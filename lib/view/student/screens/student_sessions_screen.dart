@@ -1,0 +1,697 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:language_learning_app/core/constants/const_color.dart';
+import 'package:language_learning_app/core/constants/const_dialog.dart';
+import 'package:language_learning_app/core/constants/const_size.dart';
+import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/state/app_language_state.dart';
+import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/constants/utils.dart';
+import 'package:language_learning_app/model/list_session_students.model.dart'
+    as bookings;
+import 'package:language_learning_app/provider/cancel_student_booking/cancel_student_booking_bloc.dart';
+import 'package:language_learning_app/provider/live_session_join/live_session_join_bloc.dart';
+import 'package:language_learning_app/provider/list_student_bookings/list_student_bookings_bloc.dart';
+import 'package:language_learning_app/view/student/screens/live_session_screen.dart';
+
+enum StudentSessionTab { upcoming, current, past }
+
+class StudentSessionsScreen extends StatefulWidget {
+  const StudentSessionsScreen({super.key});
+
+  @override
+  State<StudentSessionsScreen> createState() => _StudentSessionsScreenState();
+}
+
+class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
+  StudentSessionTab _tab = StudentSessionTab.upcoming;
+  final ListStudentBookingsBloc _listStudentBookingsBloc =
+      ListStudentBookingsBloc();
+  final CancelStudentBookingBloc _cancelStudentBookingBloc =
+      CancelStudentBookingBloc();
+  final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _listStudentBookingsBloc),
+        BlocProvider.value(value: _cancelStudentBookingBloc),
+        BlocProvider.value(value: _liveSessionJoinBloc),
+      ],
+      child: ValueListenableBuilder<bool>(
+        valueListenable: AppLanguageState.isKorean,
+        builder: (context, isKorean, _) {
+          final language = isKorean ? AppLanguage.korean : AppLanguage.english;
+          String t(String key) => ConstString.text(language, key);
+
+          return MultiBlocListener(
+            listeners: [
+              BlocListener<ListStudentBookingsBloc, ListStudentBookingsState>(
+                listener: (context, state) {
+                  if (state is ListStudentBookingsError) {
+                    commonAlertDialog(context, state.message);
+                  }
+                },
+              ),
+              BlocListener<CancelStudentBookingBloc, CancelStudentBookingState>(
+                listener: (context, state) {
+                  if (state is CancelStudentBookingError) {
+                    commonAlertDialog(context, state.message);
+                  }
+                  if (state is CancelStudentBookingSuccess) {
+                    commonAlertDialog(context, state.model.detail ?? '');
+                    final studentId = PrefUtils.getstudentid().trim();
+                    if (studentId.isNotEmpty) {
+                      _listStudentBookingsBloc.add(
+                        FetchStudentBookings(studentId: studentId),
+                      );
+                    }
+                  }
+                },
+              ),
+              BlocListener<LiveSessionJoinBloc, LiveSessionJoinState>(
+                listener: (context, state) {
+                  if (state is LiveSessionJoinError) {
+                    commonAlertDialog(context, state.message);
+                  }
+                  if (state is LiveSessionJoinWaiting) {
+                    commonAlertDialog(context, state.message);
+                  }
+                  if (state is LiveSessionJoinSuccess) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveSessionScreen(
+                          session: state.session,
+                          isTutor: false,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(ConstSize.grid * 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AppText(
+                      'sessions',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: ConstSize.grid * 2),
+                    _TabToggle(
+                      selected: _tab,
+                      onChanged: (value) => setState(() => _tab = value),
+                    ),
+                    const SizedBox(height: ConstSize.grid * 2),
+                    Expanded(
+                      child:
+                          BlocBuilder<
+                            ListStudentBookingsBloc,
+                            ListStudentBookingsState
+                          >(
+                            builder: (context, state) {
+                              if (state is ListStudentBookingsInitial) {
+                                final studentId = PrefUtils.getstudentid()
+                                    .trim();
+                                if (studentId.isNotEmpty) {
+                                  _listStudentBookingsBloc.add(
+                                    FetchStudentBookings(studentId: studentId),
+                                  );
+                                }
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              if (state is ListStudentBookingsLoading) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              if (state is ListStudentBookingsError) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(
+                                      ConstSize.grid * 2,
+                                    ),
+                                    child: Text(
+                                      state.message,
+                                      style: const TextStyle(
+                                        color: ConstColor.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final rows = state is ListStudentBookingsSuccess
+                                  ? (state.model.data ??
+                                        const <bookings.Data>[])
+                                  : const <bookings.Data>[];
+                              final groups = _groupsForTab(rows, _tab);
+
+                              if (groups.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    t('noData'),
+                                    style: const TextStyle(
+                                      color: ConstColor.textSecondary,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return ListView.separated(
+                                itemCount: groups.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: ConstSize.grid * 2),
+                                itemBuilder: (_, index) => _TutorSessionCard(
+                                  group: groups[index],
+                                  onJoin: (row) {
+                                    final studentId =
+                                        (row.studentId ??
+                                                PrefUtils.getstudentid())
+                                            .trim();
+                                    final tutorId = (row.tutorId ?? '').trim();
+                                    final slotId =
+                                        (row.slotId ?? row.sessionId ?? '')
+                                            .trim();
+                                    final slotRaw = (row.slot ?? '').trim();
+                                    final date = _extractDateLabel(slotRaw);
+                                    final range = _extractTimeLabel(slotRaw);
+                                    final parts = _splitSlotTimeRange(range);
+                                    String clock(String raw) =>
+                                        raw.trim().replaceAll('.', ':');
+                                    final startTime =
+                                        parts.isNotEmpty ? clock(parts.first) : '';
+                                    final endTime = parts.length > 1
+                                        ? clock(parts.last)
+                                        : '';
+
+                                    if (studentId.isEmpty ||
+                                        tutorId.isEmpty ||
+                                        slotId.isEmpty ||
+                                        date.isEmpty ||
+                                        startTime.isEmpty ||
+                                        endTime.isEmpty) {
+                                      commonAlertDialog(
+                                        context,
+                                        t('pleaseTryAgain'),
+                                      );
+                                      return;
+                                    }
+                                    _liveSessionJoinBloc.add(
+                                      LiveSessionJoinRequested(
+                                        actorType: 'student',
+                                        actorId: studentId,
+                                        tutorId: tutorId,
+                                        slotId: slotId,
+                                        date: date,
+                                        startTime: startTime,
+                                        endTime: endTime,
+                                        waitForHost: true,
+                                      ),
+                                    );
+                                  },
+                                  onCancel: (row) {
+                                    final studentId = PrefUtils.getstudentid()
+                                        .trim();
+                                    final slotId = (row.slotId ?? '').trim();
+                                    if (studentId.isEmpty || slotId.isEmpty) {
+                                      commonAlertDialog(
+                                        context,
+                                        t('pleaseTryAgain'),
+                                      );
+                                      return;
+                                    }
+                                    showDialog<void>(
+                                      context: context,
+                                      builder: (dialogContext) {
+                                        return AlertDialog(
+                                          title: Text(
+                                            t('cancelSessionConfirmTitle'),
+                                          ),
+                                          content: Text(
+                                            t('cancelSessionConfirmMessage'),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(dialogContext);
+                                              },
+                                              child: Text(t('cancel')),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(dialogContext);
+                                                _cancelStudentBookingBloc.add(
+                                                  CancelStudentBookingRequested(
+                                                    studentId: studentId,
+                                                    slotId: slotId,
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(t('yes')),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _listStudentBookingsBloc.close();
+    _cancelStudentBookingBloc.close();
+    _liveSessionJoinBloc.close();
+    super.dispose();
+  }
+
+  String _normalizeStatus(String? input) {
+    final raw = (input ?? '').trim().toLowerCase();
+    if (raw.isEmpty) return '';
+    // API commonly uses `upcomming` (typo) or `upcoming`.
+    if (raw.contains('upcom')) return 'upcoming';
+    if (raw.contains('curr')) return 'current';
+    if (raw.contains('past')) return 'past';
+    return raw;
+  }
+
+  String _extractDateLabel(String? slot) {
+    final s = (slot ?? '').trim();
+    if (s.isEmpty) return '-';
+    final commaParts = s.split(',');
+    if (commaParts.length >= 2) {
+      return commaParts.first.trim();
+    }
+    final match = RegExp(r'^\d{4}-\d{2}-\d{2}').firstMatch(s);
+    if (match != null) {
+      return match.group(0)!;
+    }
+    return s;
+  }
+
+  String _extractTimeLabel(String? slot) {
+    final s = (slot ?? '').trim();
+    if (s.isEmpty) return '-';
+    String clean(String value) {
+      var out = value.trim();
+      if (out.startsWith('/')) {
+        out = out.substring(1).trim();
+      }
+      return out;
+    }
+
+    final commaParts = s.split(',');
+    if (commaParts.length >= 2) {
+      return clean(commaParts.sublist(1).join(','));
+    }
+    final match = RegExp(r'^\d{4}-\d{2}-\d{2}\s*(.*)$').firstMatch(s);
+    if (match != null && (match.group(1) ?? '').trim().isNotEmpty) {
+      return clean(match.group(1)!);
+    }
+    return clean(s);
+  }
+
+  /// Splits a range like `17:15:00 - 17:45:00` (not `.split('-')`, which breaks on colons).
+  List<String> _splitSlotTimeRange(String range) {
+    return range
+        .split(RegExp(r'\s*-\s*'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
+  /// Parses [time] as local 24h clock (`17:15:00`, `17:15`, or `17.15.00` from API).
+  DateTime? _timeOnDate(int y, int m, int d, String time) {
+    final normalized = time.trim().replaceAll('.', ':');
+    final parts = normalized.split(':');
+    if (parts.isEmpty) return null;
+    final h = int.tryParse(parts[0]);
+    if (h == null || h < 0 || h > 23) return null;
+    final min = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    final sec = parts.length > 2 ? (int.tryParse(parts[2]) ?? 0) : 0;
+    if (min < 0 || min > 59 || sec < 0 || sec > 59) return null;
+    return DateTime(y, m, d, h, min, sec);
+  }
+
+  /// Uses [slot] date/time parts; falls back to API [status] if parsing fails.
+  (DateTime start, DateTime end)? _parseStudentSessionRange(bookings.Data row) {
+    final dateStr = _extractDateLabel(row.slot);
+    if (dateStr.isEmpty || dateStr == '-') return null;
+    final ymd = dateStr.split('-');
+    if (ymd.length != 3) return null;
+    final y = int.tryParse(ymd[0]);
+    final mo = int.tryParse(ymd[1]);
+    final d = int.tryParse(ymd[2]);
+    if (y == null || mo == null || d == null) return null;
+
+    final timePart = _extractTimeLabel(row.slot);
+    if (timePart.isEmpty || timePart == '-') return null;
+    final segments = _splitSlotTimeRange(timePart);
+    if (segments.length < 2) return null;
+    final startStr = segments.first;
+    final endStr = segments.last;
+    final start = _timeOnDate(y, mo, d, startStr);
+    final end = _timeOnDate(y, mo, d, endStr);
+    if (start == null || end == null || !end.isAfter(start)) return null;
+    return (start, end);
+  }
+
+  String _effectiveBookingStatus(bookings.Data row) {
+    final range = _parseStudentSessionRange(row);
+    if (range == null) return _normalizeStatus(row.status);
+    final (start, end) = range;
+    final now = DateTime.now();
+    if (now.isBefore(start)) return 'upcoming';
+    if (now.isBefore(end)) return 'current';
+    return 'past';
+  }
+
+  List<_TutorSessionGroup> _groupsForTab(
+    List<bookings.Data> rows,
+    StudentSessionTab tab,
+  ) {
+    final wanted = switch (tab) {
+      StudentSessionTab.upcoming => 'upcoming',
+      StudentSessionTab.current => 'current',
+      StudentSessionTab.past => 'past',
+    };
+
+    final filtered = rows
+        .where((e) => _effectiveBookingStatus(e) == wanted)
+        .toList();
+
+    final sorted = [...filtered]
+      ..sort((a, b) => (a.slot ?? '').trim().compareTo((b.slot ?? '').trim()));
+    final byTutor = <String, List<bookings.Data>>{};
+    for (final row in sorted) {
+      final tutorKey = (row.tutorName ?? '').trim().isNotEmpty
+          ? (row.tutorName ?? '').trim()
+          : ((row.tutorId ?? '').trim().isNotEmpty
+                ? (row.tutorId ?? '').trim()
+                : '—');
+      byTutor.putIfAbsent(tutorKey, () => <bookings.Data>[]).add(row);
+    }
+
+    final showJoin = wanted == 'upcoming' || wanted == 'current';
+    final canJoin = wanted == 'current';
+    final showCancel = wanted == 'upcoming';
+
+    return byTutor.entries.map((tutorEntry) {
+      final byDate = <String, List<bookings.Data>>{};
+      for (final row in tutorEntry.value) {
+        final dateKey = _extractDateLabel(row.slot);
+        byDate.putIfAbsent(dateKey, () => <bookings.Data>[]).add(row);
+      }
+
+      final dateGroups = byDate.entries.map((dateEntry) {
+        final timeRows = dateEntry.value
+            .map(
+              (e) => _SessionTimeItem(
+                timeLabel: _extractTimeLabel(e.slot),
+                topic: (e.topic ?? '').trim(),
+                row: e,
+              ),
+            )
+            .toList();
+        return _SessionDateGroup(dateLabel: dateEntry.key, items: timeRows);
+      }).toList();
+
+      return _TutorSessionGroup(
+        tutorName: tutorEntry.key,
+        dateGroups: dateGroups,
+        showJoin: showJoin,
+        canJoin: canJoin,
+        showCancel: showCancel,
+      );
+    }).toList();
+  }
+}
+
+class _TabToggle extends StatelessWidget {
+  const _TabToggle({required this.selected, required this.onChanged});
+
+  final StudentSessionTab selected;
+  final ValueChanged<StudentSessionTab> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = const [
+      StudentSessionTab.upcoming,
+      StudentSessionTab.current,
+      StudentSessionTab.past,
+    ];
+
+    return ToggleButtons(
+      isSelected: items.map((e) => e == selected).toList(),
+      onPressed: (index) => onChanged(items[index]),
+      borderRadius: BorderRadius.circular(ConstSize.radiusM),
+      constraints: const BoxConstraints(minHeight: 40, minWidth: 96),
+      selectedColor: Colors.white,
+      fillColor: ConstColor.primaryBlue,
+      color: ConstColor.textSecondary,
+      children: const [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: AppText('upcoming'),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: AppText('current'),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: AppText('past'),
+        ),
+      ],
+    );
+  }
+}
+
+class _TutorSessionGroup {
+  const _TutorSessionGroup({
+    required this.tutorName,
+    required this.dateGroups,
+    required this.showJoin,
+    required this.canJoin,
+    required this.showCancel,
+  });
+  final String tutorName;
+  final List<_SessionDateGroup> dateGroups;
+  final bool showJoin;
+  /// Join is tappable only for sessions on the Current tab.
+  final bool canJoin;
+  final bool showCancel;
+}
+
+class _SessionDateGroup {
+  const _SessionDateGroup({required this.dateLabel, required this.items});
+  final String dateLabel;
+  final List<_SessionTimeItem> items;
+}
+
+class _SessionTimeItem {
+  const _SessionTimeItem({
+    required this.timeLabel,
+    required this.topic,
+    required this.row,
+  });
+  final String timeLabel;
+  final String topic;
+  final bookings.Data row;
+}
+
+class _TutorSessionCard extends StatelessWidget {
+  const _TutorSessionCard({
+    required this.group,
+    required this.onJoin,
+    required this.onCancel,
+  });
+
+  final _TutorSessionGroup group;
+  final ValueChanged<bookings.Data> onJoin;
+  final ValueChanged<bookings.Data> onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(ConstSize.grid * 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(ConstSize.radiusL),
+        border: Border.all(color: ConstColor.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: ConstColor.accentTeal.withValues(alpha: 0.16),
+                child: const Icon(Icons.person, color: ConstColor.accentTeal),
+              ),
+              const SizedBox(width: ConstSize.grid),
+              Text(
+                group.tutorName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ConstSize.grid * 1.5),
+          ...group.dateGroups.map((dateGroup) {
+            return Container(
+              width: (!group.showJoin && !group.showCancel)
+                  ? double.infinity
+                  : null,
+              margin: const EdgeInsets.only(bottom: ConstSize.grid * 1.5),
+              padding: const EdgeInsets.all(ConstSize.grid * 1.2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFF),
+                borderRadius: BorderRadius.circular(ConstSize.radiusM),
+                border: Border.all(color: ConstColor.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateGroup.dateLabel,
+                    style: const TextStyle(
+                      color: ConstColor.primaryBlue,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: ConstSize.grid),
+                  ...dateGroup.items.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+                      child: Container(
+                        padding: const EdgeInsets.all(ConstSize.grid),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(
+                            ConstSize.radiusM,
+                          ),
+                          border: Border.all(color: ConstColor.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.timeLabel,
+                              style: const TextStyle(
+                                color: ConstColor.primaryBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (item.topic.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const AppText(
+                                    'topic',
+                                    style: TextStyle(
+                                      color: ConstColor.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      item.topic,
+                                      style: const TextStyle(
+                                        color: ConstColor.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (group.showJoin || group.showCancel) ...[
+                              const SizedBox(height: ConstSize.grid),
+                              Row(
+                                children: [
+                                  if (group.showJoin)
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: group.canJoin
+                                            ? () => onJoin(item.row)
+                                            : null,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: group.canJoin
+                                              ? ConstColor.primaryBlue
+                                              : ConstColor.grey,
+                                          disabledBackgroundColor:
+                                              ConstColor.grey,
+                                          foregroundColor: Colors.white,
+                                          disabledForegroundColor:
+                                              Colors.white70,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              ConstSize.radiusM,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const AppText('join'),
+                                      ),
+                                    ),
+                                  if (group.showJoin && group.showCancel)
+                                    const SizedBox(width: ConstSize.grid),
+                                  if (group.showCancel)
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: () => onCancel(item.row),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(
+                                            color: ConstColor.border,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              ConstSize.radiusM,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const AppText('cancel'),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
