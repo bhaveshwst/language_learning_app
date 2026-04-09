@@ -165,15 +165,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     return 'past';
   }
 
-  String _timeLabel(tutor_sessions.Data row) {
-    final start = (row.startTime ?? '').trim();
-    final end = (row.endTime ?? '').trim();
-    if (start.isEmpty && end.isEmpty) return '-';
-    if (end.isEmpty) return start;
-    return '$start - $end';
-  }
-
-  List<_StudentSessionGroup> _groupsForTab(
+  List<_SlotSessionGroup> _groupsForTab(
     List<tutor_sessions.Data> rows,
     TutorSessionTab tab,
   ) {
@@ -185,38 +177,41 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     final filtered = rows
         .where((e) => _effectiveBookingStatus(e) == wanted)
         .toList();
-    final byStudent = <String, List<tutor_sessions.Data>>{};
+    final bySlot = <String, List<tutor_sessions.Data>>{};
     for (final row in filtered) {
-      final key = (row.studentName ?? '').trim().isNotEmpty
-          ? (row.studentName ?? '').trim()
-          : '-';
-      byStudent.putIfAbsent(key, () => <tutor_sessions.Data>[]).add(row);
+      final date = (row.date ?? '').trim();
+      final start = (row.startTime ?? '').trim();
+      final end = (row.endTime ?? '').trim();
+      final slotId = (row.slotId ?? '').trim();
+      final key = '$slotId|$date|$start|$end';
+      bySlot.putIfAbsent(key, () => <tutor_sessions.Data>[]).add(row);
     }
 
-    return byStudent.entries.map((entry) {
-      final byDate = <String, List<tutor_sessions.Data>>{};
-      for (final row in entry.value) {
-        final date = (row.date ?? '').trim().isNotEmpty
-            ? (row.date ?? '').trim()
-            : '-';
-        byDate.putIfAbsent(date, () => <tutor_sessions.Data>[]).add(row);
-      }
-      final dateGroups = byDate.entries.map((d) {
-        final timeRows = d.value
-          ..sort(
-            (a, b) => (a.startTime ?? '').trim().compareTo(
-              (b.startTime ?? '').trim(),
-            ),
-          );
-        return _DateGroup(dateLabel: d.key, rows: [...timeRows]);
-      }).toList();
-
-      return _StudentSessionGroup(
-        studentName: entry.key,
-        groups: dateGroups,
+    final groups = bySlot.values.map((slotRows) {
+      final sortedRows = [...slotRows]
+        ..sort(
+          (a, b) =>
+              (a.studentName ?? '').trim().compareTo((b.studentName ?? '').trim()),
+        );
+      final first = sortedRows.first;
+      final date = (first.date ?? '').trim();
+      final start = (first.startTime ?? '').trim();
+      final end = (first.endTime ?? '').trim();
+      final time = end.isEmpty ? (start.isEmpty ? '-' : start) : '$start - $end';
+      return _SlotSessionGroup(
+        dateLabel: date.isEmpty ? '-' : date,
+        timeLabel: time,
+        rows: sortedRows,
         status: wanted,
       );
     }).toList();
+
+    groups.sort((a, b) {
+      final byDate = a.dateLabel.compareTo(b.dateLabel);
+      if (byDate != 0) return byDate;
+      return a.timeLabel.compareTo(b.timeLabel);
+    });
+    return groups;
   }
 
   @override
@@ -353,9 +348,8 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                         const SizedBox(
                                           height: ConstSize.grid * 2,
                                         ),
-                                    itemBuilder: (_, i) => _StudentSessionCard(
+                                    itemBuilder: (_, i) => _SlotSessionCard(
                                       group: groups[i],
-                                      timeLabel: _timeLabel,
                                       onJoin: (row) {
                                         final tutorId = (row.tutorId ?? '')
                                             .trim();
@@ -464,33 +458,27 @@ class _TutorTabToggle extends StatelessWidget {
   }
 }
 
-class _StudentSessionGroup {
-  const _StudentSessionGroup({
-    required this.studentName,
-    required this.groups,
+class _SlotSessionGroup {
+  const _SlotSessionGroup({
+    required this.dateLabel,
+    required this.timeLabel,
+    required this.rows,
     required this.status,
   });
-  final String studentName;
-  final List<_DateGroup> groups;
+  final String dateLabel;
+  final String timeLabel;
+  final List<tutor_sessions.Data> rows;
   final String status;
 }
 
-class _DateGroup {
-  const _DateGroup({required this.dateLabel, required this.rows});
-  final String dateLabel;
-  final List<tutor_sessions.Data> rows;
-}
-
-class _StudentSessionCard extends StatelessWidget {
-  const _StudentSessionCard({
+class _SlotSessionCard extends StatelessWidget {
+  const _SlotSessionCard({
     required this.group,
-    required this.timeLabel,
     required this.onJoin,
     required this.onAnalytics,
   });
 
-  final _StudentSessionGroup group;
-  final String Function(tutor_sessions.Data row) timeLabel;
+  final _SlotSessionGroup group;
   final ValueChanged<tutor_sessions.Data> onJoin;
   final ValueChanged<tutor_sessions.Data> onAnalytics;
 
@@ -509,105 +497,98 @@ class _StudentSessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: Color(0x1A0F6CBD),
-                child: Icon(
-                  Icons.person_outline,
-                  color: ConstColor.primaryBlue,
-                ),
-              ),
-              const SizedBox(width: ConstSize.grid),
-              Expanded(
-                child: Text(
-                  group.studentName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            group.dateLabel,
+            style: const TextStyle(
+              color: ConstColor.primaryBlue,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: ConstSize.grid),
-          ...group.groups.map((dateGroup) {
-            return Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: ConstSize.grid),
-              padding: const EdgeInsets.all(ConstSize.grid),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFF),
-                borderRadius: BorderRadius.circular(ConstSize.radiusM),
-                border: Border.all(color: ConstColor.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateGroup.dateLabel,
-                    style: const TextStyle(
-                      color: ConstColor.primaryBlue,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  ...dateGroup.rows.map((row) {
-                    return Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(ConstSize.radiusM),
-                        border: Border.all(color: ConstColor.border),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(ConstSize.grid),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFF),
+              borderRadius: BorderRadius.circular(ConstSize.radiusM),
+              border: Border.all(color: ConstColor.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        group.timeLabel,
+                        style: const TextStyle(
+                          color: ConstColor.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              timeLabel(row),
-                              style: const TextStyle(
-                                color: ConstColor.primaryBlue,
-                                fontWeight: FontWeight.w600,
-                              ),
+                    ),
+                    if (showJoin)
+                      ElevatedButton(
+                        onPressed: canJoin ? () => onJoin(group.rows.first) : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: canJoin
+                              ? ConstColor.primaryBlue
+                              : ConstColor.grey,
+                          disabledBackgroundColor: ConstColor.grey,
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white70,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ConstSize.radiusM,
                             ),
                           ),
-                          if (showJoin)
-                            ElevatedButton(
-                              onPressed: canJoin ? () => onJoin(row) : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: canJoin
-                                    ? ConstColor.primaryBlue
-                                    : ConstColor.grey,
-                                disabledBackgroundColor: ConstColor.grey,
-                                foregroundColor: Colors.white,
-                                disabledForegroundColor: Colors.white70,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    ConstSize.radiusM,
-                                  ),
-                                ),
-                              ),
-                              child: const AppText('join'),
-                            ),
-                          if (showAnalytics)
-                            IconButton(
-                              onPressed: () => onAnalytics(row),
-                              icon: const Icon(
-                                Icons.bar_chart_rounded,
-                                color: ConstColor.primaryBlue,
-                              ),
-                              tooltip: 'Analytics',
-                            ),
-                        ],
+                        ),
+                        child: const AppText('join'),
                       ),
-                    );
-                  }),
-                ],
-              ),
-            );
-          }),
+                    if (showAnalytics)
+                      IconButton(
+                        onPressed: () => onAnalytics(group.rows.first),
+                        icon: const Icon(
+                          Icons.bar_chart_rounded,
+                          color: ConstColor.primaryBlue,
+                        ),
+                        tooltip: 'Analytics',
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                ...group.rows.map((row) {
+                  final name = (row.studentName ?? '').trim().isNotEmpty
+                      ? (row.studentName ?? '').trim()
+                      : '-';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline,
+                          size: 18,
+                          color: ConstColor.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
         ],
       ),
     );
