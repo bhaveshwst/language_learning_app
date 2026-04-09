@@ -3,7 +3,7 @@ class ConstApiUrl {
 
   // static const String baseURL = "https://konnected-backend-production.up.railway.app";
   static const String baseURL =
-      "https://konnected-backend-production-0366.up.railway.app";
+      "https://konnected.wisdomsquare.net";
   // static const String baseURL =
   //     "https://isaias-poriferous-lezlie.ngrok-free.dev";
   static const String profileCommonURL = "$baseURL/profile/data";

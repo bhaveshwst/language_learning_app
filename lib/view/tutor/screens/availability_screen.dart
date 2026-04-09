@@ -355,6 +355,19 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                               ? AppLanguage.korean
                                               : AppLanguage.english;
                                           return Text(
+                                            '${ConstString.text(language, 'topic')}: ${slot.topics?.trim().isNotEmpty == true ? slot.topics : '-'}',
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 2),
+                                      ValueListenableBuilder<bool>(
+                                        valueListenable:
+                                            AppLanguageState.isKorean,
+                                        builder: (context, isKorean, _) {
+                                          final language = isKorean
+                                              ? AppLanguage.korean
+                                              : AppLanguage.english;
+                                          return Text(
                                             '${ConstString.text(language, 'status')}: ${slot.status ?? '-'}',
                                             style: TextStyle(
                                               color:
