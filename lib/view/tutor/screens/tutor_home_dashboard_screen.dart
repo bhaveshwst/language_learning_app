@@ -9,6 +9,7 @@ import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/tutor_session_list_model.dart'
     as tutor_sessions;
 import 'package:language_learning_app/provider/get_tutor_profile/get_tutor_profile_bloc.dart';
@@ -261,12 +262,20 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${PrefUtils.getname()} 👋',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${PrefUtils.getname()} 👋',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const AppVersionHeaderBadge(),
+                  ],
                 ),
                 const SizedBox(height: ConstSize.grid * 2),
                 BlocBuilder<TutorSessionsBloc, TutorSessionsState>(

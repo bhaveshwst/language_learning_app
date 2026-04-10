@@ -8,6 +8,7 @@ import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/provider/tutor_add_slot/tutor_add_slot_bloc.dart';
 import 'package:language_learning_app/provider/tutor_topics/tutor_topics_bloc.dart';
 
@@ -171,6 +172,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
           backgroundColor: Colors.white,
+          actions: const [AppVersionAppBarAction()],
         ),
         body: BlocBuilder<TutorTopicsBloc, TutorTopicsState>(
           builder: (context, state) {

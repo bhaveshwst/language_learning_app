@@ -5,6 +5,7 @@ import 'package:language_learning_app/core/constants/const_api_url.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/live_session_config.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/live_session_join_model.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
@@ -48,7 +49,10 @@ class LiveSessionScreen extends StatelessWidget {
 
     if (!LiveSessionConfig.isConfigured) {
       return Scaffold(
-        appBar: AppBar(title: const AppText('liveSession')),
+        appBar: AppBar(
+          title: const AppText('liveSession'),
+          actions: const [AppVersionAppBarAction()],
+        ),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(ConstSize.grid * 2),

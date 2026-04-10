@@ -11,6 +11,7 @@ import 'package:language_learning_app/view/tutor/screens/tutor_sessions_screen.d
 import 'package:language_learning_app/view/auth/app_welcome_screen.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 
 class TutorDashboardShell extends StatefulWidget {
@@ -150,9 +151,17 @@ class _TutorSettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppText(
-              'tutorSettings',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Expanded(
+                  child: AppText(
+                    'tutorSettings',
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                const AppVersionHeaderBadge(),
+              ],
             ),
             const SizedBox(height: ConstSize.grid * 2),
             _SectionCard(
@@ -365,6 +374,7 @@ class _TutorReviewsPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const AppText('review'),
+        actions: const [AppVersionAppBarAction()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(ConstSize.grid * 2),

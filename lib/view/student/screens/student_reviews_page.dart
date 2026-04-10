@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 
 class StudentReviewsPage extends StatelessWidget {
   const StudentReviewsPage({super.key});
@@ -13,6 +14,7 @@ class StudentReviewsPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const AppText('review'),
+        actions: const [AppVersionAppBarAction()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(ConstSize.grid * 2),

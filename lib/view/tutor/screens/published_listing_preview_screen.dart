@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 
 class PublishedListingPreviewScreen extends StatelessWidget {
   const PublishedListingPreviewScreen({super.key});
@@ -12,6 +13,7 @@ class PublishedListingPreviewScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Published Listing Preview'),
         backgroundColor: Colors.white,
+        actions: const [AppVersionAppBarAction()],
       ),
       body: SafeArea(
         child: Padding(

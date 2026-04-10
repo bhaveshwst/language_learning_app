@@ -5,6 +5,7 @@ import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/get_tutor_detail_model.dart'
     as tutor_profile;
 import 'package:language_learning_app/model/list_tutor_slot_model.dart'
@@ -226,6 +227,7 @@ class _BookingScreenState extends State<BookingScreen> {
       appBar: AppBar(
         title: const AppText('booking'),
         backgroundColor: Colors.white,
+        actions: const [AppVersionAppBarAction()],
       ),
       body: MultiBlocProvider(
         providers: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 
 class CreateTutorProfileScreen extends StatefulWidget {
   const CreateTutorProfileScreen({super.key});
@@ -23,6 +24,7 @@ class _CreateTutorProfileScreenState extends State<CreateTutorProfileScreen> {
       appBar: AppBar(
         title: const Text('Create Tutor Profile'),
         backgroundColor: Colors.white,
+        actions: const [AppVersionAppBarAction()],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

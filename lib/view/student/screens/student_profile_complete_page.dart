@@ -7,6 +7,7 @@ import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/provider/profile_common_api/profile_common_api_bloc.dart';
 import 'package:language_learning_app/provider/student_profile_create/student_profile_create_bloc.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
@@ -70,6 +71,7 @@ class _StudentProfileCompletePageState
             t('profileTitle'),
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
+          actions: const [AppVersionAppBarAction()],
         ),
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),

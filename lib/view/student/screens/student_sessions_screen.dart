@@ -6,6 +6,7 @@ import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/model/list_session_students.model.dart'
     as bookings;
@@ -98,12 +99,20 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppText(
-                      'sessions',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                          child: AppText(
+                            'sessions',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const AppVersionHeaderBadge(),
+                      ],
                     ),
                     const SizedBox(height: ConstSize.grid * 2),
                     _TabToggle(

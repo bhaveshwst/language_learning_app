@@ -7,6 +7,7 @@ import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/provider/delete_tutor_slot/delete_tutor_slot_bloc.dart';
 import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_bloc.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_add_slot_screen.dart';
@@ -163,9 +164,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppText(
-                  'availability',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: AppText(
+                        'availability',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const AppVersionHeaderBadge(),
+                  ],
                 ),
                 const SizedBox(height: ConstSize.grid * 2),
                 Align(

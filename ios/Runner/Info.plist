@@ -51,5 +51,11 @@
 		<string>Microphone access is needed for live tutoring sessions.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>itms-apps</string>
+		</array>
 	</dict>
 </plist>

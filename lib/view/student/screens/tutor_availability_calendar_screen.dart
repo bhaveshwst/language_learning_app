@@ -4,6 +4,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/tutor_avaibility_model.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
 import 'package:language_learning_app/view/student/screens/booking_screen.dart';
@@ -146,6 +147,7 @@ class _TutorAvailabilityCalendarScreenState
                 '${widget.tutorName} ${t('availabilityCalendarTitle')}',
               ),
               backgroundColor: Colors.white,
+              actions: const [AppVersionAppBarAction()],
             ),
             body: SafeArea(
               child: BlocBuilder<TutorAvailabilityBloc, TutorAvailabilityState>(

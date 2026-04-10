@@ -6,16 +6,25 @@ import 'package:language_learning_app/view/home_page.dart';
 import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:language_learning_app/core/remote_config/app_remote_config.dart';
+import 'package:language_learning_app/view/force_update_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PrefUtils.init();
+  await AppRemoteConfig.initialize();
+  final forceUpdate = await AppRemoteConfig.evaluateForceUpdate();
 
-  runApp(const MyApp());
+  runApp(MyApp(forceUpdateRequired: forceUpdate.mustUpdate));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.forceUpdateRequired = false});
+
+  final bool forceUpdateRequired;
 
   String? _inferUserTypeFromToken(String token) {
     // Best-effort inference: if backend returns a JWT, the payload often
@@ -54,40 +63,43 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: ValueListenableBuilder<bool>(
-        valueListenable: AppLanguageState.isKorean,
-        builder: (context, isKorean, _) {
-          final token = PrefUtils.getToken();
-          if (token.isEmpty) {
-            return HomePage(
-              isKorean: isKorean,
-              onLanguageChanged: (value) {
-                AppLanguageState.isKorean.value = value;
+      home: forceUpdateRequired
+          ? const ForceUpdateScreen()
+          : ValueListenableBuilder<bool>(
+              valueListenable: AppLanguageState.isKorean,
+              builder: (context, isKorean, _) {
+                final token = PrefUtils.getToken();
+                if (token.isEmpty) {
+                  return HomePage(
+                    isKorean: isKorean,
+                    onLanguageChanged: (value) {
+                      AppLanguageState.isKorean.value = value;
+                    },
+                  );
+                }
+
+                final storedUserType = PrefUtils.getUserType();
+                final inferredUserType = storedUserType.isNotEmpty
+                    ? storedUserType
+                    : _inferUserTypeFromToken(token);
+
+                if (inferredUserType == 'tutor') {
+                  return const TutorDashboardShell();
+                }
+                if (inferredUserType == 'student') {
+                  return const StudentDashboardShell();
+                }
+
+                // If token exists but we can't tell student vs tutor, fall back.
+                return HomePage(
+                  isKorean: isKorean,
+                  onLanguageChanged: (value) {
+                    AppLanguageState.isKorean.value = value;
+                  },
+                );
               },
-            );
-          }
-
-          final storedUserType = PrefUtils.getUserType();
-          final inferredUserType = storedUserType.isNotEmpty
-              ? storedUserType
-              : _inferUserTypeFromToken(token);
-
-          if (inferredUserType == 'tutor') {
-            return const TutorDashboardShell();
-          }
-          if (inferredUserType == 'student') {
-            return const StudentDashboardShell();
-          }
-
-          // If token exists but we can't tell student vs tutor, fall back.
-          return HomePage(
-            isKorean: isKorean,
-            onLanguageChanged: (value) {
-              AppLanguageState.isKorean.value = value;
-            },
-          );
-        },
-      ),
+            ),
     );
   }
 }
+

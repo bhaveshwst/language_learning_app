@@ -7,6 +7,7 @@ import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
+import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/provider/get_student_profile/get_student_profile_bloc.dart';
 import 'package:language_learning_app/provider/recommended_tutor/recommended_tutor_bloc.dart';
 import 'package:language_learning_app/view/student/screens/booking_screen.dart';
@@ -173,12 +174,20 @@ class _StudentHomeDashboardScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const AppVersionHeaderBadge(),
+                      ],
                     ),
                     const SizedBox(height: ConstSize.grid * 2),
 
