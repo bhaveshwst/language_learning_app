@@ -201,6 +201,9 @@ class ConstString {
     // Extra languages for dropdowns
     'spanish': 'Spanish',
     'japanese': 'Japanese',
+
+    'noInternetMessage':
+        'No internet connection. Check Wi‑Fi or mobile data.',
   };
 
   static const Map<String, String> _ko = {
@@ -398,6 +401,8 @@ class ConstString {
     // Extra languages for dropdowns
     'spanish': '스페인어',
     'japanese': '일본어',
+
+    'noInternetMessage': '인터넷에 연결되어 있지 않습니다. Wi‑Fi 또는 모바일 데이터를 확인해 주세요.',
   };
 
   static String text(AppLanguage language, String key) {

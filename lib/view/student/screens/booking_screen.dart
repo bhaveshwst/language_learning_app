@@ -82,7 +82,8 @@ class _BookingScreenState extends State<BookingScreen> {
       _didApplyPrefill = true;
       return;
     }
-    final hasAnyPrefill = (widget.prefillSlotDate ?? '').trim().isNotEmpty ||
+    final hasAnyPrefill =
+        (widget.prefillSlotDate ?? '').trim().isNotEmpty ||
         (widget.prefillSlotStartTime ?? '').trim().isNotEmpty ||
         (widget.prefillSlotEndTime ?? '').trim().isNotEmpty;
     if (!hasAnyPrefill) {
@@ -90,9 +91,9 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
     final match = _slots.cast<tutor_slots.Data?>().firstWhere(
-          (s) => s != null && _matchesPrefill(s),
-          orElse: () => null,
-        );
+      (s) => s != null && _matchesPrefill(s),
+      orElse: () => null,
+    );
     if (match != null) {
       _selectedSlot = match;
     }
@@ -156,7 +157,8 @@ class _BookingScreenState extends State<BookingScreen> {
                     children: [
                       Checkbox(
                         value: isSelected,
-                        onChanged: (_) => Navigator.pop(bottomSheetContext, slot),
+                        onChanged: (_) =>
+                            Navigator.pop(bottomSheetContext, slot),
                         activeColor: ConstColor.primaryBlue,
                       ),
                       const SizedBox(width: ConstSize.grid),
@@ -449,7 +451,9 @@ class _BookingScreenState extends State<BookingScreen> {
                             onTap: () => _showSlotPicker(language),
                             child: Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.all(ConstSize.grid * 1.5),
+                              padding: const EdgeInsets.all(
+                                ConstSize.grid * 1.5,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF7F9FD),
                                 border: Border.all(color: ConstColor.border),
@@ -541,8 +545,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
                                       final tutorId = widget.tutorId.trim();
                                       final slotDate = (slot.date ?? '').trim();
-                                      final startTime =
-                                          (slot.startTime ?? '').trim();
+                                      final startTime = (slot.startTime ?? '')
+                                          .trim();
                                       if (tutorId.isEmpty ||
                                           slotDate.isEmpty ||
                                           startTime.isEmpty) {

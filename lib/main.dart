@@ -14,6 +14,7 @@ import 'package:language_learning_app/view/home_page.dart';
 import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
 import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
 import 'package:language_learning_app/view/force_update_screen.dart';
+import 'package:language_learning_app/core/widgets/connectivity_overlay.dart';
 
 import 'firebase_options.dart';
 
@@ -24,7 +25,7 @@ void main() async {
 }
 
 class _AppBootstrap extends StatefulWidget {
-  const _AppBootstrap({super.key});
+  const _AppBootstrap();
 
   @override
   State<_AppBootstrap> createState() => _AppBootstrapState();
@@ -168,6 +169,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      builder: (context, child) =>
+          ConnectivityOverlay(child: child ?? const SizedBox.shrink()),
       home: forceUpdateRequired
           ? const ForceUpdateScreen()
           : ValueListenableBuilder<bool>(
