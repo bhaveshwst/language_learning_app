@@ -1,37 +1,139 @@
 import 'dart:convert';
+import 'dart:ui';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/theme/app_theme.dart';
+import 'package:language_learning_app/core/state/app_language_state.dart';
+import 'package:language_learning_app/core/remote_config/app_remote_config.dart';
+
 import 'package:language_learning_app/view/home_page.dart';
 import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
-import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:language_learning_app/core/remote_config/app_remote_config.dart';
 import 'package:language_learning_app/view/force_update_screen.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await PrefUtils.init();
-  await AppRemoteConfig.initialize();
-  final forceUpdate = await AppRemoteConfig.evaluateForceUpdate();
 
-  runApp(MyApp(forceUpdateRequired: forceUpdate.mustUpdate));
+  runApp(const _AppBootstrap());
+}
+
+class _AppBootstrap extends StatefulWidget {
+  const _AppBootstrap({super.key});
+
+  @override
+  State<_AppBootstrap> createState() => _AppBootstrapState();
+}
+
+class _AppBootstrapState extends State<_AppBootstrap> {
+  Object? _error;
+  bool _ready = false;
+  bool _forceUpdateRequired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      // Firebase first
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+
+      // Crashlytics
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stack,
+          fatal: true,
+        );
+        return true;
+      };
+
+      // Shared Preferences
+      await PrefUtils.init();
+
+      // Remote Config
+      await AppRemoteConfig.initialize();
+      final forceUpdate = await AppRemoteConfig.evaluateForceUpdate();
+
+      if (!mounted) return;
+
+      setState(() {
+        _forceUpdateRequired = forceUpdate.mustUpdate;
+        _ready = true;
+      });
+    } catch (e, st) {
+      debugPrint('Startup init failed: $e\n$st');
+
+      if (!mounted) return;
+
+      setState(() {
+        _error = e;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Could not start the app.\n$_error',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!_ready) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    return MyApp(forceUpdateRequired: _forceUpdateRequired);
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, this.forceUpdateRequired = false});
+  const MyApp({
+    super.key,
+    this.forceUpdateRequired = false,
+  });
 
   final bool forceUpdateRequired;
 
   String? _inferUserTypeFromToken(String token) {
-    // Best-effort inference: if backend returns a JWT, the payload often
-    // contains fields like `role` / `user_type` / `type` with `student` or `tutor`.
     try {
       final parts = token.split('.');
       if (parts.length < 2) return null;
+
       final payloadBase64 = parts[1];
       final normalized = base64Url.normalize(payloadBase64);
       final payloadJson = utf8.decode(base64Url.decode(normalized));
@@ -45,12 +147,16 @@ class MyApp extends StatelessWidget {
           payload['type'];
 
       if (rawRole is! String) return null;
+
       final role = rawRole.toLowerCase();
+
       if (role.contains('tutor')) return 'tutor';
       if (role.contains('student')) return 'student';
+
       if (role == 'becometutor' || role == 'findtutor') {
         return role == 'becometutor' ? 'tutor' : 'student';
       }
+
       return null;
     } catch (_) {
       return null;
@@ -59,7 +165,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(PrefUtils.gettutorid());
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -69,6 +174,7 @@ class MyApp extends StatelessWidget {
               valueListenable: AppLanguageState.isKorean,
               builder: (context, isKorean, _) {
                 final token = PrefUtils.getToken();
+
                 if (token.isEmpty) {
                   return HomePage(
                     isKorean: isKorean,
@@ -79,6 +185,7 @@ class MyApp extends StatelessWidget {
                 }
 
                 final storedUserType = PrefUtils.getUserType();
+
                 final inferredUserType = storedUserType.isNotEmpty
                     ? storedUserType
                     : _inferUserTypeFromToken(token);
@@ -86,11 +193,11 @@ class MyApp extends StatelessWidget {
                 if (inferredUserType == 'tutor') {
                   return const TutorDashboardShell();
                 }
+
                 if (inferredUserType == 'student') {
                   return const StudentDashboardShell();
                 }
 
-                // If token exists but we can't tell student vs tutor, fall back.
                 return HomePage(
                   isKorean: isKorean,
                   onLanguageChanged: (value) {
@@ -102,4 +209,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

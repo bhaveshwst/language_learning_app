@@ -1,11 +1,25 @@
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefUtils {
   static SharedPreferences? _preferences;
 
-  // Init SharedPreferences
-  static Future init() async {
-    _preferences = await SharedPreferences.getInstance();
+  /// Opens SharedPreferences. Retries briefly if the Android embedder has not
+  /// finished wiring the Pigeon channel yet (cold start `channel-error`).
+  static Future<void> init() async {
+    const maxAttempts = 10;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        _preferences = await SharedPreferences.getInstance();
+        return;
+      } on PlatformException catch (e) {
+        if (e.code == 'channel-error' && attempt < maxAttempts) {
+          await Future<void>.delayed(Duration(milliseconds: 25 * attempt));
+          continue;
+        }
+        rethrow;
+      }
+    }
   }
 
   // Keys

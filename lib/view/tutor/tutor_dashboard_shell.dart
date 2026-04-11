@@ -4,7 +4,6 @@ import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/view/tutor/screens/availability_screen.dart';
-import 'package:language_learning_app/view/tutor/screens/create_tutor_profile_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_home_dashboard_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_profile_complete_page.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_sessions_screen.dart';
@@ -363,76 +362,3 @@ class _LangButton extends StatelessWidget {
     );
   }
 }
-
-class _TutorReviewsPage extends StatelessWidget {
-  const _TutorReviewsPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const AppText('review'),
-        actions: const [AppVersionAppBarAction()],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(ConstSize.grid * 2),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppText(
-              'review',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            ),
-            ..._placeholderTutorReviews.map(
-              (r) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _ReviewCard(from: r['from']!, text: r['text']!),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.from, required this.text});
-
-  final String from;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(ConstSize.grid * 2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(ConstSize.radiusM),
-        border: Border.all(color: ConstColor.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(from, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(
-            text,
-            style: TextStyle(color: ConstColor.textSecondary, height: 1.4),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-const List<Map<String, String>> _placeholderTutorReviews = [
-  {'from': 'Student A', 'text': 'Great session! Learned a lot quickly.'},
-  {
-    'from': 'Student B',
-    'text': 'Very helpful feedback and clear explanations.',
-  },
-];
