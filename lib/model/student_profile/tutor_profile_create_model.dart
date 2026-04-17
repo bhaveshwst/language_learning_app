@@ -26,6 +26,7 @@ class Data {
   String? userId;
   String? name;
   String? headline;
+  String? timezone;
   String? bio;
   String? languagesTaught;
   String? languagesSpoken;
@@ -36,6 +37,7 @@ class Data {
     this.userId,
     this.name,
     this.headline,
+    this.timezone,
     this.bio,
     this.languagesTaught,
     this.languagesSpoken,
@@ -47,6 +49,7 @@ class Data {
     userId = json['user_id'];
     name = json['name'];
     headline = json['headline'];
+    timezone = json['timezone'];
     bio = json['bio'];
     languagesTaught = json['languages_taught'];
     languagesSpoken = json['languages_spoken'];
@@ -59,6 +62,7 @@ class Data {
     data['user_id'] = userId;
     data['name'] = name;
     data['headline'] = headline;
+    data['timezone'] = timezone;
     data['bio'] = bio;
     data['languages_taught'] = languagesTaught;
     data['languages_spoken'] = languagesSpoken;

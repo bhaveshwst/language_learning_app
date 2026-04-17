@@ -13,6 +13,7 @@ import 'package:language_learning_app/model/list_session_students.model.dart'
 import 'package:language_learning_app/provider/cancel_student_booking/cancel_student_booking_bloc.dart';
 import 'package:language_learning_app/provider/live_session_join/live_session_join_bloc.dart';
 import 'package:language_learning_app/provider/list_student_bookings/list_student_bookings_bloc.dart';
+import 'package:language_learning_app/provider/report_session/report_session_bloc.dart';
 import 'package:language_learning_app/view/student/screens/live_session_screen.dart';
 
 enum StudentSessionTab { upcoming, current, past }
@@ -31,6 +32,38 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
   final CancelStudentBookingBloc _cancelStudentBookingBloc =
       CancelStudentBookingBloc();
   final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
+  final ReportSessionBloc _reportSessionBloc = ReportSessionBloc();
+
+  void _openReportSessionDialog(
+    BuildContext dialogParentContext,
+    AppLanguage language,
+    bookings.Data row,
+  ) {
+    final studentId = (row.studentId ?? PrefUtils.getstudentid()).trim();
+    final tutorId = (row.tutorId ?? '').trim();
+    final sessionId = (row.sessionId ?? row.slotId ?? '').trim();
+    if (studentId.isEmpty || tutorId.isEmpty || sessionId.isEmpty) {
+      commonAlertDialog(
+        dialogParentContext,
+        ConstString.text(language, 'pleaseTryAgain'),
+      );
+      return;
+    }
+    _reportSessionBloc.add(const ReportSessionReset());
+    showDialog<void>(
+      context: dialogParentContext,
+      builder: (_) => BlocProvider.value(
+        value: _reportSessionBloc,
+        child: _ReportSessionReasonDialog(
+          parentContext: dialogParentContext,
+          language: language,
+          studentId: studentId,
+          tutorId: tutorId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +72,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
         BlocProvider.value(value: _listStudentBookingsBloc),
         BlocProvider.value(value: _cancelStudentBookingBloc),
         BlocProvider.value(value: _liveSessionJoinBloc),
+        BlocProvider.value(value: _reportSessionBloc),
       ],
       child: ValueListenableBuilder<bool>(
         valueListenable: AppLanguageState.isKorean,
@@ -183,6 +217,11 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                     SizedBox(height: ConstSize.grid * 2),
                                 itemBuilder: (_, index) => _TutorSessionCard(
                                   group: groups[index],
+                                  onReport: (row) => _openReportSessionDialog(
+                                    context,
+                                    language,
+                                    row,
+                                  ),
                                   onJoin: (row) {
                                     final studentId =
                                         (row.studentId ??
@@ -198,8 +237,9 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                     final parts = _splitSlotTimeRange(range);
                                     String clock(String raw) =>
                                         raw.trim().replaceAll('.', ':');
-                                    final startTime =
-                                        parts.isNotEmpty ? clock(parts.first) : '';
+                                    final startTime = parts.isNotEmpty
+                                        ? clock(parts.first)
+                                        : '';
                                     final endTime = parts.length > 1
                                         ? clock(parts.last)
                                         : '';
@@ -294,6 +334,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     _listStudentBookingsBloc.close();
     _cancelStudentBookingBloc.close();
     _liveSessionJoinBloc.close();
+    _reportSessionBloc.close();
     super.dispose();
   }
 
@@ -427,6 +468,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     final showJoin = wanted == 'upcoming' || wanted == 'current';
     final canJoin = wanted == 'current';
     final showCancel = wanted == 'upcoming';
+    final showReport = wanted == 'past';
 
     return byTutor.entries.map((tutorEntry) {
       final byDate = <String, List<bookings.Data>>{};
@@ -454,6 +496,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
         showJoin: showJoin,
         canJoin: canJoin,
         showCancel: showCancel,
+        showReport: showReport,
       );
     }).toList();
   }
@@ -506,13 +549,16 @@ class _TutorSessionGroup {
     required this.showJoin,
     required this.canJoin,
     required this.showCancel,
+    required this.showReport,
   });
   final String tutorName;
   final List<_SessionDateGroup> dateGroups;
   final bool showJoin;
+
   /// Join is tappable only for sessions on the Current tab.
   final bool canJoin;
   final bool showCancel;
+  final bool showReport;
 }
 
 class _SessionDateGroup {
@@ -537,11 +583,13 @@ class _TutorSessionCard extends StatelessWidget {
     required this.group,
     required this.onJoin,
     required this.onCancel,
+    required this.onReport,
   });
 
   final _TutorSessionGroup group;
   final ValueChanged<bookings.Data> onJoin;
   final ValueChanged<bookings.Data> onCancel;
+  final ValueChanged<bookings.Data> onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -574,7 +622,7 @@ class _TutorSessionCard extends StatelessWidget {
           const SizedBox(height: ConstSize.grid * 1.5),
           ...group.dateGroups.map((dateGroup) {
             return Container(
-              width: (!group.showJoin && !group.showCancel)
+              width: (!group.showJoin && !group.showCancel && !group.showReport)
                   ? double.infinity
                   : null,
               margin: const EdgeInsets.only(bottom: ConstSize.grid * 1.5),
@@ -690,6 +738,26 @@ class _TutorSessionCard extends StatelessWidget {
                                 ],
                               ),
                             ],
+                            if (group.showReport) ...[
+                              const SizedBox(height: ConstSize.grid),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: () => onReport(item.row),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                      color: ConstColor.border,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        ConstSize.radiusM,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const AppText('reportSpam'),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -699,6 +767,114 @@ class _TutorSessionCard extends StatelessWidget {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportSessionReasonDialog extends StatefulWidget {
+  const _ReportSessionReasonDialog({
+    required this.parentContext,
+    required this.language,
+    required this.studentId,
+    required this.tutorId,
+    required this.sessionId,
+  });
+
+  final BuildContext parentContext;
+  final AppLanguage language;
+  final String studentId;
+  final String tutorId;
+  final String sessionId;
+
+  @override
+  State<_ReportSessionReasonDialog> createState() =>
+      _ReportSessionReasonDialogState();
+}
+
+class _ReportSessionReasonDialogState
+    extends State<_ReportSessionReasonDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  String t(String key) => ConstString.text(widget.language, key);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ReportSessionBloc, ReportSessionState>(
+      listener: (context, state) {
+        if (state is ReportSessionSuccess) {
+          Navigator.of(context).pop();
+          final detail = (state.model.detail ?? '').trim();
+          final message = detail.isNotEmpty
+              ? detail
+              : t('reportSessionSuccessFallback');
+          if (widget.parentContext.mounted) {
+            commonAlertDialog(widget.parentContext, message);
+          }
+        } else if (state is ReportSessionError) {
+          commonAlertDialog(context, state.message);
+        }
+      },
+      child: AlertDialog(
+        title: Text(t('reportSessionTitle')),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: _controller,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            maxLines: 5,
+            decoration: InputDecoration(
+              hintText: t('reportSessionReasonHint'),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(t('cancel')),
+          ),
+          BlocBuilder<ReportSessionBloc, ReportSessionState>(
+            builder: (context, state) {
+              final loading = state is ReportSessionLoading;
+              return TextButton(
+                onPressed: loading
+                    ? null
+                    : () {
+                        final reason = _controller.text.trim();
+                        if (reason.isEmpty) {
+                          commonAlertDialog(
+                            context,
+                            t('reportSessionReasonEmptyError'),
+                          );
+                          return;
+                        }
+                        context.read<ReportSessionBloc>().add(
+                          ReportSessionSubmitted(
+                            studentId: widget.studentId,
+                            tutorId: widget.tutorId,
+                            sessionId: widget.sessionId,
+                            reason: reason,
+                          ),
+                        );
+                      },
+                child: loading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(t('submit')),
+              );
+            },
+          ),
         ],
       ),
     );

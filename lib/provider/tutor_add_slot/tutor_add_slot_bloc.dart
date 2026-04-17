@@ -22,6 +22,7 @@ class TutorAddSlotBloc extends Bloc<TutorAddSlotEvent, TutorAddSlotState> {
             "availability_date": event.date,
             "start_time": event.startTime,
             "end_time": event.endTime,
+            "timezone": event.timezone,
             "topic": event.topic,
             "short_description": event.description,
           },

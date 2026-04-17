@@ -86,7 +86,8 @@ class _TutorAvailabilityCalendarScreenState
       final endTime = (row.endTime ?? '').trim();
 
       final timeLabel = endTime.isEmpty ? startTime : '$startTime - $endTime';
-
+      final timezone = (row.timezone ?? '').trim();
+      final timezoneLabel = timezone.isEmpty ? '-' : timezone;
       grouped.putIfAbsent(normalized, () => <Map<String, dynamic>>[]);
       grouped[normalized]!.add({
         'date': normalized,
@@ -95,6 +96,7 @@ class _TutorAvailabilityCalendarScreenState
             'time': timeLabel.isEmpty ? '-' : timeLabel,
             'durationMin': _tryComputeDurationMinutes(startTime, endTime),
             'status': 'availableStatus',
+            'timezone': timezoneLabel,
           },
         ],
       });
@@ -248,8 +250,8 @@ class _TutorAvailabilityCalendarScreenState
                             final parts = timeStr.split('-');
                             final startTime =
                                 (parts.isNotEmpty ? parts.first : '').trim();
-                            final endTime =
-                                (parts.length >= 2 ? parts[1] : '').trim();
+                            final endTime = (parts.length >= 2 ? parts[1] : '')
+                                .trim();
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.only(
@@ -272,7 +274,7 @@ class _TutorAvailabilityCalendarScreenState
                                 children: [
                                   Center(
                                     child: Text(
-                                      '${t('time')}: ${slotData['time']}',
+                                      '${t('time')}: ${slotData['time']}\n${slotData['timezone']}',
                                     ),
                                   ),
                                   GestureDetector(

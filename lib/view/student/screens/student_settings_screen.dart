@@ -9,6 +9,7 @@ import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/view/auth/app_welcome_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_profile_complete_page.dart';
+import 'package:language_learning_app/view/student/screens/student_report_list_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_reviews_page.dart';
 
 class StudentSettingsScreen extends StatelessWidget {
@@ -67,6 +68,17 @@ class StudentSettingsScreen extends StatelessWidget {
                     icon: Icons.lock_outline,
                     titleKey: 'privacyPolicy',
                     onTap: () {},
+                  ),
+                  const Divider(height: 1, color: ConstColor.border),
+                  _SettingsTile(
+                    icon: Icons.flag_outlined,
+                    titleKey: 'reportList',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const StudentReportListScreen(),
+                      ),
+                    ),
                   ),
                   // const Divider(height: 1, color: ConstColor.border),
                   // _SettingsTile(

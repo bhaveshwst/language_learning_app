@@ -22,6 +22,9 @@ class ConstApiUrl {
   static const String tutorGetProfileUrl = "$baseURL/tutor/get-profile";
   static const String studentGetProfileUrl = "$baseURL/profile/get-profile";
   static const String profileBookingsUrl = "$baseURL/profile/bookings";
+  static const String bookingsReportUrl = "$baseURL/profile/bookings/report-session";
+  static const String bookingsReportListUrl =
+      "$baseURL/profile/bookings/report-session/list";
   static const String profileBookingsListUrl = "$baseURL/profile/bookings/list";
   static const String profileBookingsCancelUrl =
       "$baseURL/profile/bookings/cancel";

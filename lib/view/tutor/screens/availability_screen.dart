@@ -391,6 +391,19 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           );
                                         },
                                       ),
+                                         const SizedBox(height: 2),
+                                      ValueListenableBuilder<bool>(
+                                        valueListenable:
+                                            AppLanguageState.isKorean,
+                                        builder: (context, isKorean, _) {
+                                          final language = isKorean
+                                              ? AppLanguage.korean
+                                              : AppLanguage.english;
+                                          return Text(
+                                            '${ConstString.text(language, 'timezone')}: ${slot.timezone?.trim().isNotEmpty == true ? slot.timezone : '-'}',
+                                          );
+                                        },
+                                      ),
                                     ],
                                   ),
                                 ),

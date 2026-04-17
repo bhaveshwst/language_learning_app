@@ -226,6 +226,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
               final headline = (data.headline ?? '').trim();
               if (headline.isNotEmpty) await PrefUtils.setHeadline(headline);
 
+              final timezone = (data.timezone ?? '').trim();
+              if (timezone.isNotEmpty) await PrefUtils.settimezone(timezone);
+
               final bio = (data.bio ?? '').trim();
               if (bio.isNotEmpty) await PrefUtils.setbio(bio);
 

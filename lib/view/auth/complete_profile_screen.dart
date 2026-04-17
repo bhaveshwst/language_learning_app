@@ -148,20 +148,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           hint: t('displayName'),
                           controller: _displayNameController,
                         ),
-                        if (widget.role == UserRole.findTutor) ...[
-                          const SizedBox(height: ConstSize.grid * 2),
-                          AppDropdownButton2<String>(
-                            hintText: t('timezone'),
-                            value: _timezone,
-                            items: List<String>.from(
-                              state.profileCommonAPI.data?.timezone ?? [],
-                            ),
-                            itemLabelBuilder: (v) {
-                              return v.toString();
-                            },
-                            onChanged: (v) => setState(() => _timezone = v),
+                        const SizedBox(height: ConstSize.grid * 2),
+                        AppDropdownButton2<String>(
+                          hintText: t('timezone'),
+                          value: _timezone,
+                          items: List<String>.from(
+                            state.profileCommonAPI.data?.timezone ?? [],
                           ),
-                        ],
+                          itemLabelBuilder: (v) {
+                            return v.toString();
+                          },
+                          onChanged: (v) => setState(() => _timezone = v),
+                        ),
 
                         const SizedBox(height: ConstSize.grid * 2),
                         AppDropdownButton2<String>(
@@ -482,9 +480,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         context,
                                         t('enterHeadlineErrorLength'),
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.findTutor &&
-                                        _timezone == null) {
+                                    } else if (_timezone == null) {
                                       commonAlertDialog(
                                         context,
                                         t('selectTimezoneError'),
@@ -560,6 +556,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                             displayname: _displayNameController
                                                 .text
                                                 .trim(),
+                                            timezone: _timezone ?? '',
                                             primarytaught:
                                                 _primaryLanguage ?? '',
                                             targetspoken: _targetLanguage ?? '',

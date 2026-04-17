@@ -21,6 +21,7 @@ class BookSessionBloc extends Bloc<BookSessionEvent, BookSessionState> {
             'slot_date': event.slotDate,
             'start_time': event.startTime,
             'topic': event.topic,
+            'timezone': event.timezone,
           },
         );
 

@@ -12,6 +12,7 @@ class TutorAddSlotProvider extends TutorAddSlotEvent {
   final String date;
   final String startTime;
   final String endTime;
+  final String timezone;
   final String topic;
   final String description;
   
@@ -21,11 +22,20 @@ class TutorAddSlotProvider extends TutorAddSlotEvent {
     required this.date,
     required this.startTime,
     required this.endTime,
+    required this.timezone,
     required this.topic,
     required this.description,
   });
 
   @override
-  List<Object?> get props => [ tutorID, date, startTime, endTime, topic, description ];
+  List<Object?> get props => [
+    tutorID,
+    date,
+    startTime,
+    endTime,
+    timezone,
+    topic,
+    description,
+  ];
 }
 

@@ -35,8 +35,9 @@ class Data {
   String? endTime;
   String? topics;
   String? status;
+  String? timezone;
 
-  Data({this.tutorId, this.date, this.slotid, this.startTime, this.endTime, this.topics, this.status});
+  Data({this.tutorId, this.date, this.slotid, this.startTime, this.endTime, this.topics, this.status, this.timezone});
 
   Data.fromJson(Map<String, dynamic> json) {
     tutorId = json['tutor_id'];
@@ -51,6 +52,7 @@ class Data {
       topics = rawTopics?.toString();
     }
     status = json['status'];
+    timezone = json['timezone'];
   }
 
   Map<String, dynamic> toJson() {
@@ -62,6 +64,7 @@ class Data {
     data['end_time'] = endTime;
     data['topics'] = topics;
     data['status'] = status;
+    data['timezone'] = timezone;
     return data;
   }
 }

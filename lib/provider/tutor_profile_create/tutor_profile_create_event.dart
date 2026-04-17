@@ -10,6 +10,7 @@ sealed class TutorProfileCreateEvent extends Equatable {
 class TutorProfileCreateProvider extends TutorProfileCreateEvent {
   final String displayname;
   final String headline;
+  final String timezone;
   final String primarytaught;
   final String targetspoken;
   final List<dynamic> topics;
@@ -19,6 +20,7 @@ class TutorProfileCreateProvider extends TutorProfileCreateEvent {
   const TutorProfileCreateProvider({
     required this.displayname,
     required this.headline,
+    required this.timezone,
     required this.primarytaught,
     required this.targetspoken,
     required this.topics,
@@ -27,6 +29,15 @@ class TutorProfileCreateProvider extends TutorProfileCreateEvent {
   });
 
   @override
-  List<Object?> get props => [ displayname, headline, primarytaught, targetspoken, topics, bio, ispublished ];
+  List<Object?> get props => [
+    displayname,
+    headline,
+    timezone,
+    primarytaught,
+    targetspoken,
+    topics,
+    bio,
+    ispublished,
+  ];
 }
 

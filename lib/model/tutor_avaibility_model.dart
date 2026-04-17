@@ -32,14 +32,16 @@ class Data {
   String? date;
   String? startTime;
   String? endTime;
+  String? timezone;
 
-  Data({this.tutorId, this.date, this.startTime, this.endTime});
+  Data({this.tutorId, this.date, this.startTime, this.endTime, this.timezone});
 
   Data.fromJson(Map<String, dynamic> json) {
     tutorId = json['tutor_id'];
     date = json['date'];
     startTime = json['start_time'];
     endTime = json['end_time'];
+    timezone = json['timezone'];
   }
 
   Map<String, dynamic> toJson() {
@@ -48,6 +50,7 @@ class Data {
     data['date'] = date;
     data['start_time'] = startTime;
     data['end_time'] = endTime;
+    data['timezone'] = timezone;
     return data;
   }
 }

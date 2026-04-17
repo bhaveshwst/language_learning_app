@@ -15,6 +15,7 @@ import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_b
 import 'package:language_learning_app/provider/book_session/book_session_bloc.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
+ 
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
@@ -176,6 +177,16 @@ class _BookingScreenState extends State<BookingScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _slotTopicLabel(slot, language),
+                              style: const TextStyle(
+                                color: ConstColor.textSecondary,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              (slot.timezone ?? '').trim().isEmpty
+                                  ? '${ConstString.text(language, 'timezone')}: -'
+                                  : '${ConstString.text(language, 'timezone')}: ${(slot.timezone ?? '').trim()}',
                               style: const TextStyle(
                                 color: ConstColor.textSecondary,
                                 height: 1.35,
@@ -497,6 +508,19 @@ class _BookingScreenState extends State<BookingScreen> {
                                                   height: 1.35,
                                                 ),
                                               ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                ((_selectedSlot!.timezone ?? '')
+                                                        .trim()
+                                                        .isEmpty)
+                                                    ? '${t('timezone')}: -'
+                                                    : '${t('timezone')}: ${(_selectedSlot!.timezone ?? '').trim()}',
+                                                style: const TextStyle(
+                                                  color:
+                                                      ConstColor.textSecondary,
+                                                  height: 1.35,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                   ),
@@ -557,12 +581,23 @@ class _BookingScreenState extends State<BookingScreen> {
                                         return;
                                       }
 
+                                      final timezone =
+                                          (slot.timezone ?? '').trim();
+                                      if (timezone.isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectTimezoneError'),
+                                        );
+                                        return;
+                                      }
+
                                       _bookSessionBloc.add(
                                         CreateBooking(
                                           tutorId: tutorId,
                                           slotDate: slotDate,
                                           startTime: startTime,
                                           topic: topic,
+                                          timezone: timezone,
                                         ),
                                       );
                                     },

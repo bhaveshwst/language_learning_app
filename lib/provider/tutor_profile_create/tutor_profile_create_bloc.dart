@@ -24,6 +24,7 @@ class TutorProfileCreateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
           body: jsonEncode({
             "headline": event.headline,
             "name": event.displayname,
+            "timezone": event.timezone,
             "bio": event.bio,
             "languages_taught": event.primarytaught,
             "languages_spoken": event.targetspoken,
@@ -64,6 +65,7 @@ class TutorProfileUpdateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
           body: jsonEncode({
             "headline": event.headline,
             "name": event.displayname,
+            "timezone": event.timezone,
             "bio": event.bio,
             "languages_taught": event.primarytaught,
             "languages_spoken": event.targetspoken,

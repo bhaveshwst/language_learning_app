@@ -91,6 +91,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
 
     _headlinecontroller.text = PrefUtils.getHeadline();
     _displayNameController.text = PrefUtils.getname();
+    _timezone = PrefUtils.gettimezone() == "" ? null : PrefUtils.gettimezone();
     _primaryLanguage = PrefUtils.getprimarylanguage() == ""
         ? null
         : PrefUtils.getprimarylanguage();
@@ -169,20 +170,18 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                               hint: t('displayName'),
                               controller: _displayNameController,
                             ),
-                            if (widget.role == UserRole.findTutor) ...[
-                              const SizedBox(height: ConstSize.grid * 2),
-                              AppDropdownButton2<String>(
-                                hintText: t('timezone'),
-                                value: _timezone,
-                                items: List<String>.from(
-                                  state.profileCommonAPI.data?.timezone ?? [],
-                                ),
-                                itemLabelBuilder: (v) {
-                                  return v.toString();
-                                },
-                                onChanged: (v) => setState(() => _timezone = v),
+                            const SizedBox(height: ConstSize.grid * 2),
+                            AppDropdownButton2<String>(
+                              hintText: t('timezone'),
+                              value: _timezone,
+                              items: List<String>.from(
+                                state.profileCommonAPI.data?.timezone ?? [],
                               ),
-                            ],
+                              itemLabelBuilder: (v) {
+                                return v.toString();
+                              },
+                              onChanged: (v) => setState(() => _timezone = v),
+                            ),
 
                             const SizedBox(height: ConstSize.grid * 2),
                             AppDropdownButton2<String>(
@@ -435,9 +434,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                       context,
                                       t('enterHeadlineErrorLength'),
                                     );
-                                  } else if (widget.role ==
-                                          UserRole.findTutor &&
-                                      _timezone == null) {
+                                  } else if (_timezone == null) {
                                     commonAlertDialog(
                                       context,
                                       t('selectTimezoneError'),
@@ -510,6 +507,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                             .trim(),
                                         displayname: _displayNameController.text
                                             .trim(),
+                                        timezone: _timezone ?? '',
                                         primarytaught: _primaryLanguage ?? '',
                                         targetspoken: _targetLanguage ?? '',
                                         topics: _topicValues,
