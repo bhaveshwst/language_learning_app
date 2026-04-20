@@ -1,3 +1,5 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -14,7 +16,9 @@ import 'package:language_learning_app/view/student/screens/booking_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
 
-class StudentHomeDashboardScreen extends StatefulWidget {
+import 'package:permission_handler/permission_handler.dart';
+
+class StudentHomeDashboardScreen extends StatefulWidget  {
   const StudentHomeDashboardScreen({super.key});
 
   @override
@@ -23,7 +27,7 @@ class StudentHomeDashboardScreen extends StatefulWidget {
 }
 
 class _StudentHomeDashboardScreenState
-    extends State<StudentHomeDashboardScreen> {
+    extends State<StudentHomeDashboardScreen> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final RecommendedTutorBloc _recommendedTutorBloc = RecommendedTutorBloc();
   final GetStudentProfileBloc _getStudentProfileBloc = GetStudentProfileBloc();
@@ -44,6 +48,55 @@ class _StudentHomeDashboardScreenState
     return null;
   }
 
+
+  
+
+
+
+
+    Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    _notifyDetail(message);
+  }
+
+
+
+    void _showNotification() async {
+    /// Handling Message In Foreground
+    FirebaseMessaging.onMessage.listen((message) async {
+        _notifyDetail(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((event) {});
+  }
+
+  void _notifyDetail(message) {
+    RemoteNotification notification = message.notification;
+
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        channelKey: 'silent_channel',
+        title: notification.title,
+        body: notification.body,
+        notificationLayout: NotificationLayout.BigPicture,
+        largeIcon: 'assets/images/icon.png',
+        wakeUpScreen: true,
+      ),
+    );
+  }
+
+
+
+    Future<Map<Permission, PermissionStatus>> requestPermission() async {
+    Map<Permission, PermissionStatus> statuses =
+        await [Permission.notification].request();
+    return statuses;
+  }
+
+  
+
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +111,11 @@ class _StudentHomeDashboardScreenState
         matchLanguage: _matchLanguageValue,
       ),
     );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    _showNotification();
+
+    WidgetsBinding.instance.addObserver(this);
+    requestPermission();
   }
 
   @override

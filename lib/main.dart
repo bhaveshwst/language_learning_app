@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'package:language_learning_app/core/constants/utils.dart';
@@ -20,7 +21,6 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   runApp(const _AppBootstrap());
 }
 
@@ -44,28 +44,47 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
   Future<void> _initializeApp() async {
     try {
-      // Firebase first
+      // Firebase initialize
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // Crashlytics
+      // Crashlytics setup
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
       FlutterError.onError =
           FirebaseCrashlytics.instance.recordFlutterFatalError;
 
       PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(
-          error,
-          stack,
-          fatal: true,
-        );
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
 
-      // Shared Preferences
+      // Shared Preferences init
       await PrefUtils.init();
+
+      // Safe FCM initialization
+      try {
+        await FirebaseMessaging.instance.requestPermission();
+
+        for (int i = 0; i < 3; i++) {
+          final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+          if (apnsToken != null) {
+            final token = await FirebaseMessaging.instance.getToken();
+
+            if (token != null) {
+              await PrefUtils.setFCMToken(token);
+              debugPrint('FCM Token saved: $token');
+            }
+            break;
+          }
+
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      } catch (e) {
+        debugPrint('Notification init skipped: $e');
+      }
 
       // Remote Config
       await AppRemoteConfig.initialize();
@@ -110,11 +129,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     if (!_ready) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -123,10 +138,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({
-    super.key,
-    this.forceUpdateRequired = false,
-  });
+  const MyApp({super.key, this.forceUpdateRequired = false});
 
   final bool forceUpdateRequired;
 

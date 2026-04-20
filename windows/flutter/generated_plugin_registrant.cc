@@ -6,6 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <awesome_notifications/awesome_notifications_plugin_c_api.h>
 #include <connectivity_plus/connectivity_plus_windows_plugin.h>
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <firebase_remote_config/firebase_remote_config_plugin_c_api.h>
@@ -15,6 +16,8 @@
 #include <zego_express_engine/zego_express_engine_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  AwesomeNotificationsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("AwesomeNotificationsPluginCApi"));
   ConnectivityPlusWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ConnectivityPlusWindowsPlugin"));
   FirebaseCorePluginCApiRegisterWithRegistrar(

@@ -133,7 +133,7 @@ class StudentSettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: ConstSize.grid * 3),
             SizedBox(
-              height: 50,
+              height: 42,
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(

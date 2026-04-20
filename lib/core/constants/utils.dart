@@ -36,6 +36,7 @@ class PrefUtils {
   static const String headline = "headline";
   static const String tutorid = "tutor_id";
   static const String studentid = "student_id";
+  static const String fcmToken = "fcm_token";
   // Set Token
   static Future setToken(String token) async {
     await _preferences?.setString(accessTokenKey, token);
@@ -118,6 +119,14 @@ class PrefUtils {
   static String getHeadline() {
     return _preferences?.getString(headline) ?? "";
   }
+
+  static Future setFCMToken(String value) async {
+    await _preferences?.setString(fcmToken, value);
+  }
+  static String getFCMToken() {
+    return _preferences?.getString(fcmToken) ?? "";
+  }
+
   static Future settutorid(String value) async {
     await _preferences?.setString(tutorid, value);
   }
