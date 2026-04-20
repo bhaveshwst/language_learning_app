@@ -78,4 +78,39 @@ class AppHttpClient {
 
     return response;
   }
+
+  /// DELETE with JSON body (same headers/cookies as [post]).
+  static Future<http.Response> delete(
+    String url, {
+    Map<String, dynamic>? body,
+  }) async {
+    final uri = Uri.parse(url);
+
+    final cookies = await _cookieJar.loadForRequest(uri);
+    final cookieHeader = cookies.map((c) => '${c.name}=${c.value}').join('; ');
+
+    print('🌐 REQUEST URL: $url (DELETE)');
+    print('🍪 SENDING COOKIES: $cookieHeader');
+
+    final response = await _client.delete(
+      uri,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${PrefUtils.getToken()}",
+        if (cookieHeader.isNotEmpty) "Cookie": cookieHeader,
+      },
+      body: body == null ? null : jsonEncode(body),
+    );
+
+    print('📥 RESPONSE STATUS: ${response.statusCode}');
+
+    final setCookie = response.headers['set-cookie'];
+    if (setCookie != null) {
+      final cookie = Cookie.fromSetCookieValue(setCookie);
+      await _cookieJar.saveFromResponse(uri, [cookie]);
+      print('✅ COOKIE SAVED: ${cookie.name}=${cookie.value}');
+    }
+
+    return response;
+  }
 }

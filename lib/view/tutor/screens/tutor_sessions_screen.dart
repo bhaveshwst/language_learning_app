@@ -124,46 +124,9 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     return raw;
   }
 
-  /// Parses [time] as local 24h clock (`17:15:00`, `17:15`, or `17.15.00` from API).
-  DateTime? _timeOnDate(int y, int m, int d, String time) {
-    final normalized = time.trim().replaceAll('.', ':');
-    final parts = normalized.split(':');
-    if (parts.isEmpty) return null;
-    final h = int.tryParse(parts[0]);
-    if (h == null || h < 0 || h > 23) return null;
-    final min = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    final sec = parts.length > 2 ? (int.tryParse(parts[2]) ?? 0) : 0;
-    if (min < 0 || min > 59 || sec < 0 || sec > 59) return null;
-    return DateTime(y, m, d, h, min, sec);
-  }
-
-  (DateTime start, DateTime end)? _parseSessionRange(tutor_sessions.Data row) {
-    final dateStr = (row.date ?? '').trim();
-    final startStr = (row.startTime ?? '').trim();
-    final endStr = (row.endTime ?? '').trim();
-    if (dateStr.isEmpty || startStr.isEmpty || endStr.isEmpty) return null;
-    final ymd = dateStr.split('-');
-    if (ymd.length != 3) return null;
-    final y = int.tryParse(ymd[0]);
-    final m = int.tryParse(ymd[1]);
-    final d = int.tryParse(ymd[2]);
-    if (y == null || m == null || d == null) return null;
-    final start = _timeOnDate(y, m, d, startStr);
-    final end = _timeOnDate(y, m, d, endStr);
-    if (start == null || end == null || !end.isAfter(start)) return null;
-    return (start, end);
-  }
-
-  /// Prefer slot boundaries in local time so "current" matches the device clock;
-  /// falls back to API `booking_time_status` if date/time cannot be parsed.
+  /// Uses API `booking_time_status` for tab grouping.
   String _effectiveBookingStatus(tutor_sessions.Data row) {
-    final range = _parseSessionRange(row);
-    if (range == null) return _normalizeStatus(row.bookingTimeStatus);
-    final (start, end) = range;
-    final now = DateTime.now();
-    if (now.isBefore(start)) return 'upcoming';
-    if (now.isBefore(end)) return 'current';
-    return 'past';
+    return _normalizeStatus(row.bookingTimeStatus);
   }
 
   List<_SlotSessionGroup> _groupsForTab(
@@ -198,10 +161,14 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
       final date = (first.date ?? '').trim();
       final start = (first.startTime ?? '').trim();
       final end = (first.endTime ?? '').trim();
+      final timezone = sortedRows
+          .map((row) => (row.studentTimezone ?? '').trim())
+          .firstWhere((tz) => tz.isNotEmpty, orElse: () => '');
       final time = end.isEmpty ? (start.isEmpty ? '-' : start) : '$start - $end';
       return _SlotSessionGroup(
         dateLabel: date.isEmpty ? '-' : date,
         timeLabel: time,
+        timezoneLabel: timezone,
         rows: sortedRows,
         status: wanted,
       );
@@ -471,11 +438,13 @@ class _SlotSessionGroup {
   const _SlotSessionGroup({
     required this.dateLabel,
     required this.timeLabel,
+    required this.timezoneLabel,
     required this.rows,
     required this.status,
   });
   final String dateLabel;
   final String timeLabel;
+  final String timezoneLabel;
   final List<tutor_sessions.Data> rows;
   final String status;
 }
@@ -529,12 +498,27 @@ class _SlotSessionCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        group.timeLabel,
-                        style: const TextStyle(
-                          color: ConstColor.primaryBlue,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            group.timeLabel,
+                            style: const TextStyle(
+                              color: ConstColor.primaryBlue,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (group.timezoneLabel.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              group.timezoneLabel,
+                              style: const TextStyle(
+                                color: ConstColor.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     if (showJoin)

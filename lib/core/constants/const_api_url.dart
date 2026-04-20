@@ -16,7 +16,8 @@ class ConstApiUrl {
   static const String tutorTopicsUrl = "$baseURL/tutor/get-topics";
   static const String tutoaddslotURL = "$baseURL/tutor/availability";
   static const String listtutorSlotURL = "$baseURL/tutor/list-availability";
-  static const String cancelTutorSlotURL = "$baseURL/slots";
+  /// Tutor deletes an availability slot (JSON body: tutor_id, slot_id).
+  static const String tutorDeleteSlotUrl = "$baseURL/tutor/slot/delete";
   static const String tutorAvailabilityProfileUrl =
       "$baseURL/profile/tutor-availability";
   static const String tutorGetProfileUrl = "$baseURL/tutor/get-profile";

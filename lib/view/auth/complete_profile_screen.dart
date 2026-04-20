@@ -480,11 +480,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         context,
                                         t('enterHeadlineErrorLength'),
                                       );
-                                    } else if (_timezone == null) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectTimezoneError'),
-                                      );
                                     } else if (widget.role ==
                                             UserRole.findTutor &&
                                         _primaryLanguage == null) {

@@ -9,7 +9,6 @@ import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
-import 'package:language_learning_app/provider/profile_common_api/profile_common_api_bloc.dart';
 import 'package:language_learning_app/provider/tutor_add_slot/tutor_add_slot_bloc.dart';
 import 'package:language_learning_app/provider/tutor_topics/tutor_topics_bloc.dart';
 
@@ -29,21 +28,14 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
       TextEditingController();
 
   final TutorTopicsBloc _tutorTopicsBloc = TutorTopicsBloc();
-  final ProfileCommonApiBloc _profileCommonApiBloc = ProfileCommonApiBloc();
   final TutorAddSlotBloc _tutorAddSlotBloc = TutorAddSlotBloc();
   dynamic _selectedTopic;
-  String? _selectedTimezone;
-  String? _timezoneErrorKey;
   String? _topicErrorKey;
 
   @override
   void initState() {
     super.initState();
     _tutorTopicsBloc.add(TutorTopicsProvider(tutorID: PrefUtils.gettutorid()));
-    _profileCommonApiBloc.add(FetchProfileCommonApi());
-    _selectedTimezone = PrefUtils.gettimezone().trim().isEmpty
-        ? null
-        : PrefUtils.gettimezone().trim();
   }
 
   DateTime? _selectedDate;
@@ -53,7 +45,6 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
   @override
   void dispose() {
     _tutorTopicsBloc.close();
-    _profileCommonApiBloc.close();
     _tutorAddSlotBloc.close();
     _dateController.dispose();
     _startTimeController.dispose();
@@ -132,20 +123,16 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     FocusScope.of(context).unfocus();
 
     final topicLabel = _topicLabel(_selectedTopic).trim();
-    final timezoneValue = (_selectedTimezone ?? '').trim();
-    final timezoneErrorKey = timezoneValue.isEmpty ? 'selectTimezoneError' : null;
     final topicErrorKey = (_selectedTopic == null || topicLabel.isEmpty)
         ? 'selectTopicError'
         : null;
 
     setState(() {
-      _timezoneErrorKey = timezoneErrorKey;
       _topicErrorKey = topicErrorKey;
     });
 
     final isValid =
         (_formKey.currentState?.validate() ?? false) &&
-        timezoneErrorKey == null &&
         topicErrorKey == null;
     if (!isValid) {
       return;
@@ -155,7 +142,6 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
       date: _dateController.text,
       startTime: _startTimeController.text,
       endTime: _endTimeController.text,
-      timezone: timezoneValue,
       topic: _selectedTopic,
       description: _shortDescriptionController.text,
     ));
@@ -178,7 +164,6 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => _tutorTopicsBloc),
-        BlocProvider(create: (context) => _profileCommonApiBloc),
         BlocProvider(create: (context) => _tutorAddSlotBloc),
       ],
       child: Scaffold(
@@ -315,62 +300,6 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                       );
                                     }
                                     return null;
-                                  },
-                                ),
-                                const SizedBox(height: ConstSize.grid * 2),
-                                BlocBuilder<
-                                  ProfileCommonApiBloc,
-                                  ProfileCommonApiState
-                                >(
-                                  builder: (context, timezoneState) {
-                                    final timezoneItems = timezoneState
-                                            is ProfileCommonApiSuccess
-                                        ? List<String>.from(
-                                            timezoneState
-                                                    .profileCommonAPI
-                                                    .data
-                                                    ?.timezone ??
-                                                const [],
-                                          )
-                                        : const <String>[];
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        AppDropdownButton2<String>(
-                                          hintText: ConstString.text(
-                                            language,
-                                            'timezone',
-                                          ),
-                                          value: _selectedTimezone,
-                                          items: timezoneItems,
-                                          itemLabelBuilder: (v) => v,
-                                          onChanged: (val) {
-                                            setState(() {
-                                              _selectedTimezone = val;
-                                              _timezoneErrorKey = null;
-                                            });
-                                          },
-                                        ),
-                                        if (_timezoneErrorKey != null) ...[
-                                          const SizedBox(height: 8),
-                                          Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Text(
-                                              ConstString.text(
-                                                language,
-                                                _timezoneErrorKey!,
-                                              ),
-                                              style: const TextStyle(
-                                                color: ConstColor.error,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    );
                                   },
                                 ),
                                 const SizedBox(height: ConstSize.grid * 2),

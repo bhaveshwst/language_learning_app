@@ -384,7 +384,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     return clean(s);
   }
 
-  /// Splits a range like `17:15:00 - 17:45:00` (not `.split('-')`, which breaks on colons).
+  /// Splits a range like `17:15:00 - 17:45:00`.
   List<String> _splitSlotTimeRange(String range) {
     return range
         .split(RegExp(r'\s*-\s*'))
@@ -393,50 +393,9 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
         .toList();
   }
 
-  /// Parses [time] as local 24h clock (`17:15:00`, `17:15`, or `17.15.00` from API).
-  DateTime? _timeOnDate(int y, int m, int d, String time) {
-    final normalized = time.trim().replaceAll('.', ':');
-    final parts = normalized.split(':');
-    if (parts.isEmpty) return null;
-    final h = int.tryParse(parts[0]);
-    if (h == null || h < 0 || h > 23) return null;
-    final min = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    final sec = parts.length > 2 ? (int.tryParse(parts[2]) ?? 0) : 0;
-    if (min < 0 || min > 59 || sec < 0 || sec > 59) return null;
-    return DateTime(y, m, d, h, min, sec);
-  }
-
-  /// Uses [slot] date/time parts; falls back to API [status] if parsing fails.
-  (DateTime start, DateTime end)? _parseStudentSessionRange(bookings.Data row) {
-    final dateStr = _extractDateLabel(row.slot);
-    if (dateStr.isEmpty || dateStr == '-') return null;
-    final ymd = dateStr.split('-');
-    if (ymd.length != 3) return null;
-    final y = int.tryParse(ymd[0]);
-    final mo = int.tryParse(ymd[1]);
-    final d = int.tryParse(ymd[2]);
-    if (y == null || mo == null || d == null) return null;
-
-    final timePart = _extractTimeLabel(row.slot);
-    if (timePart.isEmpty || timePart == '-') return null;
-    final segments = _splitSlotTimeRange(timePart);
-    if (segments.length < 2) return null;
-    final startStr = segments.first;
-    final endStr = segments.last;
-    final start = _timeOnDate(y, mo, d, startStr);
-    final end = _timeOnDate(y, mo, d, endStr);
-    if (start == null || end == null || !end.isAfter(start)) return null;
-    return (start, end);
-  }
-
+  /// Uses API `booking_time_status` for tab grouping.
   String _effectiveBookingStatus(bookings.Data row) {
-    final range = _parseStudentSessionRange(row);
-    if (range == null) return _normalizeStatus(row.status);
-    final (start, end) = range;
-    final now = DateTime.now();
-    if (now.isBefore(start)) return 'upcoming';
-    if (now.isBefore(end)) return 'current';
-    return 'past';
+    return _normalizeStatus(row.bookingTimeStatus);
   }
 
   List<_TutorSessionGroup> _groupsForTab(
@@ -483,6 +442,8 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
               (e) => _SessionTimeItem(
                 timeLabel: _extractTimeLabel(e.slot),
                 topic: (e.topic ?? '').trim(),
+                tutorTimezone: (e.tutorTimezone ?? '').trim(),
+                viewerTimezone: (e.viewTimezone ?? '').trim(),
                 row: e,
               ),
             )
@@ -571,10 +532,14 @@ class _SessionTimeItem {
   const _SessionTimeItem({
     required this.timeLabel,
     required this.topic,
+    required this.tutorTimezone,
+    required this.viewerTimezone,
     required this.row,
   });
   final String timeLabel;
   final String topic;
+  final String tutorTimezone;
+  final String viewerTimezone;
   final bookings.Data row;
 }
 
@@ -686,6 +651,24 @@ class _TutorSessionCard extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ],
+                            if (item.tutorTimezone.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Tutor timezone: ${item.tutorTimezone}',
+                                style: const TextStyle(
+                                  color: ConstColor.textSecondary,
+                                ),
+                              ),
+                            ],
+                            if (item.viewerTimezone.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Viewer timezone: ${item.viewerTimezone}',
+                                style: const TextStyle(
+                                  color: ConstColor.textSecondary,
+                                ),
                               ),
                             ],
                             if (group.showJoin || group.showCancel) ...[

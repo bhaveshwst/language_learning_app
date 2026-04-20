@@ -36,6 +36,7 @@ class Data {
   String? studentName;
   String? bookingTimeStatus;
   String? slotId;
+  String? studentTimezone;
 
   Data({
     this.tutorId,
@@ -46,6 +47,7 @@ class Data {
     this.studentName,
     this.bookingTimeStatus,
     this.slotId,
+    this.studentTimezone,
   });
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -57,6 +59,7 @@ class Data {
     studentName = json['student_name'];
     bookingTimeStatus = json['booking_time_status'];
     slotId = json['slot_id'];
+    studentTimezone = json['student_timezone'];
   }
 
   Map<String, dynamic> toJson() {
@@ -69,6 +72,7 @@ class Data {
     data['student_name'] = studentName;
     data['booking_time_status'] = bookingTimeStatus;
     data['slot_id'] = slotId;
+    data['student_timezone'] = studentTimezone;
     return data;
   }
 }

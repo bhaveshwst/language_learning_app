@@ -33,6 +33,7 @@ class StudentProfileCompletePage extends StatefulWidget {
 class _StudentProfileCompletePageState
     extends State<StudentProfileCompletePage> {
   String? _timezone;
+  late final bool _isTimezoneLocked;
   String? _primaryLanguage;
   String? _targetLanguage;
   final Set<String> _selectedInterests = {};
@@ -52,8 +53,13 @@ class _StudentProfileCompletePageState
     _profileCommonApiBloc.add(FetchProfileCommonApi());
     _displayNameController.text = PrefUtils.getname();
     _timezone = PrefUtils.gettimezone() == "" ? null : PrefUtils.gettimezone();
-    _primaryLanguage =PrefUtils.getprimarylanguage() == "" ? null : PrefUtils.getprimarylanguage();
-    _targetLanguage = PrefUtils.gettargetlanguage() == "" ? null : PrefUtils.gettargetlanguage();
+    _isTimezoneLocked = (_timezone ?? '').trim().isNotEmpty;
+    _primaryLanguage = PrefUtils.getprimarylanguage() == ""
+        ? null
+        : PrefUtils.getprimarylanguage();
+    _targetLanguage = PrefUtils.gettargetlanguage() == ""
+        ? null
+        : PrefUtils.gettargetlanguage();
     _selectedInterests.addAll(PrefUtils.getintrested());
     _bioController.text = PrefUtils.getbio();
   }
@@ -101,14 +107,23 @@ class _StudentProfileCompletePageState
                             controller: _displayNameController,
                           ),
                           const SizedBox(height: ConstSize.grid * 2),
-                          AppDropdownButton2<String>(
-                            hintText: t('timezone'),
-                            value: _timezone,
-                            items: List<String>.from(
-                              state.profileCommonAPI.data?.timezone ?? [],
+                          IgnorePointer(
+                            ignoring: _isTimezoneLocked,
+                            child: Opacity(
+                              opacity: _isTimezoneLocked ? 0.65 : 1,
+                              child: AppDropdownButton2<String>(
+                                hintText: t('timezone'),
+                                value: _timezone,
+                                items: List<String>.from(
+                                  state.profileCommonAPI.data?.timezone ?? [],
+                                ),
+                                itemLabelBuilder: (v) => v.toString(),
+                                onChanged: (v) {
+                                  if (_isTimezoneLocked) return;
+                                  setState(() => _timezone = v);
+                                },
+                              ),
                             ),
-                            itemLabelBuilder: (v) => v.toString(),
-                            onChanged: (v) => setState(() => _timezone = v),
                           ),
                           const SizedBox(height: ConstSize.grid * 2),
                           AppDropdownButton2<String>(
@@ -234,11 +249,6 @@ class _StudentProfileCompletePageState
                                   commonAlertDialog(
                                     context,
                                     t('enterDisplayNameError'),
-                                  );
-                                } else if (_timezone == null) {
-                                  commonAlertDialog(
-                                    context,
-                                    t('selectTimezoneError'),
                                   );
                                 } else if (_primaryLanguage == null) {
                                   commonAlertDialog(

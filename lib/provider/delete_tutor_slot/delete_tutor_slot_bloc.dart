@@ -2,9 +2,8 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:language_learning_app/core/constants/client_cookie.dart';
 import 'package:language_learning_app/core/constants/const_api_url.dart';
-import 'package:http/http.dart' as http;
-import 'package:language_learning_app/core/constants/utils.dart';
 
 part 'delete_tutor_slot_event.dart';
 part 'delete_tutor_slot_state.dart';
@@ -15,20 +14,43 @@ class DeleteTutorSlotBloc
     on<DeleteTutorSlotProvider>((event, emit) async {
       emit(DeleteTutorSlotLoading());
       try {
-        final response = await http.put(
-          Uri.parse('${ConstApiUrl.cancelTutorSlotURL}/${event.slotId}/cancel'),
-          body: jsonEncode({'tutor_id': event.tutorId, 'slot_id': event.slotId}),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${PrefUtils.getToken()}',
+        // JSON body must be a String (jsonEncode). Passing a Map to
+        // http.delete makes the client use form fields, which conflicts
+        // with Content-Type: application/json ("Bad state: Cannot set the
+        // body fields of a Request...").
+        final response = await AppHttpClient.delete(
+          ConstApiUrl.tutorDeleteSlotUrl,
+          body: {
+            'tutor_id': event.tutorId,
+            'slot_id': event.slotId,
           },
         );
-        final data = jsonDecode(response.body);
-        if (response.statusCode == 200) {
-          emit(DeleteTutorSlotSuccess(data['detail']?.toString() ?? ''));
-        } else {
-          emit(DeleteTutorSlotError(data['detail']?.toString() ?? ''));
+        final rawBody = response.body.trim();
+        final decoded = rawBody.isEmpty
+            ? <String, dynamic>{}
+            : jsonDecode(rawBody) as Object;
+        if (response.statusCode != 200) {
+          final msg = decoded is Map<String, dynamic>
+              ? (decoded['detail']?.toString() ?? 'Error')
+              : 'Error';
+          emit(DeleteTutorSlotError(msg));
+          return;
         }
+        if (decoded is! Map<String, dynamic>) {
+          emit(const DeleteTutorSlotSuccess(''));
+          return;
+        }
+        final map = decoded;
+        final code = map['response_code']?.toString();
+        if (code != null && code != '1') {
+          emit(
+            DeleteTutorSlotError(
+              map['detail']?.toString() ?? 'Error',
+            ),
+          );
+          return;
+        }
+        emit(DeleteTutorSlotSuccess(map['detail']?.toString() ?? ''));
       } catch (e) {
         emit(DeleteTutorSlotError(e.toString()));
       }

@@ -86,6 +86,7 @@ class ConstString {
     'deleteSlotTitle': 'Delete Slot',
     'deleteSlotConfirmMessage':
         'Are you sure you want to delete this slot?',
+    'delete': 'Delete',
     'deleteSuccess': 'Slot deleted successfully',
     'availabilitySlot': 'Availability slot',
     'cancel': 'Cancel',
@@ -293,6 +294,7 @@ class ConstString {
     'noSlotsFound': '슬롯이 없습니다',
     'deleteSlotTitle': '슬롯 삭제',
     'deleteSlotConfirmMessage': '이 슬롯을 삭제하시겠습니까?',
+    'delete': '삭제',
     'deleteSuccess': '슬롯이 삭제되었습니다',
     'headline': '헤드라인',
     'availabilitySlot': '이용 가능 시간',

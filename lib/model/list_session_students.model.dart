@@ -36,6 +36,9 @@ class Data {
   String? topic;
   String? status;
   String? tutorName;
+  String? bookingTimeStatus;
+  String? tutorTimezone;
+  String? viewTimezone;
 
   Data({
     this.tutorId,
@@ -46,6 +49,9 @@ class Data {
     this.topic,
     this.status,
     this.tutorName,
+    this.bookingTimeStatus,
+    this.tutorTimezone,
+    this.viewTimezone,
   });
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -58,6 +64,9 @@ class Data {
     // Backend may send this as `states` (per docs) or `status`.
     status = (json['states'] ?? json['status'])?.toString();
     tutorName = json['tutor_name'];
+    bookingTimeStatus = json['booking_time_status'];
+    tutorTimezone = json['tutor_timezone'];
+    viewTimezone = json['viewer_timezone'];
   }
 
   Map<String, dynamic> toJson() {
@@ -70,6 +79,9 @@ class Data {
     data['topic'] = topic;
     data['status'] = status;
     data['tutor_name'] = tutorName;
+    data['booking_time_status'] = bookingTimeStatus;
+    data['tutor_timezone'] = tutorTimezone;
+    data['viewer_timezone'] = viewTimezone;
     return data;
   }
 }

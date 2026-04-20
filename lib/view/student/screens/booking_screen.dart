@@ -8,11 +8,11 @@ import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/get_tutor_detail_model.dart'
     as tutor_profile;
-import 'package:language_learning_app/model/list_tutor_slot_model.dart'
-    as tutor_slots;
+import 'package:language_learning_app/model/tutor_avaibility_model.dart'
+    as tutor_availability;
 import 'package:language_learning_app/provider/get_tutor_profile/get_tutor_profile_bloc.dart';
-import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_bloc.dart';
 import 'package:language_learning_app/provider/book_session/book_session_bloc.dart';
+import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
  
@@ -39,13 +39,13 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
-  final ListTutorSlotBloc _listTutorSlotBloc = ListTutorSlotBloc();
+  final TutorAvailabilityBloc _tutorAvailabilityBloc = TutorAvailabilityBloc();
   final BookSessionBloc _bookSessionBloc = BookSessionBloc();
 
   tutor_profile.Data? _profile;
-  List<tutor_slots.Data> _slots = const [];
+  List<tutor_availability.Data> _slots = const [];
 
-  tutor_slots.Data? _selectedSlot;
+  tutor_availability.Data? _selectedSlot;
   bool _didApplyPrefill = false;
 
   @override
@@ -54,11 +54,11 @@ class _BookingScreenState extends State<BookingScreen> {
     final tutorId = widget.tutorId.trim();
     if (tutorId.isNotEmpty) {
       _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
-      _listTutorSlotBloc.add(FetchListTutorSlot(tutorId: tutorId));
+      _tutorAvailabilityBloc.add(FetchTutorAvailability(tutorId: tutorId));
     }
   }
 
-  bool _matchesPrefill(tutor_slots.Data s) {
+  bool _matchesPrefill(tutor_availability.Data s) {
     final prefillDate = (widget.prefillSlotDate ?? '').trim();
     final prefillStart = (widget.prefillSlotStartTime ?? '').trim();
     final prefillEnd = (widget.prefillSlotEndTime ?? '').trim();
@@ -91,7 +91,7 @@ class _BookingScreenState extends State<BookingScreen> {
       _didApplyPrefill = true;
       return;
     }
-    final match = _slots.cast<tutor_slots.Data?>().firstWhere(
+    final match = _slots.cast<tutor_availability.Data?>().firstWhere(
       (s) => s != null && _matchesPrefill(s),
       orElse: () => null,
     );
@@ -104,12 +104,12 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void dispose() {
     _getTutorProfileBloc.close();
-    _listTutorSlotBloc.close();
+    _tutorAvailabilityBloc.close();
     _bookSessionBloc.close();
     super.dispose();
   }
 
-  String _slotDateTimeLabel(tutor_slots.Data s) {
+  String _slotDateTimeLabel(tutor_availability.Data s) {
     final date = (s.date ?? '').trim();
     final start = (s.startTime ?? '').trim();
     final end = (s.endTime ?? '').trim();
@@ -119,14 +119,14 @@ class _BookingScreenState extends State<BookingScreen> {
     return '$date • $time';
   }
 
-  String _slotTopicLabel(tutor_slots.Data s, AppLanguage language) {
-    final topic = (s.topics ?? '').trim();
+  String _slotTopicLabel(tutor_availability.Data s, AppLanguage language) {
+    final topic = '';
     final topicTitle = ConstString.text(language, 'topic');
     return topic.isEmpty ? '$topicTitle: -' : '$topicTitle: $topic';
   }
 
   Future<void> _showSlotPicker(AppLanguage language) async {
-    final selected = await showModalBottomSheet<tutor_slots.Data>(
+    final selected = await showModalBottomSheet<tutor_availability.Data>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -245,7 +245,7 @@ class _BookingScreenState extends State<BookingScreen> {
       body: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _getTutorProfileBloc),
-          BlocProvider.value(value: _listTutorSlotBloc),
+          BlocProvider.value(value: _tutorAvailabilityBloc),
           BlocProvider.value(value: _bookSessionBloc),
         ],
         child: ValueListenableBuilder<bool>(
@@ -284,11 +284,11 @@ class _BookingScreenState extends State<BookingScreen> {
                     }
                   },
                 ),
-                BlocListener<ListTutorSlotBloc, ListTutorSlotState>(
+                BlocListener<TutorAvailabilityBloc, TutorAvailabilityState>(
                   listener: (context, state) {
-                    if (state is ListTutorSlotSuccess) {
+                    if (state is TutorAvailabilitySuccess) {
                       setState(() {
-                        _slots = state.listTutorSlotModel.data ?? const [];
+                        _slots = state.tutorAvaibilityModel.data ?? const [];
                         _applyPrefillIfNeeded();
                       });
                     }
@@ -419,7 +419,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       const SizedBox(height: ConstSize.grid),
 
                       // Select slot picker
-                      BlocBuilder<ListTutorSlotBloc, ListTutorSlotState>(
+                      BlocBuilder<TutorAvailabilityBloc, TutorAvailabilityState>(
                         builder: (context, state) {
                           if (widget.tutorId.trim().isEmpty) {
                             return Text(
@@ -429,7 +429,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               ),
                             );
                           }
-                          // if (state is ListTutorSlotLoading) {
+                          // if (state is TutorAvailabilityLoading) {
                           //   return const Center(
                           //     child: Padding(
                           //       padding: EdgeInsets.all(ConstSize.grid * 2),
@@ -437,7 +437,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           //     ),
                           //   );
                           // }
-                          if (state is ListTutorSlotError) {
+                          if (state is TutorAvailabilityError) {
                             return Text(
                               state.message,
                               style: const TextStyle(
@@ -565,7 +565,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                         );
                                         return;
                                       }
-                                      final topic = (slot.topics ?? '').trim();
+                                      const topic = '';
 
                                       final tutorId = widget.tutorId.trim();
                                       final slotDate = (slot.date ?? '').trim();

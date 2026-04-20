@@ -59,46 +59,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
     return raw;
   }
 
-  /// Parses [time] as local 24h clock (`17:15:00`, `17:15`, or `17.15.00` from API).
-  DateTime? _timeOnDate(int y, int m, int d, String time) {
-    final normalized = time.trim().replaceAll('.', ':');
-    final parts = normalized.split(':');
-    if (parts.isEmpty) return null;
-    final h = int.tryParse(parts[0]);
-    if (h == null || h < 0 || h > 23) return null;
-    final min = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    final sec = parts.length > 2 ? (int.tryParse(parts[2]) ?? 0) : 0;
-    if (min < 0 || min > 59 || sec < 0 || sec > 59) return null;
-    return DateTime(y, m, d, h, min, sec);
-  }
-
-  (DateTime start, DateTime end)? _parseSessionRange(tutor_sessions.Data row) {
-    final dateStr = (row.date ?? '').trim();
-    final startStr = (row.startTime ?? '').trim();
-    final endStr = (row.endTime ?? '').trim();
-    if (dateStr.isEmpty || startStr.isEmpty || endStr.isEmpty) return null;
-    final ymd = dateStr.split('-');
-    if (ymd.length != 3) return null;
-    final y = int.tryParse(ymd[0]);
-    final m = int.tryParse(ymd[1]);
-    final d = int.tryParse(ymd[2]);
-    if (y == null || m == null || d == null) return null;
-    final start = _timeOnDate(y, m, d, startStr);
-    final end = _timeOnDate(y, m, d, endStr);
-    if (start == null || end == null || !end.isAfter(start)) return null;
-    return (start, end);
-  }
-
-  /// Prefer slot boundaries in local time (same as [TutorSessionsScreen]);
-  /// falls back to API `booking_time_status` if date/time cannot be parsed.
+  /// Uses API `booking_time_status` for dashboard status grouping.
   String _effectiveBookingStatus(tutor_sessions.Data row) {
-    final range = _parseSessionRange(row);
-    if (range == null) return _normalizeBookingStatus(row.bookingTimeStatus);
-    final (start, end) = range;
-    final now = DateTime.now();
-    if (now.isBefore(start)) return 'upcoming';
-    if (now.isBefore(end)) return 'current';
-    return 'past';
+    return _normalizeBookingStatus(row.bookingTimeStatus);
   }
 
   List<tutor_sessions.Data> _sessionRows(TutorSessionsState state) {
@@ -423,6 +386,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
                                         : '-',
                                 time: _bookingScheduleLine(row, locale),
                                 focus: _bookingTimeRangeLine(row),
+                                timezone: (row.studentTimezone ?? '').trim(),
                               ),
                               if (i < preview.length - 1)
                                 const SizedBox(height: ConstSize.grid),
@@ -488,11 +452,13 @@ class _BookingTile extends StatelessWidget {
     required this.student,
     required this.time,
     required this.focus,
+    required this.timezone,
   });
 
   final String student;
   final String time;
   final String focus;
+  final String timezone;
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +494,13 @@ class _BookingTile extends StatelessWidget {
                   focus,
                   style: const TextStyle(color: ConstColor.textSecondary),
                 ),
+                if (timezone.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    timezone,
+                    style: const TextStyle(color: ConstColor.textSecondary),
+                  ),
+                ],
               ],
             ),
           ),
