@@ -24,7 +24,7 @@ class TutorHomeDashboardScreen extends StatefulWidget {
       _TutorHomeDashboardScreenState();
 }
 
-class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
+class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> with WidgetsBindingObserver {
   final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
   final TutorSessionsBloc _tutorSessionsBloc = TutorSessionsBloc();
 
@@ -41,6 +41,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> {
       _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
       _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
     }
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override

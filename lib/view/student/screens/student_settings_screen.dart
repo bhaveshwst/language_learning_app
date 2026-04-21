@@ -1,19 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
+import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
+import 'package:language_learning_app/core/services/logout_service.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/view/auth/app_welcome_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_profile_complete_page.dart';
 import 'package:language_learning_app/view/student/screens/student_report_list_screen.dart';
-import 'package:language_learning_app/view/student/screens/student_reviews_page.dart';
 
 class StudentSettingsScreen extends StatelessWidget {
   const StudentSettingsScreen({super.key});
+
+  Future<void> _handleLogout(BuildContext context) async {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await LogoutService.logout(
+        studentId: PrefUtils.getstudentid(),
+        tutorId: PrefUtils.gettutorid(),
+        fcmToken: PrefUtils.getFCMToken(),
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+      await PrefUtils.clearPrefs();
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AppWelcomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        commonAlertDialog(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,12 +180,7 @@ class StudentSettingsScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () async {
-                  await PrefUtils.clearPrefs();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AppWelcomeScreen()),
-                    (route) => false,
-                  );
+                  await _handleLogout(context);
                 },
                 child: const AppText(
                   'logout',

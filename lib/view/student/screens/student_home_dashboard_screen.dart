@@ -1,4 +1,3 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,9 +15,7 @@ import 'package:language_learning_app/view/student/screens/booking_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
 
-import 'package:permission_handler/permission_handler.dart';
-
-class StudentHomeDashboardScreen extends StatefulWidget  {
+class StudentHomeDashboardScreen extends StatefulWidget {
   const StudentHomeDashboardScreen({super.key});
 
   @override
@@ -26,16 +23,15 @@ class StudentHomeDashboardScreen extends StatefulWidget  {
       _StudentHomeDashboardScreenState();
 }
 
-class _StudentHomeDashboardScreenState
-    extends State<StudentHomeDashboardScreen> with WidgetsBindingObserver {
+class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final RecommendedTutorBloc _recommendedTutorBloc = RecommendedTutorBloc();
   final GetStudentProfileBloc _getStudentProfileBloc = GetStudentProfileBloc();
   Timer? _searchDebounce;
 
-  bool _tutorSpeakMyPrimaryLanguage = true; // Default YES
+  bool _tutorSpeakMyPrimaryLanguage = true;
   String? _selectedTargetLanguage;
-  String? _selectedAvailabilitySlot;
 
   String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
 
@@ -48,54 +44,29 @@ class _StudentHomeDashboardScreenState
     return null;
   }
 
+  Future<void> _printFcmTokenAfterLogin() async {
+    try {
+      final saved = PrefUtils.getFCMToken().trim();
+      if (saved.isNotEmpty) {
+        debugPrint('FCM Token (Student Home): $saved');
+        return;
+      }
 
-  
+      for (int i = 0; i < 12; i++) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null && token.isNotEmpty) {
+          await PrefUtils.setFCMToken(token);
+          debugPrint('FCM Token (Student Home): $token');
+          return;
+        }
+        await Future.delayed(const Duration(seconds: 1));
+      }
 
-
-
-
-    Future<void> _firebaseMessagingBackgroundHandler(
-      RemoteMessage message) async {
-    _notifyDetail(message);
+      debugPrint('FCM Token (Student Home): still null');
+    } catch (e) {
+      debugPrint('FCM Token print failed: $e');
+    }
   }
-
-
-
-    void _showNotification() async {
-    /// Handling Message In Foreground
-    FirebaseMessaging.onMessage.listen((message) async {
-        _notifyDetail(message);
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((event) {});
-  }
-
-  void _notifyDetail(message) {
-    RemoteNotification notification = message.notification;
-
-    AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        channelKey: 'silent_channel',
-        title: notification.title,
-        body: notification.body,
-        notificationLayout: NotificationLayout.BigPicture,
-        largeIcon: 'assets/images/icon.png',
-        wakeUpScreen: true,
-      ),
-    );
-  }
-
-
-
-    Future<Map<Permission, PermissionStatus>> requestPermission() async {
-    Map<Permission, PermissionStatus> statuses =
-        await [Permission.notification].request();
-    return statuses;
-  }
-
-  
-
 
   @override
   void initState() {
@@ -111,11 +82,9 @@ class _StudentHomeDashboardScreenState
         matchLanguage: _matchLanguageValue,
       ),
     );
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    _showNotification();
+    unawaited(_printFcmTokenAfterLogin());
 
     WidgetsBinding.instance.addObserver(this);
-    requestPermission();
   }
 
   @override
@@ -759,11 +728,3 @@ class _FilterResult {
   final String targetLanguage;
   final String? availabilitySlot;
 }
-
-const _availabilitySlots = [
-  'Today, 6:30 PM',
-  'Today, 8:00 PM',
-  'Tomorrow, 9:00 AM',
-];
-
-const _targetLanguageOptions = ['Korean', 'English'];

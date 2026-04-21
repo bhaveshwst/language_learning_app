@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:language_learning_app/core/services/firebase_messaging_background.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/theme/app_theme.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
@@ -19,8 +22,12 @@ import 'package:language_learning_app/core/widgets/connectivity_overlay.dart';
 
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const _AppBootstrap());
 }
 
@@ -35,6 +42,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
   Object? _error;
   bool _ready = false;
   bool _forceUpdateRequired = false;
+  String? _lastForegroundMessageId;
 
   @override
   void initState() {
@@ -44,11 +52,6 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
   Future<void> _initializeApp() async {
     try {
-      // Firebase initialize
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-
       // Crashlytics setup
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
@@ -63,28 +66,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
       // Shared Preferences init
       await PrefUtils.init();
 
-      // Safe FCM initialization
-      try {
-        await FirebaseMessaging.instance.requestPermission();
-
-        for (int i = 0; i < 3; i++) {
-          final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-
-          if (apnsToken != null) {
-            final token = await FirebaseMessaging.instance.getToken();
-
-            if (token != null) {
-              await PrefUtils.setFCMToken(token);
-              debugPrint('FCM Token saved: $token');
-            }
-            break;
-          }
-
-          await Future.delayed(const Duration(seconds: 1));
-        }
-      } catch (e) {
-        debugPrint('Notification init skipped: $e');
-      }
+       _initializeNotifications();
 
       // Remote Config
       await AppRemoteConfig.initialize();
@@ -105,6 +87,86 @@ class _AppBootstrapState extends State<_AppBootstrap> {
         _error = e;
       });
     }
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      await AwesomeNotifications().initialize('resource://drawable/appicon', [
+        NotificationChannel(
+          channelKey: 'silent_channel',
+          channelName: 'General Notifications',
+          channelDescription: 'App push notifications',
+          importance: NotificationImportance.High,
+          playSound: true,
+        ),
+      ]);
+
+      await FirebaseMessaging.instance.requestPermission();
+
+      final startupToken = await _fetchFcmTokenWithRetry();
+      if (startupToken != null) {
+        await PrefUtils.setFCMToken(startupToken);
+        if (kDebugMode) {
+          debugPrint('FCM Token saved at startup: $startupToken');
+        }
+      } else if (kDebugMode) {
+        debugPrint('FCM Token was null after startup init');
+      }
+
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) async {
+        await PrefUtils.setFCMToken(token);
+        if (kDebugMode) {
+          debugPrint('FCM Token refreshed: $token');
+        }
+      });
+
+      FirebaseMessaging.onMessage.listen((message) async {
+        final messageId = message.messageId;
+        if (messageId != null && messageId == _lastForegroundMessageId) return;
+        _lastForegroundMessageId = messageId;
+
+        final notification = message.notification;
+        if (notification == null) return;
+
+        await AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            channelKey: 'silent_channel',
+            title: notification.title ?? 'New Notification',
+            body: notification.body ?? '',
+            notificationLayout: NotificationLayout.Default,
+            wakeUpScreen: true,
+          ),
+        );
+      });
+
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        if (kDebugMode) {
+          debugPrint('Notification tapped with data: ${message.data}');
+        }
+      });
+    } catch (e) {
+      debugPrint('Notification init skipped: $e');
+    }
+  }
+
+  Future<String?> _fetchFcmTokenWithRetry({int attempts = 15}) async {
+    for (int i = 0; i < attempts; i++) {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        if (apnsToken == null) {
+          await Future.delayed(const Duration(seconds: 1));
+          continue;
+        }
+      }
+
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        return token;
+      }
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return null;
   }
 
   @override

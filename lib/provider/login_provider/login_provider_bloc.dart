@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import 'package:language_learning_app/core/constants/client_cookie.dart';
 import 'package:language_learning_app/core/constants/const_api_url.dart';
@@ -14,6 +15,8 @@ class LoginProviderBloc extends Bloc<LoginProviderEvent, LoginProviderState> {
     on<LoginProvider>((event, emit) async {
         emit(LoginProviderLoading());
       try {
+        debugPrint('Login API URL => ${ConstApiUrl.loginURL}');
+        debugPrint('Login email => ${event.email}');
         final reponse = await AppHttpClient.post(
           ConstApiUrl.loginURL,
           
@@ -21,6 +24,8 @@ class LoginProviderBloc extends Bloc<LoginProviderEvent, LoginProviderState> {
             "email": event.email,
           },
         );
+        debugPrint('Login statusCode => ${reponse.statusCode}');
+        debugPrint('Login responseBody => ${reponse.body}');
         if (reponse.statusCode == 200) {
           final data = jsonDecode(reponse.body);
           emit(LoginProviderSuccess(LoginModel.fromJson(data)));
@@ -29,6 +34,7 @@ class LoginProviderBloc extends Bloc<LoginProviderEvent, LoginProviderState> {
           emit(LoginProviderError(data["detail"].toString()));
         }
       } catch (e) {
+        debugPrint('Login exception => $e');
         emit(LoginProviderError(e.toString()));
       }
     });

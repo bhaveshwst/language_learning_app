@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
+import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
+import 'package:language_learning_app/core/services/logout_service.dart';
 import 'package:language_learning_app/view/tutor/screens/availability_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_home_dashboard_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_profile_complete_page.dart';
@@ -142,6 +144,41 @@ class _BottomItem extends StatelessWidget {
 class _TutorSettingsScreen extends StatelessWidget {
   const _TutorSettingsScreen();
 
+  Future<void> _handleLogout(BuildContext context) async {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await LogoutService.logout(
+        studentId: PrefUtils.getstudentid(),
+        tutorId: PrefUtils.gettutorid(),
+        fcmToken: PrefUtils.getFCMToken(),
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+      await PrefUtils.clearPrefs();
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AppWelcomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        commonAlertDialog(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -262,12 +299,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () async {
-                  await PrefUtils.clearPrefs();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AppWelcomeScreen()),
-                    (route) => false,
-                  );
+                  await _handleLogout(context);
                 },
                 child: const AppText(
                   'logout',
