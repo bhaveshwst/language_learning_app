@@ -63,6 +63,8 @@ class Tutors {
   String? teachesLanguages;
   List<dynamic>? topics;
   String? nextSlot;
+  String? bio;
+  String? targetlanguage;
 
   Tutors({
     this.id,
@@ -70,6 +72,8 @@ class Tutors {
     this.teachesLanguages,
     this.topics,
     this.nextSlot,
+    this.bio,
+    this.targetlanguage,
   });
 
   Tutors.fromJson(Map<String, dynamic> json) {
@@ -78,6 +82,8 @@ class Tutors {
     teachesLanguages = json['teaches_languages'];
     topics = json['topics'].cast<String>();
     nextSlot = json['next_slot'];
+    bio = json['bio'];
+    targetlanguage = json['target_language'];
   }
 
   Map<String, dynamic> toJson() {
@@ -87,6 +93,8 @@ class Tutors {
     data['teaches_languages'] = teachesLanguages;
     data['topics'] = topics;
     data['next_slot'] = nextSlot;
+    data['bio'] = bio;
+    data['target_language'] = targetlanguage;
     return data;
   }
 }

@@ -6,22 +6,22 @@ import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
-import 'package:language_learning_app/model/get_tutor_detail_model.dart'
-    as tutor_profile;
 import 'package:language_learning_app/model/tutor_avaibility_model.dart'
     as tutor_availability;
-import 'package:language_learning_app/provider/get_tutor_profile/get_tutor_profile_bloc.dart';
 import 'package:language_learning_app/provider/book_session/book_session_bloc.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
- 
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
     super.key,
     required this.tutorName,
     this.tutorId = '',
+    this.tutorHeadline = '',
+    this.tutorBio = '',
+    this.tutorLanguagesTaught = '',
+    this.tutorLanguagesSpoken = '',
     this.prefillSlotDate,
     this.prefillSlotStartTime,
     this.prefillSlotEndTime,
@@ -29,6 +29,10 @@ class BookingScreen extends StatefulWidget {
 
   final String tutorName;
   final String tutorId;
+  final String tutorHeadline;
+  final String tutorBio;
+  final String tutorLanguagesTaught;
+  final String tutorLanguagesSpoken;
   final String? prefillSlotDate;
   final String? prefillSlotStartTime;
   final String? prefillSlotEndTime;
@@ -38,11 +42,9 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
-  final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
   final TutorAvailabilityBloc _tutorAvailabilityBloc = TutorAvailabilityBloc();
   final BookSessionBloc _bookSessionBloc = BookSessionBloc();
 
-  tutor_profile.Data? _profile;
   List<tutor_availability.Data> _slots = const [];
 
   tutor_availability.Data? _selectedSlot;
@@ -53,7 +55,6 @@ class _BookingScreenState extends State<BookingScreen> {
     super.initState();
     final tutorId = widget.tutorId.trim();
     if (tutorId.isNotEmpty) {
-      _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
       _tutorAvailabilityBloc.add(FetchTutorAvailability(tutorId: tutorId));
     }
   }
@@ -103,7 +104,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   void dispose() {
-    _getTutorProfileBloc.close();
     _tutorAvailabilityBloc.close();
     _bookSessionBloc.close();
     super.dispose();
@@ -120,7 +120,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   String _slotTopicLabel(tutor_availability.Data s, AppLanguage language) {
-    final topic = '';
+    final topic = s.topic ?? '';
     final topicTitle = ConstString.text(language, 'topic');
     return topic.isEmpty ? '$topicTitle: -' : '$topicTitle: $topic';
   }
@@ -244,7 +244,6 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
       body: MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: _getTutorProfileBloc),
           BlocProvider.value(value: _tutorAvailabilityBloc),
           BlocProvider.value(value: _bookSessionBloc),
         ],
@@ -274,13 +273,6 @@ class _BookingScreenState extends State<BookingScreen> {
                           Navigator.pop(context); // back
                         },
                       );
-                    }
-                  },
-                ),
-                BlocListener<GetTutorProfileBloc, GetTutorProfileState>(
-                  listener: (context, state) {
-                    if (state is GetTutorProfileSuccess) {
-                      setState(() => _profile = state.model.data);
                     }
                   },
                 ),
@@ -334,9 +326,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        (_profile?.name ?? '').trim().isNotEmpty
-                                            ? (_profile?.name ?? '')
-                                            : widget.tutorName,
+                                        widget.tutorName,
                                         style: const TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w800,
@@ -344,7 +334,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        (_profile?.headline ?? '').trim(),
+                                        widget.tutorHeadline.trim(),
                                         style: const TextStyle(
                                           color: ConstColor.textSecondary,
                                           height: 1.3,
@@ -358,16 +348,16 @@ class _BookingScreenState extends State<BookingScreen> {
                             const SizedBox(height: ConstSize.grid * 2),
                             _infoRow(
                               icon: Icons.school_outlined,
-                              text: (_profile?.languagesTaught ?? '').trim(),
+                              text: widget.tutorLanguagesTaught.trim(),
                             ),
                             _infoRow(
                               icon: Icons.record_voice_over_outlined,
-                              text: (_profile?.languagesSpoken ?? '').trim(),
+                              text: widget.tutorLanguagesSpoken.trim(),
                             ),
-                            if (((_profile?.bio ?? '').trim()).isNotEmpty) ...[
+                            if ((widget.tutorBio).trim().isNotEmpty) ...[
                               const SizedBox(height: ConstSize.grid),
                               Text(
-                                (_profile?.bio ?? '').trim(),
+                                widget.tutorBio.trim(),
                                 style: const TextStyle(
                                   color: ConstColor.textSecondary,
                                   height: 1.45,
@@ -401,11 +391,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                         builder: (_) =>
                                             TutorAvailabilityCalendarScreen(
                                               tutorName:
-                                                  (_profile?.name ?? '')
-                                                      .trim()
-                                                      .isNotEmpty
-                                                  ? (_profile?.name ?? '')
-                                                  : widget.tutorName,
+                                                  widget.tutorName,
                                               tutorId: widget.tutorId,
                                             ),
                                       ),
@@ -419,7 +405,10 @@ class _BookingScreenState extends State<BookingScreen> {
                       const SizedBox(height: ConstSize.grid),
 
                       // Select slot picker
-                      BlocBuilder<TutorAvailabilityBloc, TutorAvailabilityState>(
+                      BlocBuilder<
+                        TutorAvailabilityBloc,
+                        TutorAvailabilityState
+                      >(
                         builder: (context, state) {
                           if (widget.tutorId.trim().isEmpty) {
                             return Text(
@@ -581,8 +570,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                         return;
                                       }
 
-                                      final timezone =
-                                          (slot.timezone ?? '').trim();
+                                      final timezone = (slot.timezone ?? '')
+                                          .trim();
                                       if (timezone.isEmpty) {
                                         commonAlertDialog(
                                           context,

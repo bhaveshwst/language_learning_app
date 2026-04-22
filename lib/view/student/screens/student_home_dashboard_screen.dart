@@ -73,7 +73,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     super.initState();
     final studentId = PrefUtils.getstudentid().trim();
     if (studentId.isNotEmpty) {
-      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId));
+      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, tutorId: PrefUtils.gettutorid()));
     }
     _recommendedTutorBloc.add(
       FetchRecommendedTutorWithSearch(
@@ -217,7 +217,6 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                       ],
                     ),
                     const SizedBox(height: ConstSize.grid * 2),
-
                     _YesNoToggle(
                       label: ConstString.text(
                         language,
@@ -370,6 +369,20 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                                                 .data
                                                 ?.tutors?[index]
                                                 .id ??
+                                            "",
+                                        tutorBio:
+                                            tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .bio ??
+                                            "",
+                                        tutorLanguagesTaught:
+                                            tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .teachesLanguages ??
                                             "",
                                       ),
                                     ),

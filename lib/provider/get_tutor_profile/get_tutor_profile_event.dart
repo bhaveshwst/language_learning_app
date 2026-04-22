@@ -15,4 +15,3 @@ final class FetchTutorProfile extends GetTutorProfileEvent {
   @override
   List<Object?> get props => [tutorId];
 }
-

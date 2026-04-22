@@ -10,7 +10,7 @@ sealed class GetStudentProfileEvent extends Equatable {
 final class FetchStudentProfile extends GetStudentProfileEvent {
   final String studentId;
 
-  const FetchStudentProfile({required this.studentId});
+  const FetchStudentProfile({required this.studentId, required String tutorId});
 
   @override
   List<Object?> get props => [studentId];

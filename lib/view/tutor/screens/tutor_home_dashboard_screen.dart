@@ -24,7 +24,8 @@ class TutorHomeDashboardScreen extends StatefulWidget {
       _TutorHomeDashboardScreenState();
 }
 
-class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> with WidgetsBindingObserver {
+class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
+    with WidgetsBindingObserver {
   final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
   final TutorSessionsBloc _tutorSessionsBloc = TutorSessionsBloc();
 
@@ -82,13 +83,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
       final parts = timeStr.split(':');
       final h = int.tryParse(parts[0]) ?? 0;
       final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-      return DateTime(
-        dateOnly.year,
-        dateOnly.month,
-        dateOnly.day,
-        h,
-        m,
-      );
+      return DateTime(dateOnly.year, dateOnly.month, dateOnly.day, h, m);
     } catch (_) {
       return null;
     }
@@ -108,10 +103,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
     return n;
   }
 
-  String _bookingScheduleLine(
-    tutor_sessions.Data row,
-    Locale locale,
-  ) {
+  String _bookingScheduleLine(tutor_sessions.Data row, Locale locale) {
     final dt = _sessionStartDateTime(row);
     if (dt == null) {
       final d = (row.date ?? '').trim();
@@ -132,9 +124,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
     return '$start - $end';
   }
 
-  List<tutor_sessions.Data> _upcomingPreview(
-    List<tutor_sessions.Data> rows,
-  ) {
+  List<tutor_sessions.Data> _upcomingPreview(List<tutor_sessions.Data> rows) {
     final upcoming = rows
         .where((e) => _effectiveBookingStatus(e) == 'upcoming')
         .toList();
@@ -166,18 +156,22 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
                 final language = AppLanguageState.isKorean.value
                     ? AppLanguage.korean
                     : AppLanguage.english;
-                commonAlertDialogwithButton(context, t('profileIncomplete'), () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TutorProfileCompletePage(
-                        language: language,
-                        role: UserRole.becomeTutor,
+                commonAlertDialogwithButton(
+                  context,
+                  t('profileIncomplete'),
+                  () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TutorProfileCompletePage(
+                          language: language,
+                          role: UserRole.becomeTutor,
+                        ),
                       ),
-                    ),
-                  );
-                });
+                    );
+                  },
+                );
                 return;
               }
               if (state is! GetTutorProfileSuccess) return;
@@ -248,7 +242,8 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
                 BlocBuilder<TutorSessionsBloc, TutorSessionsState>(
                   builder: (context, sessionState) {
                     final tutorId = PrefUtils.gettutorid().trim();
-                    final loading = tutorId.isNotEmpty &&
+                    final loading =
+                        tutorId.isNotEmpty &&
                         (sessionState is TutorSessionsInitial ||
                             sessionState is TutorSessionsLoading);
                     final rows = _sessionRows(sessionState);
@@ -272,7 +267,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
                           padding: const EdgeInsets.all(ConstSize.grid * 2),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF4F8FF),
-                            borderRadius: BorderRadius.circular(ConstSize.radiusL),
+                            borderRadius: BorderRadius.circular(
+                              ConstSize.radiusL,
+                            ),
                             border: Border.all(color: ConstColor.border),
                           ),
                           child: Column(
@@ -383,8 +380,8 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen> wit
                               _BookingTile(
                                 student:
                                     (row.studentName ?? '').trim().isNotEmpty
-                                        ? (row.studentName ?? '').trim()
-                                        : '-',
+                                    ? (row.studentName ?? '').trim()
+                                    : '-',
                                 time: _bookingScheduleLine(row, locale),
                                 focus: _bookingTimeRangeLine(row),
                                 timezone: (row.studentTimezone ?? '').trim(),
