@@ -91,7 +91,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
   Future<void> _initializeNotifications() async {
     try {
-      await AwesomeNotifications().initialize('resource://drawable/appicon', [
+      await AwesomeNotifications().initialize('resource://drawable/notification', [
         NotificationChannel(
           channelKey: 'silent_channel',
           channelName: 'General Notifications',
@@ -134,6 +134,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
             channelKey: 'silent_channel',
             title: notification.title ?? 'New Notification',
             body: notification.body ?? '',
+                icon: 'resource://drawable/notification',
             notificationLayout: NotificationLayout.Default,
             wakeUpScreen: true,
           ),
