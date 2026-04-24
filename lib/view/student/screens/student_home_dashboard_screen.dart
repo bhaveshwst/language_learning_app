@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -14,6 +17,9 @@ import 'package:language_learning_app/provider/recommended_tutor/recommended_tut
 import 'package:language_learning_app/view/student/screens/booking_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+
 
 class StudentHomeDashboardScreen extends StatefulWidget {
   const StudentHomeDashboardScreen({super.key});
@@ -32,6 +38,10 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
   bool _tutorSpeakMyPrimaryLanguage = true;
   String? _selectedTargetLanguage;
+
+  String _address = "";
+  String _latitude = "";
+  String _longitude = "";
 
   String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
 
@@ -71,6 +81,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   @override
   void initState() {
     super.initState();
+    _getLocation();
     final studentId = PrefUtils.getstudentid().trim();
     if (studentId.isNotEmpty) {
       _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, tutorId: PrefUtils.gettutorid()));
@@ -85,6 +96,96 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     unawaited(_printFcmTokenAfterLogin());
 
     WidgetsBinding.instance.addObserver(this);
+  }
+
+    Future<void> _getLocation() async {
+    Position position = await _getGeoLocationPosition();
+    _latitude = position.latitude.toString();
+    _longitude = position.longitude.toString();
+    debugPrint('Latitude: $_latitude');
+    debugPrint('Longitude: $_longitude');
+    await getAddressFromLatLong(position);
+  }
+
+
+   Future<void> getAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
+
+    Placemark place = placemarks[0];
+    _address =
+        '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
+    setState(() {});
+  }
+
+
+    Future<Position> _getGeoLocationPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+
+      return Future.error('Location services are disabled.');
+    } else {}
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        showCupertinoDialog(
+            context: context,
+            builder: (dialogContext) {
+              return CupertinoAlertDialog(
+                content: Text('Location permissions are denied'),
+                actions: [
+                  CupertinoDialogAction(child: Text("Settings"), onPressed: () async {
+                      Navigator.pop(dialogContext);
+                  if (Platform.isIOS) {
+                    await Geolocator.openLocationSettings();
+                  } else if (Platform.isAndroid) {
+                    await Geolocator.openAppSettings();
+                  }
+                  }),
+                ],
+              );
+            });
+        return Future.error('Location permissions are denied');
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      showCupertinoDialog(
+          context: context,
+          builder: (dialogContext) {
+            return CupertinoAlertDialog(
+              content: Text('Location permissions are permanently denied, we cannot request permissions.'),
+               actions: [
+                  CupertinoDialogAction(child: Text("Settings"), onPressed: () async {
+                      Navigator.pop(dialogContext);
+                  if (Platform.isIOS) {
+                    await Geolocator.openLocationSettings();
+                  } else if (Platform.isAndroid) {
+                    await Geolocator.openAppSettings();
+                  }
+                  }),
+                ],
+            );
+          });
+
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      return await Geolocator.getCurrentPosition(
+          locationSettings:
+              LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+    }
+    return await Geolocator.getCurrentPosition(
+        locationSettings:
+            LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
   }
 
   @override

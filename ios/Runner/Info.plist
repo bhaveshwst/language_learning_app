@@ -30,6 +30,19 @@
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>This app uses your location to recommend nearby places of interest during your
+			Konnected.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>This app uses your location to recommend nearby places of interest during your
+			Konnected.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>This app uses your location to recommend nearby places of interest during your
+			Konnected.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>location</string>
+		</array>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
