@@ -16,14 +16,16 @@ final class ReportSessionSubmitted extends ReportSessionEvent {
   final String tutorId;
   final String sessionId;
   final String reason;
+  final String type;
 
   const ReportSessionSubmitted({
     required this.studentId,
     required this.tutorId,
     required this.sessionId,
     required this.reason,
+    required this.type,
   });
 
   @override
-  List<Object?> get props => [studentId, tutorId, sessionId, reason];
+  List<Object?> get props => [studentId, tutorId, sessionId, reason, type];
 }

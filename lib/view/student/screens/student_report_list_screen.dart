@@ -13,11 +13,13 @@ class StudentReportListScreen extends StatefulWidget {
   const StudentReportListScreen({super.key});
 
   @override
-  State<StudentReportListScreen> createState() => _StudentReportListScreenState();
+  State<StudentReportListScreen> createState() =>
+      _StudentReportListScreenState();
 }
 
 class _StudentReportListScreenState extends State<StudentReportListScreen> {
   final ReportSessionListBloc _reportSessionListBloc = ReportSessionListBloc();
+  String _selectedType = 'Report';
 
   @override
   void initState() {
@@ -37,6 +39,13 @@ class _StudentReportListScreenState extends State<StudentReportListScreen> {
   String _safeValue(String? value) {
     final out = (value ?? '').trim();
     return out.isEmpty ? '-' : out;
+  }
+
+  String _normalizedType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized == 'report') return 'Report';
+    if (normalized == 'review') return 'Review';
+    return '';
   }
 
   String _formatDateTime(String? raw) {
@@ -81,102 +90,140 @@ class _StudentReportListScreenState extends State<StudentReportListScreen> {
                 final rows = state is ReportSessionListSuccess
                     ? (state.model.data ?? const <ReportSessionListItem>[])
                     : const <ReportSessionListItem>[];
+                final filteredRows = rows
+                    .where(
+                      (item) => _normalizedType(item.type) == _selectedType,
+                    )
+                    .toList();
 
-                if (rows.isEmpty) {
-                  return const Center(
-                    child: AppText(
-                      'reportListEmpty',
-                      style: TextStyle(color: ConstColor.textSecondary),
+                return Column(
+                  children: [
+                    ToggleButtons(
+                      isSelected: [
+                        'Report',
+                        'Review',
+                      ].map((e) => e == _selectedType).toList(),
+                      onPressed: (index) {
+                        setState(
+                          () =>
+                              _selectedType = index == 0 ? 'Report' : 'Review',
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(ConstSize.radiusM),
+                      constraints: const BoxConstraints(
+                        minHeight: 40,
+                        minWidth: 96,
+                      ),
+                      selectedColor: Colors.white,
+                      fillColor: ConstColor.primaryBlue,
+                      color: ConstColor.textSecondary,
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: AppText('report'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: AppText('review'),
+                        ),
+                      ],
                     ),
-                  );
-                }
-
-                return ListView.separated(
-                  itemCount: rows.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: ConstSize.grid * 1.5),
-                  itemBuilder: (context, index) {
-                    final item = rows[index];
-                    return Container(
-                      padding: const EdgeInsets.all(ConstSize.grid * 1.5),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(ConstSize.radiusM),
-                        border: Border.all(color: ConstColor.border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if ((item.tutorName ?? '').trim().isNotEmpty)
-                            Text(
-                              item.tutorName!.trim(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                    const SizedBox(height: ConstSize.grid * 1.5),
+                    Expanded(
+                      child: filteredRows.isEmpty
+                          ? const Center(
+                              child: AppText(
+                                'reportListEmpty',
+                                style: TextStyle(
+                                  color: ConstColor.textSecondary,
+                                ),
                               ),
+                            )
+                          : ListView.separated(
+                              itemCount: filteredRows.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: ConstSize.grid * 1.5),
+                              itemBuilder: (context, index) {
+                                final item = filteredRows[index];
+                                return Container(
+                                  padding: const EdgeInsets.all(
+                                    ConstSize.grid * 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                      ConstSize.radiusM,
+                                    ),
+                                    border: Border.all(
+                                      color: ConstColor.border,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if ((item.tutorName ?? '')
+                                          .trim()
+                                          .isNotEmpty)
+                                        Text(
+                                          item.tutorName!.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      if ((item.tutorName ?? '')
+                                          .trim()
+                                          .isNotEmpty)
+                                        const SizedBox(height: ConstSize.grid),
+                                      const AppText(
+                                        'reportReason',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Row(
+                                        children: [
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              _safeValue(item.reason),
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const AppText(
+                                            'reportedOn',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              _formatDateTime(item.createdAt),
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                          if ((item.tutorName ?? '').trim().isNotEmpty)
-                            const SizedBox(height: ConstSize.grid),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const AppText(
-                                'reportReason',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _safeValue(item.reason),
-                                  style: const TextStyle(
-                                    color: ConstColor.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const AppText(
-                                'reportSessionId',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _safeValue(item.sessionId),
-                                  style: const TextStyle(
-                                    color: ConstColor.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const AppText(
-                                'reportedOn',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _formatDateTime(item.createdAt),
-                                  style: const TextStyle(
-                                    color: ConstColor.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                    ),
+                  ],
                 );
               },
             ),

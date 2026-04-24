@@ -25,6 +25,7 @@ class ReportSessionBloc extends Bloc<ReportSessionEvent, ReportSessionState> {
             'tutor_id': event.tutorId,
             'session_id': event.sessionId,
             'reason': event.reason,
+            'type': event.type,
           },
         );
 

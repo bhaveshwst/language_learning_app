@@ -203,6 +203,8 @@ class ConstString {
     'reportedOn': 'Reported On',
     'reportSessionReasonHint':
         'Describe what happened. Your report helps keep the community safe.',
+    'selectReportTypeHint': 'Select type',
+    'reportSessionTypeEmptyError': 'Please select Report or Review.',
     'reportSessionReasonEmptyError': 'Please enter a reason for your report.',
     'reportSessionSuccessFallback': 'Report submitted successfully',
     'createTutorProfile': 'Create Tutor Profile',
@@ -414,6 +416,8 @@ class ConstString {
     'reportedOn': '신고일',
     'reportSessionReasonHint':
         '어떤 일이 있었는지 알려주세요. 커뮤니티 안전에 도움이 됩니다.',
+    'selectReportTypeHint': '유형 선택',
+    'reportSessionTypeEmptyError': '신고 또는 후기를 선택해 주세요.',
     'reportSessionReasonEmptyError': '신고 사유를 입력해 주세요.',
     'reportSessionSuccessFallback': '신고가 접수되었습니다',
     'yes': '예',

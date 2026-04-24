@@ -779,6 +779,8 @@ class _ReportSessionReasonDialog extends StatefulWidget {
 class _ReportSessionReasonDialogState
     extends State<_ReportSessionReasonDialog> {
   final TextEditingController _controller = TextEditingController();
+  String? _selectedType;
+  static const List<String> _reportTypes = ['Report', 'Review'];
 
   String t(String key) => ConstString.text(widget.language, key);
 
@@ -808,15 +810,44 @@ class _ReportSessionReasonDialogState
       child: AlertDialog(
         title: Text(t('reportSessionTitle')),
         content: SingleChildScrollView(
-          child: TextField(
-            controller: _controller,
-            keyboardType: TextInputType.multiline,
-            textInputAction: TextInputAction.newline,
-            maxLines: 5,
-            decoration: InputDecoration(
-              hintText: t('reportSessionReasonHint'),
-              border: const OutlineInputBorder(),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _selectedType,
+                decoration: InputDecoration(
+                  hintText: t('selectReportTypeHint'),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                items: _reportTypes
+                    .map(
+                      (type) => DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() => _selectedType = value);
+                },
+              ),
+              const SizedBox(height: ConstSize.grid),
+              TextField(
+                controller: _controller,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: t('reportSessionReasonHint'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -831,7 +862,15 @@ class _ReportSessionReasonDialogState
                 onPressed: loading
                     ? null
                     : () {
+                        final type = (_selectedType ?? '').trim();
                         final reason = _controller.text.trim();
+                        if (type.isEmpty) {
+                          commonAlertDialog(
+                            context,
+                            t('reportSessionTypeEmptyError'),
+                          );
+                          return;
+                        }
                         if (reason.isEmpty) {
                           commonAlertDialog(
                             context,
@@ -845,6 +884,7 @@ class _ReportSessionReasonDialogState
                             tutorId: widget.tutorId,
                             sessionId: widget.sessionId,
                             reason: reason,
+                            type: type,
                           ),
                         );
                       },
