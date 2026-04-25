@@ -218,6 +218,10 @@ class ConstString {
 
     'noInternetMessage':
         'No internet connection. Check Wi‑Fi or mobile data.',
+    'locationServicesDisabled': 'Location services are disabled.',
+    'locationPermissionsDenied': 'Location permissions are denied.',
+    'locationPermissionsPermanentlyDenied':
+        'Location permissions are permanently denied, we cannot request permissions.',
   };
 
   static const Map<String, String> _ko = {
@@ -431,6 +435,10 @@ class ConstString {
     'japanese': '일본어',
 
     'noInternetMessage': '인터넷에 연결되어 있지 않습니다. Wi‑Fi 또는 모바일 데이터를 확인해 주세요.',
+    'locationServicesDisabled': '위치 서비스가 비활성화되어 있습니다.',
+    'locationPermissionsDenied': '위치 권한이 거부되었습니다.',
+    'locationPermissionsPermanentlyDenied':
+        '위치 권한이 영구적으로 거부되어 더 이상 요청할 수 없습니다.',
   };
 
   static String text(AppLanguage language, String key) {

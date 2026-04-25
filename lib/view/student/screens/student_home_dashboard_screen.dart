@@ -42,6 +42,10 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   String _address = "";
   String _latitude = "";
   String _longitude = "";
+  String t(String key) => ConstString.text(
+    AppLanguageState.isKorean.value ? AppLanguage.korean : AppLanguage.english,
+    key,
+  );
 
   String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
 
@@ -84,7 +88,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     _getLocation();
     final studentId = PrefUtils.getstudentid().trim();
     if (studentId.isNotEmpty) {
-      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, tutorId: PrefUtils.gettutorid()));
+      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, latitude: _latitude, longitude: _longitude, address: _address));
     }
     _recommendedTutorBloc.add(
       FetchRecommendedTutorWithSearch(
@@ -104,6 +108,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     _longitude = position.longitude.toString();
     debugPrint('Latitude: $_latitude');
     debugPrint('Longitude: $_longitude');
+    debugPrint('Address: $_address');
     await getAddressFromLatLong(position);
   }
 
@@ -127,7 +132,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();
 
-      return Future.error('Location services are disabled.');
+      return Future.error(t('locationServicesDisabled'));
     } else {}
 
     permission = await Geolocator.checkPermission();
@@ -138,9 +143,12 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             context: context,
             builder: (dialogContext) {
               return CupertinoAlertDialog(
-                content: Text('Location permissions are denied'),
+                content: Text(t('locationPermissionsDenied')),
                 actions: [
-                  CupertinoDialogAction(child: Text("Settings"), onPressed: () async {
+                  CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+                    Navigator.pop(dialogContext);
+                  }),
+                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
                       Navigator.pop(dialogContext);
                   if (Platform.isIOS) {
                     await Geolocator.openLocationSettings();
@@ -148,10 +156,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                     await Geolocator.openAppSettings();
                   }
                   }),
+                  
                 ],
               );
             });
-        return Future.error('Location permissions are denied');
+        return Future.error(t('locationPermissionsDenied'));
       }
     }
     if (permission == LocationPermission.deniedForever) {
@@ -159,9 +168,12 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
           context: context,
           builder: (dialogContext) {
             return CupertinoAlertDialog(
-              content: Text('Location permissions are permanently denied, we cannot request permissions.'),
+              content: Text(t('locationPermissionsPermanentlyDenied')),
                actions: [
-                  CupertinoDialogAction(child: Text("Settings"), onPressed: () async {
+                CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+                    Navigator.pop(dialogContext);
+                  }),
+                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
                       Navigator.pop(dialogContext);
                   if (Platform.isIOS) {
                     await Geolocator.openLocationSettings();
@@ -169,12 +181,13 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                     await Geolocator.openAppSettings();
                   }
                   }),
+                  
                 ],
             );
           });
 
       return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
+          t('locationPermissionsPermanentlyDenied'));
     }
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always ||

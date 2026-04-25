@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
@@ -34,15 +39,119 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     key,
   );
 
+  String _address = "";
+  String _latitude = "";
+  String _longitude = "";
+
   @override
   void initState() {
     super.initState();
+    _getLocation();
     final tutorId = PrefUtils.gettutorid().trim();
     if (tutorId.isNotEmpty) {
-      _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
+      _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId, latitude: _latitude, longitude: _longitude, address: _address));
       _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
     }
     WidgetsBinding.instance.addObserver(this);
+  }
+
+    Future<void> _getLocation() async {
+    Position position = await _getGeoLocationPosition();
+    _latitude = position.latitude.toString();
+    _longitude = position.longitude.toString();
+    debugPrint('Latitude: $_latitude');
+    debugPrint('Longitude: $_longitude');
+    debugPrint('Address: $_address');
+    await getAddressFromLatLong(position);
+  }
+
+
+   Future<void> getAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
+
+    Placemark place = placemarks[0];
+    _address =
+        '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
+    setState(() {});
+  }
+
+
+    Future<Position> _getGeoLocationPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+
+      return Future.error(t('locationServicesDisabled'));
+    } else {}
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        showCupertinoDialog(
+            context: context,
+            builder: (dialogContext) {
+              return CupertinoAlertDialog(
+                content: Text(t('locationPermissionsDenied')),
+                actions: [
+                  CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+                    Navigator.pop(dialogContext);
+                  }),
+                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
+                      Navigator.pop(dialogContext);
+                  if (Platform.isIOS) {
+                    await Geolocator.openLocationSettings();
+                  } else if (Platform.isAndroid) {
+                    await Geolocator.openAppSettings();
+                  }
+                  }),
+                  
+                ],
+              );
+            });
+        return Future.error(t('locationPermissionsDenied'));
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      showCupertinoDialog(
+          context: context,
+          builder: (dialogContext) {
+            return CupertinoAlertDialog(
+              content: Text(t('locationPermissionsPermanentlyDenied')),
+               actions: [
+                CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+                    Navigator.pop(dialogContext);
+                  }),
+                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
+                      Navigator.pop(dialogContext);
+                  if (Platform.isIOS) {
+                    await Geolocator.openLocationSettings();
+                  } else if (Platform.isAndroid) {
+                    await Geolocator.openAppSettings();
+                  }
+                  }),
+                  
+                ],
+            );
+          });
+
+      return Future.error(
+          t('locationPermissionsPermanentlyDenied'));
+    }
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      return await Geolocator.getCurrentPosition(
+          locationSettings:
+              LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+    }
+    return await Geolocator.getCurrentPosition(
+        locationSettings:
+            LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
   }
 
   @override
