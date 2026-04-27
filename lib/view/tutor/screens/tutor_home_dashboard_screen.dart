@@ -47,11 +47,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
   void initState() {
     super.initState();
     _getLocation();
-    final tutorId = PrefUtils.gettutorid().trim();
-    if (tutorId.isNotEmpty) {
-      _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId, latitude: _latitude, longitude: _longitude, address: _address));
-      _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
-    }
+    
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -73,6 +69,11 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     Placemark place = placemarks[0];
     _address =
         '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
+        final tutorId = PrefUtils.gettutorid().trim();
+    if (tutorId.isNotEmpty) {
+      _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId, latitude: _latitude, longitude: _longitude, address: _address));
+      _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
+    }
     setState(() {});
   }
 

@@ -86,17 +86,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   void initState() {
     super.initState();
     _getLocation();
-    final studentId = PrefUtils.getstudentid().trim();
-    if (studentId.isNotEmpty) {
-      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, latitude: _latitude, longitude: _longitude, address: _address));
-    }
-    _recommendedTutorBloc.add(
-      FetchRecommendedTutorWithSearch(
-        studentId: PrefUtils.getstudentid(),
-        search: "",
-        matchLanguage: _matchLanguageValue,
-      ),
-    );
+  
     unawaited(_printFcmTokenAfterLogin());
 
     WidgetsBinding.instance.addObserver(this);
@@ -120,6 +110,17 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     Placemark place = placemarks[0];
     _address =
         '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
+          final studentId = PrefUtils.getstudentid().trim();
+    if (studentId.isNotEmpty) {
+      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, latitude: _latitude, longitude: _longitude, address: _address));
+    }
+    _recommendedTutorBloc.add(
+      FetchRecommendedTutorWithSearch(
+        studentId: PrefUtils.getstudentid(),
+        search: "",
+        matchLanguage: _matchLanguageValue,
+      ),
+    );
     setState(() {});
   }
 
