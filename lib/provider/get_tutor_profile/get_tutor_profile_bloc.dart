@@ -22,9 +22,6 @@ class GetTutorProfileBloc
             'fcm_token': PrefUtils.getFCMToken().trim().toString(),
             "platform": "android",
             "tutor_id": event.tutorId,
-            "latitude": event.latitude,
-            "longitude": event.longitude,
-            "address": event.address,
           },
         );
         final decoded = jsonDecode(response.body);

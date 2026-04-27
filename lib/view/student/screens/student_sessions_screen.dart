@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -33,6 +37,106 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
       CancelStudentBookingBloc();
   final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
   final ReportSessionBloc _reportSessionBloc = ReportSessionBloc();
+  String _joiningSlotId = '';
+
+  Future<({String latitude, String longitude, String address})>
+  _fetchLocationForJoin() async {
+    final position = await _getGeoLocationPosition();
+    final address = await _getAddressFromPosition(position);
+    return (
+      latitude: position.latitude.toString(),
+      longitude: position.longitude.toString(),
+      address: address,
+    );
+  }
+
+  Future<String> _getAddressFromPosition(Position position) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isEmpty) return '';
+      final place = placemarks.first;
+      return [
+        (place.street ?? '').trim(),
+        (place.locality ?? '').trim(),
+        (place.administrativeArea ?? '').trim(),
+        (place.postalCode ?? '').trim(),
+        (place.country ?? '').trim(),
+      ].where((e) => e.isNotEmpty).join(', ');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> _showLocationSettingsDialog(String message) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const AppText('cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                if (Platform.isIOS) {
+                  await Geolocator.openLocationSettings();
+                } else if (Platform.isAndroid) {
+                  await Geolocator.openAppSettings();
+                } else {
+                  await Geolocator.openAppSettings();
+                }
+              },
+              child: const AppText('settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Position> _getGeoLocationPosition() async {
+    String t(String key) {
+      final language = AppLanguageState.isKorean.value
+          ? AppLanguage.korean
+          : AppLanguage.english;
+      return ConstString.text(language, key);
+    }
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await _showLocationSettingsDialog(t('locationServicesDisabled'));
+      throw Exception(t('locationServicesDisabled'));
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        await _showLocationSettingsDialog(t('locationPermissionsDenied'));
+        throw Exception(t('locationPermissionsDenied'));
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      await _showLocationSettingsDialog(
+        t('locationPermissionsPermanentlyDenied'),
+      );
+      throw Exception(t('locationPermissionsPermanentlyDenied'));
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
+    );
+  }
 
   void _openReportSessionDialog(
     BuildContext dialogParentContext,
@@ -107,6 +211,10 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
               ),
               BlocListener<LiveSessionJoinBloc, LiveSessionJoinState>(
                 listener: (context, state) {
+                  if (state is! LiveSessionJoinLoading &&
+                      _joiningSlotId.isNotEmpty) {
+                    setState(() => _joiningSlotId = '');
+                  }
                   if (state is LiveSessionJoinError) {
                     commonAlertDialog(context, state.message);
                   }
@@ -256,19 +364,31 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                       );
                                       return;
                                     }
-                                    _liveSessionJoinBloc.add(
-                                      LiveSessionJoinRequested(
-                                        actorType: 'student',
-                                        actorId: studentId,
-                                        tutorId: tutorId,
-                                        slotId: slotId,
-                                        date: date,
-                                        startTime: startTime,
-                                        endTime: endTime,
-                                        waitForHost: true,
-                                      ),
-                                    );
+                                    setState(() => _joiningSlotId = slotId);
+                                    _fetchLocationForJoin()
+                                        .then((location) {
+                                          _liveSessionJoinBloc.add(
+                                            LiveSessionJoinRequested(
+                                              actorType: 'student',
+                                              actorId: studentId,
+                                              tutorId: tutorId,
+                                              slotId: slotId,
+                                              date: date,
+                                              startTime: startTime,
+                                              endTime: endTime,
+                                              latitude: location.latitude,
+                                              longitude: location.longitude,
+                                              address: location.address,
+                                              waitForHost: true,
+                                            ),
+                                          );
+                                        })
+                                        .catchError((_) {
+                                          if (!mounted) return;
+                                          setState(() => _joiningSlotId = '');
+                                        });
                                   },
+                                  joiningSlotId: _joiningSlotId,
                                   onCancel: (row) {
                                     final studentId = PrefUtils.getstudentid()
                                         .trim();
@@ -547,12 +667,14 @@ class _TutorSessionCard extends StatelessWidget {
   const _TutorSessionCard({
     required this.group,
     required this.onJoin,
+    required this.joiningSlotId,
     required this.onCancel,
     required this.onReport,
   });
 
   final _TutorSessionGroup group;
   final ValueChanged<bookings.Data> onJoin;
+  final String joiningSlotId;
   final ValueChanged<bookings.Data> onCancel;
   final ValueChanged<bookings.Data> onReport;
 
@@ -677,27 +799,60 @@ class _TutorSessionCard extends StatelessWidget {
                                 children: [
                                   if (group.showJoin)
                                     Expanded(
-                                      child: ElevatedButton(
-                                        onPressed: group.canJoin
-                                            ? () => onJoin(item.row)
-                                            : null,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: group.canJoin
-                                              ? ConstColor.primaryBlue
-                                              : ConstColor.grey,
-                                          disabledBackgroundColor:
-                                              ConstColor.grey,
-                                          foregroundColor: Colors.white,
-                                          disabledForegroundColor:
-                                              Colors.white70,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              ConstSize.radiusM,
-                                            ),
+                                      child:
+                                          BlocBuilder<
+                                            LiveSessionJoinBloc,
+                                            LiveSessionJoinState
+                                          >(
+                                            builder: (context, joinState) {
+                                              final currentSlotId =
+                                                  (item.row.slotId ??
+                                                          item.row.sessionId ??
+                                                          '')
+                                                      .trim();
+                                              final isJoiningThis =
+                                                  joinState
+                                                      is LiveSessionJoinLoading &&
+                                                  joiningSlotId.isNotEmpty &&
+                                                  joiningSlotId ==
+                                                      currentSlotId;
+                                              return ElevatedButton(
+                                                onPressed:
+                                                    group.canJoin &&
+                                                        !isJoiningThis
+                                                    ? () => onJoin(item.row)
+                                                    : null,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: group.canJoin
+                                                      ? ConstColor.primaryBlue
+                                                      : ConstColor.grey,
+                                                  disabledBackgroundColor:
+                                                      ConstColor.grey,
+                                                  foregroundColor: Colors.white,
+                                                  disabledForegroundColor:
+                                                      Colors.white70,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          ConstSize.radiusM,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: isJoiningThis
+                                                    ? const SizedBox(
+                                                        width: 18,
+                                                        height: 18,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                      )
+                                                    : const AppText('join'),
+                                              );
+                                            },
                                           ),
-                                        ),
-                                        child: const AppText('join'),
-                                      ),
                                     ),
                                   if (group.showJoin && group.showCancel)
                                     const SizedBox(width: ConstSize.grid),

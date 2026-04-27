@@ -86,7 +86,17 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   void initState() {
     super.initState();
     _getLocation();
-  
+    final studentId = PrefUtils.getstudentid().trim();
+    if (studentId.isNotEmpty) {
+      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId));
+    }
+    _recommendedTutorBloc.add(
+      FetchRecommendedTutorWithSearch(
+        studentId: PrefUtils.getstudentid(),
+        search: "",
+        matchLanguage: _matchLanguageValue,
+      ),
+    );
     unawaited(_printFcmTokenAfterLogin());
 
     WidgetsBinding.instance.addObserver(this);
@@ -110,17 +120,6 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     Placemark place = placemarks[0];
     _address =
         '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
-          final studentId = PrefUtils.getstudentid().trim();
-    if (studentId.isNotEmpty) {
-      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId, latitude: _latitude, longitude: _longitude, address: _address));
-    }
-    _recommendedTutorBloc.add(
-      FetchRecommendedTutorWithSearch(
-        studentId: PrefUtils.getstudentid(),
-        search: "",
-        matchLanguage: _matchLanguageValue,
-      ),
-    );
     setState(() {});
   }
 
@@ -140,52 +139,52 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        showCupertinoDialog(
-            context: context,
-            builder: (dialogContext) {
-              return CupertinoAlertDialog(
-                content: Text(t('locationPermissionsDenied')),
-                actions: [
-                  CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
-                    Navigator.pop(dialogContext);
-                  }),
-                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
-                      Navigator.pop(dialogContext);
-                  if (Platform.isIOS) {
-                    await Geolocator.openLocationSettings();
-                  } else if (Platform.isAndroid) {
-                    await Geolocator.openAppSettings();
-                  }
-                  }),
+        // showCupertinoDialog(
+        //     context: context,
+        //     builder: (dialogContext) {
+        //       return CupertinoAlertDialog(
+        //         content: Text(t('locationPermissionsDenied')),
+        //         actions: [
+        //           CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+        //             Navigator.pop(dialogContext);
+        //           }),
+        //           CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
+        //               Navigator.pop(dialogContext);
+        //           if (Platform.isIOS) {
+        //             await Geolocator.openLocationSettings();
+        //           } else if (Platform.isAndroid) {
+        //             await Geolocator.openAppSettings();
+        //           }
+        //           }),
                   
-                ],
-              );
-            });
+        //         ],
+        //       );
+        //     });
         return Future.error(t('locationPermissionsDenied'));
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      showCupertinoDialog(
-          context: context,
-          builder: (dialogContext) {
-            return CupertinoAlertDialog(
-              content: Text(t('locationPermissionsPermanentlyDenied')),
-               actions: [
-                CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
-                    Navigator.pop(dialogContext);
-                  }),
-                  CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
-                      Navigator.pop(dialogContext);
-                  if (Platform.isIOS) {
-                    await Geolocator.openLocationSettings();
-                  } else if (Platform.isAndroid) {
-                    await Geolocator.openAppSettings();
-                  }
-                  }),
+      // showCupertinoDialog(
+      //     context: context,
+      //     builder: (dialogContext) {
+      //       return CupertinoAlertDialog(
+      //         content: Text(t('locationPermissionsPermanentlyDenied')),
+      //          actions: [
+      //           CupertinoDialogAction(child: Text(t('cancel')), onPressed: () {
+      //               Navigator.pop(dialogContext);
+      //             }),
+      //             CupertinoDialogAction(child: Text(t('settings')), onPressed: () async {
+      //                 Navigator.pop(dialogContext);
+      //             if (Platform.isIOS) {
+      //               await Geolocator.openLocationSettings();
+      //             } else if (Platform.isAndroid) {
+      //               await Geolocator.openAppSettings();
+      //             }
+      //             }),
                   
-                ],
-            );
-          });
+      //           ],
+      //       );
+      //     });
 
       return Future.error(
           t('locationPermissionsPermanentlyDenied'));

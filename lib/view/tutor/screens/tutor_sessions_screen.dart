@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -31,6 +35,106 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
       LiveSessionAnalyticsBloc();
   final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
   TutorSessionTab _tab = TutorSessionTab.upcoming;
+  String _joiningSlotId = '';
+
+  Future<({String latitude, String longitude, String address})>
+  _fetchLocationForJoin() async {
+    final position = await _getGeoLocationPosition();
+    final address = await _getAddressFromPosition(position);
+    return (
+      latitude: position.latitude.toString(),
+      longitude: position.longitude.toString(),
+      address: address,
+    );
+  }
+
+  Future<String> _getAddressFromPosition(Position position) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isEmpty) return '';
+      final place = placemarks.first;
+      return [
+        (place.street ?? '').trim(),
+        (place.locality ?? '').trim(),
+        (place.administrativeArea ?? '').trim(),
+        (place.postalCode ?? '').trim(),
+        (place.country ?? '').trim(),
+      ].where((e) => e.isNotEmpty).join(', ');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> _showLocationSettingsDialog(String message) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const AppText('cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                if (Platform.isIOS) {
+                  await Geolocator.openLocationSettings();
+                } else if (Platform.isAndroid) {
+                  await Geolocator.openAppSettings();
+                } else {
+                  await Geolocator.openAppSettings();
+                }
+              },
+              child: const AppText('settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Position> _getGeoLocationPosition() async {
+    String t(String key) {
+      final language = AppLanguageState.isKorean.value
+          ? AppLanguage.korean
+          : AppLanguage.english;
+      return ConstString.text(language, key);
+    }
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await _showLocationSettingsDialog(t('locationServicesDisabled'));
+      throw Exception(t('locationServicesDisabled'));
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        await _showLocationSettingsDialog(t('locationPermissionsDenied'));
+        throw Exception(t('locationPermissionsDenied'));
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      await _showLocationSettingsDialog(
+        t('locationPermissionsPermanentlyDenied'),
+      );
+      throw Exception(t('locationPermissionsPermanentlyDenied'));
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -154,8 +258,9 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     final groups = bySlot.values.map((slotRows) {
       final sortedRows = [...slotRows]
         ..sort(
-          (a, b) =>
-              (a.studentName ?? '').trim().compareTo((b.studentName ?? '').trim()),
+          (a, b) => (a.studentName ?? '').trim().compareTo(
+            (b.studentName ?? '').trim(),
+          ),
         );
       final first = sortedRows.first;
       final date = (first.date ?? '').trim();
@@ -164,7 +269,9 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
       final timezone = sortedRows
           .map((row) => (row.studentTimezone ?? '').trim())
           .firstWhere((tz) => tz.isNotEmpty, orElse: () => '');
-      final time = end.isEmpty ? (start.isEmpty ? '-' : start) : '$start - $end';
+      final time = end.isEmpty
+          ? (start.isEmpty ? '-' : start)
+          : '$start - $end';
       return _SlotSessionGroup(
         dateLabel: date.isEmpty ? '-' : date,
         timeLabel: time,
@@ -209,6 +316,10 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                   ),
                   BlocListener<LiveSessionJoinBloc, LiveSessionJoinState>(
                     listener: (context, state) {
+                      if (state is! LiveSessionJoinLoading &&
+                          _joiningSlotId.isNotEmpty) {
+                        setState(() => _joiningSlotId = '');
+                      }
                       if (state is LiveSessionJoinError) {
                         commonAlertDialog(context, state.message);
                       }
@@ -329,12 +440,15 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                       onJoin: (row) {
                                         final tutorId = (row.tutorId ?? '')
                                             .trim();
+                                        final slotId = (row.slotId ?? '')
+                                            .trim();
                                         final date = (row.date ?? '').trim();
                                         final startTime = (row.startTime ?? '')
                                             .trim();
                                         final endTime = (row.endTime ?? '')
                                             .trim();
                                         if (tutorId.isEmpty ||
+                                            slotId.isEmpty ||
                                             date.isEmpty ||
                                             startTime.isEmpty ||
                                             endTime.isEmpty) {
@@ -344,19 +458,33 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                           );
                                           return;
                                         }
-                                        _liveSessionJoinBloc.add(
-                                          LiveSessionJoinRequested(
-                                            actorType: 'tutor',
-                                            actorId: tutorId,
-                                            tutorId: tutorId,
-                                            slotId: row.slotId ?? '',
-                                            date: date,
-                                            startTime: startTime,
-                                            endTime: endTime,
-                                            waitForHost: false,
-                                          ),
-                                        );
+                                        setState(() => _joiningSlotId = slotId);
+                                        _fetchLocationForJoin()
+                                            .then((location) {
+                                              _liveSessionJoinBloc.add(
+                                                LiveSessionJoinRequested(
+                                                  actorType: 'tutor',
+                                                  actorId: tutorId,
+                                                  tutorId: tutorId,
+                                                  slotId: slotId,
+                                                  date: date,
+                                                  startTime: startTime,
+                                                  endTime: endTime,
+                                                  latitude: location.latitude,
+                                                  longitude: location.longitude,
+                                                  address: location.address,
+                                                  waitForHost: false,
+                                                ),
+                                              );
+                                            })
+                                            .catchError((_) {
+                                              if (!mounted) return;
+                                              setState(
+                                                () => _joiningSlotId = '',
+                                              );
+                                            });
                                       },
+                                      joiningSlotId: _joiningSlotId,
                                       onAnalytics: (row) {
                                         final tutorId = (row.tutorId ?? '')
                                             .trim();
@@ -453,11 +581,13 @@ class _SlotSessionCard extends StatelessWidget {
   const _SlotSessionCard({
     required this.group,
     required this.onJoin,
+    required this.joiningSlotId,
     required this.onAnalytics,
   });
 
   final _SlotSessionGroup group;
   final ValueChanged<tutor_sessions.Data> onJoin;
+  final String joiningSlotId;
   final ValueChanged<tutor_sessions.Data> onAnalytics;
 
   @override
@@ -522,22 +652,43 @@ class _SlotSessionCard extends StatelessWidget {
                       ),
                     ),
                     if (showJoin)
-                      ElevatedButton(
-                        onPressed: canJoin ? () => onJoin(group.rows.first) : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: canJoin
-                              ? ConstColor.primaryBlue
-                              : ConstColor.grey,
-                          disabledBackgroundColor: ConstColor.grey,
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: Colors.white70,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              ConstSize.radiusM,
+                      BlocBuilder<LiveSessionJoinBloc, LiveSessionJoinState>(
+                        builder: (context, joinState) {
+                          final currentSlotId = (group.rows.first.slotId ?? '')
+                              .trim();
+                          final isJoiningThis =
+                              joinState is LiveSessionJoinLoading &&
+                              joiningSlotId.isNotEmpty &&
+                              joiningSlotId == currentSlotId;
+                          return ElevatedButton(
+                            onPressed: canJoin && !isJoiningThis
+                                ? () => onJoin(group.rows.first)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: canJoin
+                                  ? ConstColor.primaryBlue
+                                  : ConstColor.grey,
+                              disabledBackgroundColor: ConstColor.grey,
+                              foregroundColor: Colors.white,
+                              disabledForegroundColor: Colors.white70,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  ConstSize.radiusM,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        child: const AppText('join'),
+                            child: isJoiningThis
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const AppText('join'),
+                          );
+                        },
                       ),
                     if (showAnalytics)
                       IconButton(
@@ -570,9 +721,7 @@ class _SlotSessionCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],

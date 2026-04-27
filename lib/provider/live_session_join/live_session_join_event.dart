@@ -15,6 +15,9 @@ final class LiveSessionJoinRequested extends LiveSessionJoinEvent {
   final String date;
   final String startTime;
   final String endTime;
+  final String latitude;
+  final String longitude;
+  final String address;
   final bool waitForHost;
 
   const LiveSessionJoinRequested({
@@ -25,6 +28,9 @@ final class LiveSessionJoinRequested extends LiveSessionJoinEvent {
     required this.date,
     required this.startTime,
     required this.endTime,
+    required this.latitude,
+    required this.longitude,
+    required this.address,
     this.waitForHost = true,
   });
 
@@ -37,6 +43,9 @@ final class LiveSessionJoinRequested extends LiveSessionJoinEvent {
     date,
     startTime,
     endTime,
+    latitude,
+    longitude,
+    address,
     waitForHost,
   ];
 }

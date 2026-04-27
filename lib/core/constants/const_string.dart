@@ -221,7 +221,7 @@ class ConstString {
     'locationServicesDisabled': 'Location services are disabled.',
     'locationPermissionsDenied': 'Location permissions are denied.',
     'locationPermissionsPermanentlyDenied':
-        'Location permissions are permanently denied, we cannot request permissions.',
+        'Location permission has been permanently denied. To join the session, please enable location access in your device settings.',
   };
 
   static const Map<String, String> _ko = {
@@ -438,7 +438,7 @@ class ConstString {
     'locationServicesDisabled': '위치 서비스가 비활성화되어 있습니다.',
     'locationPermissionsDenied': '위치 권한이 거부되었습니다.',
     'locationPermissionsPermanentlyDenied':
-        '위치 권한이 영구적으로 거부되어 더 이상 요청할 수 없습니다.',
+        '위치 권한이 영구적으로 거부되었습니다. 세션에 참여하려면 기기 설정에서 위치 접근을 허용해 주십시오.',
   };
 
   static String text(AppLanguage language, String key) {

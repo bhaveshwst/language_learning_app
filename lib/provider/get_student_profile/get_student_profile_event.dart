@@ -9,13 +9,11 @@ sealed class GetStudentProfileEvent extends Equatable {
 
 final class FetchStudentProfile extends GetStudentProfileEvent {
   final String studentId;
-  final String latitude;
-  final String longitude;
-  final String address;
 
-  const FetchStudentProfile({required this.studentId, required this.latitude, required this.longitude, required this.address});
+
+  const FetchStudentProfile({required this.studentId});
 
   @override
-  List<Object?> get props => [studentId, latitude, longitude, address];
+  List<Object?> get props => [studentId];
 }
 

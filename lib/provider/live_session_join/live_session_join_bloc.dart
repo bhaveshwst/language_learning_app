@@ -10,7 +10,8 @@ import 'package:language_learning_app/model/live_session_join_model.dart';
 part 'live_session_join_event.dart';
 part 'live_session_join_state.dart';
 
-class LiveSessionJoinBloc extends Bloc<LiveSessionJoinEvent, LiveSessionJoinState> {
+class LiveSessionJoinBloc
+    extends Bloc<LiveSessionJoinEvent, LiveSessionJoinState> {
   LiveSessionJoinBloc() : super(LiveSessionJoinInitial()) {
     on<LiveSessionJoinRequested>(_onRequested);
     on<LiveSessionJoinReset>((event, emit) => emit(LiveSessionJoinInitial()));
@@ -48,6 +49,9 @@ class LiveSessionJoinBloc extends Bloc<LiveSessionJoinEvent, LiveSessionJoinStat
             date: event.date,
             startTime: event.startTime,
             endTime: event.endTime,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            address: event.address,
             waitForHost: false,
           ),
         );
@@ -60,7 +64,9 @@ class LiveSessionJoinBloc extends Bloc<LiveSessionJoinEvent, LiveSessionJoinStat
     }
   }
 
-  Future<LiveSessionJoinModel> _requestJoin(LiveSessionJoinRequested event) async {
+  Future<LiveSessionJoinModel> _requestJoin(
+    LiveSessionJoinRequested event,
+  ) async {
     final response = await AppHttpClient.post(
       ConstApiUrl.liveSessionJoinUrl,
       body: {
@@ -71,12 +77,16 @@ class LiveSessionJoinBloc extends Bloc<LiveSessionJoinEvent, LiveSessionJoinStat
         'date': event.date,
         'start_time': event.startTime,
         'end_time': event.endTime,
+        'latitude': event.latitude,
+        'longitude': event.longitude,
+        'address': event.address,
         'wait_for_host': event.waitForHost,
       },
     );
     final decoded = jsonDecode(response.body);
     if (response.statusCode != 200) {
-      final msg = (decoded is Map<String, dynamic> ? decoded['detail'] : null)
+      final msg =
+          (decoded is Map<String, dynamic> ? decoded['detail'] : null)
               ?.toString() ??
           'Unable to join live session.';
       throw Exception(msg);
