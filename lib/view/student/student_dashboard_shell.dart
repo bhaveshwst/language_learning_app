@@ -1,3 +1,7 @@
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:check_vpn_connection/check_vpn_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -13,8 +17,70 @@ class StudentDashboardShell extends StatefulWidget {
   State<StudentDashboardShell> createState() => _StudentDashboardShellState();
 }
 
-class _StudentDashboardShellState extends State<StudentDashboardShell> {
+class _StudentDashboardShellState extends State<StudentDashboardShell> with WidgetsBindingObserver {
   int _selectedTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkVPNStatus();
+  }
+
+    AppLifecycleState? _appLifecycleState;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _appLifecycleState = state;
+    });
+    switch (state) {
+      case AppLifecycleState.resumed:
+        log("AppLifecycleState.resumed");
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+        log("AppLifecycleState.paused");
+        break;
+      case AppLifecycleState.detached:
+        log("AppLifecycleState.detached");
+        break;
+      case AppLifecycleState.hidden:
+        log("AppLifecycleState.hidden");
+        break;
+    }
+  }
+
+  bool isAppInBackground() {
+    return _appLifecycleState != null &&
+        _appLifecycleState == AppLifecycleState.paused;
+  }
+
+  Future<void> _checkVPNStatus() async {
+    bool isVpnActive = await CheckVpnConnection.isVpnActive();
+    if ( isVpnActive == true && isAppInBackground() == false) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) {
+            return WillPopScope(
+              onWillPop: () async {
+                return false;
+              },
+              child: const AlertDialog(
+                title: Text(
+                  "Alert!",
+                  style: TextStyle(color: Colors.red),
+                ),
+                content: Text(
+                  "VPN connections are not permitted within this network environment to ensure the security and integrity of our systems. Please close APP and dissconnect VPN.",
+                ),
+              ),
+            );
+          },
+        );
+      
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +164,9 @@ class _NavItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? ConstColor.primaryBlue : ConstColor.textSecondary,
+              color: selected
+                  ? ConstColor.primaryBlue
+                  : ConstColor.textSecondary,
             ),
           ),
         ],

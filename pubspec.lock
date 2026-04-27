@@ -169,6 +169,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  check_vpn_connection:
+    dependency: "direct main"
+    description:
+      name: check_vpn_connection
+      sha256: "68029b66124eb5de2bc877f516ad9773f8b57e0a9ccf5c64609bb7cb8f14f3a0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   checked_yaml:
     dependency: transitive
     description:
