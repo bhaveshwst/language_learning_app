@@ -154,7 +154,16 @@ class _AppBootstrapState extends State<_AppBootstrap> {
   Future<String?> _fetchFcmTokenWithRetry({int attempts = 15}) async {
     for (int i = 0; i < attempts; i++) {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        String? apnsToken;
+        try {
+          apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        } on FirebaseException catch (e) {
+          if (e.code == 'apns-token-not-set') {
+            await Future.delayed(const Duration(seconds: 1));
+            continue;
+          }
+          rethrow;
+        }
         if (apnsToken == null) {
           await Future.delayed(const Duration(seconds: 1));
           continue;

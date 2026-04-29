@@ -36,6 +36,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed for live tutoring sessions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo access is needed for profile picture.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app uses your location to recommend nearby places of interest during your Konnected.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
