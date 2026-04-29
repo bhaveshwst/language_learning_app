@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.languageLearningApp</string>
+	<string>com.app.konnected</string>
 	<key>PROJECT_ID</key>
 	<string>language-learning-app-45b70</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:703522963799:ios:a3e90f6f69f86a9fa8be12</string>
+	<string>1:703522963799:ios:ee9c6f4f4d8b147fa8be12</string>
 </dict>
 </plist>

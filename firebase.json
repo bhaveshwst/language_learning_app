@@ -1,1 +1,41 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"language-learning-app-45b70","appId":"1:703522963799:android:5502c0c62b8a7e91a8be12","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"language-learning-app-45b70","appId":"1:703522963799:ios:a3e90f6f69f86a9fa8be12","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"language-learning-app-45b70","appId":"1:703522963799:ios:a3e90f6f69f86a9fa8be12","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"language-learning-app-45b70","configurations":{"android":"1:703522963799:android:5502c0c62b8a7e91a8be12","ios":"1:703522963799:ios:a3e90f6f69f86a9fa8be12","macos":"1:703522963799:ios:a3e90f6f69f86a9fa8be12","web":"1:703522963799:web:72e628cc575c1d03a8be12","windows":"1:703522963799:web:e7e72f6155586ca0a8be12"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "language-learning-app-45b70",
+                    "appId": "1:703522963799:android:116c8173d7a6cc2fa8be12",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "ios": {
+                "default": {
+                    "projectId": "language-learning-app-45b70",
+                    "appId": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "ios/Runner/GoogleService-Info.plist"
+                }
+            },
+            "macos": {
+                "default": {
+                    "projectId": "language-learning-app-45b70",
+                    "appId": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "macos/Runner/GoogleService-Info.plist"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "language-learning-app-45b70",
+                    "configurations": {
+                        "android": "1:703522963799:android:116c8173d7a6cc2fa8be12",
+                        "ios": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
+                        "macos": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
+                        "web": "1:703522963799:web:72e628cc575c1d03a8be12",
+                        "windows": "1:703522963799:web:e7e72f6155586ca0a8be12"
+                    }
+                }
+            }
+        }
+    }
+}

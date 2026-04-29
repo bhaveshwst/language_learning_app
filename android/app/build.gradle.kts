@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.language_learning_app"
+    namespace = "com.app.konnected"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -19,13 +19,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
+    kotlinOptions { jvmTarget = JavaVersion.VERSION_17.toString() }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.language_learning_app"
+        // TODO: Specify your own unique Application ID
+        // (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.app.konnected"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26
@@ -43,6 +42,4 @@ android {
     }
 }
 
-flutter {
-    source = "../.."
-}
+flutter { source = "../.." }

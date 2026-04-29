@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBGuDbVeXu6Yb-Ryh6JxrhJPM_yDjH51LI',
-    appId: '1:703522963799:android:5502c0c62b8a7e91a8be12',
+    appId: '1:703522963799:android:116c8173d7a6cc2fa8be12',
     messagingSenderId: '703522963799',
     projectId: 'language-learning-app-45b70',
     storageBucket: 'language-learning-app-45b70.firebasestorage.app',
@@ -60,20 +60,20 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCkc_PX3_LYktTOIcnPbziZ9pmasTsDf9k',
-    appId: '1:703522963799:ios:a3e90f6f69f86a9fa8be12',
+    appId: '1:703522963799:ios:ee9c6f4f4d8b147fa8be12',
     messagingSenderId: '703522963799',
     projectId: 'language-learning-app-45b70',
     storageBucket: 'language-learning-app-45b70.firebasestorage.app',
-    iosBundleId: 'com.example.languageLearningApp',
+    iosBundleId: 'com.app.konnected',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCkc_PX3_LYktTOIcnPbziZ9pmasTsDf9k',
-    appId: '1:703522963799:ios:a3e90f6f69f86a9fa8be12',
+    appId: '1:703522963799:ios:ee9c6f4f4d8b147fa8be12',
     messagingSenderId: '703522963799',
     projectId: 'language-learning-app-45b70',
     storageBucket: 'language-learning-app-45b70.firebasestorage.app',
-    iosBundleId: 'com.example.languageLearningApp',
+    iosBundleId: 'com.app.konnected',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

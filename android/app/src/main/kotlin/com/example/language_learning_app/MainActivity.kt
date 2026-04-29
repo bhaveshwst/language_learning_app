@@ -1,4 +1,4 @@
-package com.example.language_learning_app
+package com.app.konnected
 
 import io.flutter.embedding.android.FlutterActivity
 
