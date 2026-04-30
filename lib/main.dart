@@ -24,9 +24,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const _AppBootstrap());
 }
@@ -66,7 +64,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
       // Shared Preferences init
       await PrefUtils.init();
 
-       _initializeNotifications();
+      _initializeNotifications();
 
       // Remote Config
       await AppRemoteConfig.initialize();
@@ -91,15 +89,16 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
   Future<void> _initializeNotifications() async {
     try {
-      await AwesomeNotifications().initialize('resource://drawable/notification', [
-        NotificationChannel(
-          channelKey: 'silent_channel',
-          channelName: 'General Notifications',
-          channelDescription: 'App push notifications',
-          importance: NotificationImportance.High,
-          playSound: true,
-        ),
-      ]);
+      await AwesomeNotifications()
+          .initialize('resource://drawable/notification', [
+            NotificationChannel(
+              channelKey: 'silent_channel',
+              channelName: 'General Notifications',
+              channelDescription: 'App push notifications',
+              importance: NotificationImportance.High,
+              playSound: true,
+            ),
+          ]);
 
       await FirebaseMessaging.instance.requestPermission();
 
@@ -134,7 +133,7 @@ class _AppBootstrapState extends State<_AppBootstrap> {
             channelKey: 'silent_channel',
             title: notification.title ?? 'New Notification',
             body: notification.body ?? '',
-                icon: 'resource://drawable/notification',
+            icon: 'resource://drawable/notification',
             notificationLayout: NotificationLayout.Default,
             wakeUpScreen: true,
           ),
@@ -179,11 +178,21 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     return null;
   }
 
+  Widget _withFixedTextScale(Widget child, BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
+        builder: (context, child) =>
+            _withFixedTextScale(child ?? const SizedBox.shrink(), context),
         home: Scaffold(
           body: Center(
             child: Padding(
@@ -199,9 +208,11 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     }
 
     if (!_ready) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+        builder: (context, child) =>
+            _withFixedTextScale(child ?? const SizedBox.shrink(), context),
+        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -213,6 +224,14 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key, this.forceUpdateRequired = false});
 
   final bool forceUpdateRequired;
+
+  Widget _buildWithFixedTextScale(BuildContext context, Widget child) {
+    final mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+      child: ConnectivityOverlay(child: child),
+    );
+  }
 
   String? _inferUserTypeFromToken(String token) {
     try {
@@ -254,7 +273,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       builder: (context, child) =>
-          ConnectivityOverlay(child: child ?? const SizedBox.shrink()),
+          _buildWithFixedTextScale(context, child ?? const SizedBox.shrink()),
       home: forceUpdateRequired
           ? const ForceUpdateScreen()
           : ValueListenableBuilder<bool>(
@@ -296,3 +315,5 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+int zegoAppID = 0 ;

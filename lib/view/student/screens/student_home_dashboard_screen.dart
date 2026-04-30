@@ -9,6 +9,7 @@ import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
+import 'package:language_learning_app/main.dart';
 import 'package:language_learning_app/provider/get_student_profile/get_student_profile_bloc.dart';
 import 'package:language_learning_app/provider/recommended_tutor/recommended_tutor_bloc.dart';
 import 'package:language_learning_app/view/student/screens/booking_screen.dart';
@@ -229,6 +230,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
           BlocListener<GetStudentProfileBloc, GetStudentProfileState>(
             listener: (context, state) async {
               if (state is GetStudentProfileSuccess) {
+                zegoAppID = state.model.zegoAppID ?? 0;
                 await PrefUtils.setname(state.model.data?.displayName ?? '');
                 await PrefUtils.settimezone(state.model.data?.timezone ?? '');
                 await PrefUtils.setprimarylanguage(

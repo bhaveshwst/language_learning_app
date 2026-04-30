@@ -1,3 +1,5 @@
+import 'package:language_learning_app/main.dart';
+
 class LiveSessionConfig {
   LiveSessionConfig._();
 
@@ -6,9 +8,9 @@ class LiveSessionConfig {
   static const int _defaultAppId = 1896143529;
 
   /// Token login: leave [appSign] empty. App Sign is only for non-token login.
-  static const int appId = int.fromEnvironment(
+  static final int appId = int.fromEnvironment(
     'ZEGO_APP_ID',
-    defaultValue: _defaultAppId,
+    defaultValue: zegoAppID,
   );
   static const String appSign = String.fromEnvironment(
     'ZEGO_APP_SIGN',

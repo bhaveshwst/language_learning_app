@@ -14,6 +14,7 @@ import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
+import 'package:language_learning_app/main.dart';
 import 'package:language_learning_app/model/tutor_session_list_model.dart'
     as tutor_sessions;
 import 'package:language_learning_app/provider/get_tutor_profile/get_tutor_profile_bloc.dart';
@@ -50,6 +51,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     if (tutorId.isNotEmpty) {
       _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
       _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
+      
     }
     WidgetsBinding.instance.addObserver(this);
   }
@@ -313,6 +315,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                 await PrefUtils.setIsPublished(isPublished);
               }
 
+              
+                zegoAppID = state.model.zegoAppID ?? 0;
+
               if (!mounted) return;
               setState(() {});
             },
@@ -535,7 +540,7 @@ class _TutorMetricCard extends StatelessWidget {
             style: const TextStyle(
               color: ConstColor.textSecondary,
               fontWeight: FontWeight.w700,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 8),

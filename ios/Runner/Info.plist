@@ -36,8 +36,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed for live tutoring sessions.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Photo access is needed for profile picture.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app uses your location to recommend nearby places of interest during your Konnected.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -47,11 +45,14 @@
 	<string>This app uses your location to recommend nearby places of interest during your Konnected.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access is needed for live tutoring sessions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo access is needed for profile picture.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

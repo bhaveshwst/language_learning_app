@@ -1,12 +1,14 @@
 class GetTutorDetailsModel {
   String? responseCode;
+  int? zegoAppID;
   String? detail;
   Data? data;
 
-  GetTutorDetailsModel({this.responseCode, this.detail, this.data});
+  GetTutorDetailsModel({this.responseCode, this.detail, this.data, this.zegoAppID});
 
   GetTutorDetailsModel.fromJson(Map<String, dynamic> json) {
     responseCode = json['response_code'];
+    zegoAppID = json['zego_app_id'];
     detail = json['detail'];
     data = json['data'] != null ? Data.fromJson(json['data']) : null;
   }
@@ -14,6 +16,7 @@ class GetTutorDetailsModel {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['response_code'] = responseCode;
+    data['zego_app_id'] = zegoAppID;
     data['detail'] = detail;
     if (this.data != null) {
       data['data'] = this.data!.toJson();
