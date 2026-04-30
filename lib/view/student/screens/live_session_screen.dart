@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/constants/client_cookie.dart';
 import 'package:language_learning_app/core/constants/const_api_url.dart';
+import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/live_session_config.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
@@ -18,6 +19,14 @@ class LiveSessionScreen extends StatelessWidget {
 
   final LiveSessionJoinModel session;
   final bool isTutor;
+
+  String _displayInitial(ZegoUIKitUser? user) {
+    final source = (user?.name ?? user?.id ?? '').trim();
+    if (source.isEmpty) {
+      return '?';
+    }
+    return source[0].toUpperCase();
+  }
 
   /// Notifies backend when leaving the ZEGO UI. Backend must branch on [actor_id]:
   /// tutor → end session for the slot; student → participant leave only (session continues).
@@ -74,6 +83,27 @@ class LiveSessionScreen extends StatelessWidget {
     if (isTutor) {
       config.preview.showPreviewForHost = false;
     }
+    config.turnOnMicrophoneWhenJoining = false;
+    config.turnOnCameraWhenJoining = false;
+    config.avatarBuilder = (context, size, user, extraInfo) {
+      return Container(
+        width: size.width,
+        height: size.height,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: ConstColor.primaryBlue,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          _displayInitial(user),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size.shortestSide * 0.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    };
     config.duration.isVisible = true;
     config.bottomMenuBar.hostButtons = [
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
