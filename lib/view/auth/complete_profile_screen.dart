@@ -242,7 +242,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               Expanded(
                                 flex: 9,
                                 child: Text(
-                                  'Is Published?',
+                                  t('isPublished'),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15,

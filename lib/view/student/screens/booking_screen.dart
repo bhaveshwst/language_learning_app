@@ -10,6 +10,7 @@ import 'package:language_learning_app/model/tutor_avaibility_model.dart'
     as tutor_availability;
 import 'package:language_learning_app/provider/book_session/book_session_bloc.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
+import 'package:language_learning_app/view/student/screens/student_sessions_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 
@@ -271,6 +272,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         () {
                           Navigator.pop(context); // close dialog
                           Navigator.pop(context); // back
+                          
                         },
                       );
                     }
@@ -554,9 +556,12 @@ class _BookingScreenState extends State<BookingScreen> {
                                         );
                                         return;
                                       }
-                                      const topic = '';
+                                      String topic = "";
+
 
                                       final tutorId = widget.tutorId.trim();
+                                       topic = slot.topic ?? '';
+                                      
                                       final slotDate = (slot.date ?? '').trim();
                                       final startTime = (slot.startTime ?? '')
                                           .trim();

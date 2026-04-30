@@ -108,6 +108,7 @@ class ConstString {
     'remaining': 'Remaining',
     'join': 'Join',
     'upcomingSessionsTitle': 'Upcoming Sessions',
+    'isPublished': 'Do you want to publish your profile?',
 
     'settings': 'Settings',
     'profile': 'Profile',
@@ -426,6 +427,7 @@ class ConstString {
     'reportSessionTypeEmptyError': '신고 또는 후기를 선택해 주세요.',
     'reportSessionReasonEmptyError': '신고 사유를 입력해 주세요.',
     'reportSessionSuccessFallback': '신고가 접수되었습니다',
+    'isPublished': '프로필을 공개하시겠습니까?',
     'yes': '예',
     'createTutorProfile': '튜터 프로필 생성',
     'publishedListingPreview': '공개 목록 미리보기',

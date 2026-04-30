@@ -277,7 +277,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                   Expanded(
                                     flex: 9,
                                     child: Text(
-                                      'Is Published?',
+                                      t('isPublished'),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 15,
