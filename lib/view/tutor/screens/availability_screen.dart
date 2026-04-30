@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
@@ -115,13 +116,65 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     Navigator.of(context, rootNavigator: true).pop();
   }
 
+  Future<DateTime?> _showCupertinoDatePicker({
+    required DateTime initialDate,
+  }) async {
+    final now = DateTime.now();
+    final minDate = DateTime(now.year - 1);
+    final maxDate = DateTime(now.year + 5);
+    final safeInitialDate = initialDate.isBefore(minDate)
+        ? minDate
+        : initialDate;
+    DateTime tempPickedDate = safeInitialDate;
+    final result = await showModalBottomSheet<DateTime?>(
+      context: context,
+      builder: (context) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () => Navigator.pop(context, null),
+                      child: const AppText('cancel'),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () => Navigator.pop(context, tempPickedDate),
+                      child: const AppText('done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  minimumDate: minDate,
+                  maximumDate: maxDate,
+                  initialDateTime: safeInitialDate,
+                  onDateTimeChanged: (value) {
+                    tempPickedDate = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return result;
+  }
+
   Future<void> _pickFilterDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await _showCupertinoDatePicker(
       initialDate: _selectedFilterDate ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 5),
     );
     if (picked == null) {
       return;

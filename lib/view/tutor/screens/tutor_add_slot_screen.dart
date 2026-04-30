@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
@@ -68,53 +69,176 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
 
   int _minutesFromTime(TimeOfDay time) => (time.hour * 60) + time.minute;
 
+  TimeOfDay _addMinutesToTime(TimeOfDay time, int minutesToAdd) {
+    final now = DateTime.now();
+    final dateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    ).add(Duration(minutes: minutesToAdd));
+    return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
+  }
+
+  Future<DateTime?> _showCupertinoDatePicker({
+    required DateTime initialDate,
+  }) async {
+    final minDate = DateTime(2025);
+    final maxDate = DateTime(2030);
+    final safeInitialDate = initialDate.isBefore(minDate)
+        ? minDate
+        : initialDate;
+    DateTime tempPickedDate = safeInitialDate;
+    final result = await showModalBottomSheet<DateTime?>(
+      context: context,
+      builder: (context) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () => Navigator.pop(context, null),
+                      child: const AppText('cancel'),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () => Navigator.pop(context, tempPickedDate),
+                      child: const AppText('done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  minimumDate: minDate,
+                  maximumDate: maxDate,
+                  initialDateTime: safeInitialDate,
+                  onDateTimeChanged: (value) {
+                    tempPickedDate = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return result;
+  }
+
+  Future<TimeOfDay?> _showCupertinoTimePicker({
+    required TimeOfDay initialTime,
+  }) async {
+    final now = DateTime.now();
+    DateTime tempPickedDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      initialTime.hour,
+      initialTime.minute,
+    );
+    final result = await showModalBottomSheet<TimeOfDay?>(
+      context: context,
+      builder: (context) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () => Navigator.pop(context, null),
+                      child: const AppText('cancel'),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      onPressed: () {
+                        Navigator.pop(
+                          context,
+                          TimeOfDay(
+                            hour: tempPickedDateTime.hour,
+                            minute: tempPickedDateTime.minute,
+                          ),
+                        );
+                      },
+                      child: const AppText('done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  use24hFormat: false,
+                  initialDateTime: tempPickedDateTime,
+                  onDateTimeChanged: (value) {
+                    tempPickedDateTime = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return result;
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await _showCupertinoDatePicker(
       initialDate: _selectedDate ?? now,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(now.year + 5),
     );
     if (picked == null) {
       return;
     }
 
     setState(() {
+      final isDateChanged =
+          _selectedDate == null ||
+          _selectedDate!.year != picked.year ||
+          _selectedDate!.month != picked.month ||
+          _selectedDate!.day != picked.day;
       _selectedDate = picked;
       _dateController.text = _formatDate(picked);
+      if (isDateChanged) {
+        _selectedStartTime = null;
+        _selectedEndTime = null;
+        _startTimeController.clear();
+        _endTimeController.clear();
+      }
     });
     // _formKey.currentState?.validate();
   }
 
   Future<void> _pickStartTime() async {
-    final picked = await showTimePicker(
-      context: context,
+    final picked = await _showCupertinoTimePicker(
       initialTime: _selectedStartTime ?? TimeOfDay.now(),
     );
     if (picked == null) {
       return;
     }
 
+    final autoEndTime = _addMinutesToTime(picked, 30);
     setState(() {
       _selectedStartTime = picked;
+      _selectedEndTime = autoEndTime;
       _startTimeController.text = _formatTime(picked);
-    });
-    // _formKey.currentState?.validate();
-  }
-
-  Future<void> _pickEndTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedEndTime ?? TimeOfDay.now(),
-    );
-    if (picked == null) {
-      return;
-    }
-
-    setState(() {
-      _selectedEndTime = picked;
-      _endTimeController.text = _formatTime(picked);
+      _endTimeController.text = _formatTime(autoEndTime);
     });
     // _formKey.currentState?.validate();
   }
@@ -132,19 +256,20 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     });
 
     final isValid =
-        (_formKey.currentState?.validate() ?? false) &&
-        topicErrorKey == null;
+        (_formKey.currentState?.validate() ?? false) && topicErrorKey == null;
     if (!isValid) {
       return;
     }
-    _tutorAddSlotBloc.add(TutorAddSlotProvider(
-      tutorID: PrefUtils.gettutorid(),
-      date: _dateController.text,
-      startTime: _startTimeController.text,
-      endTime: _endTimeController.text,
-      topic: _selectedTopic,
-      description: _shortDescriptionController.text,
-    ));
+    _tutorAddSlotBloc.add(
+      TutorAddSlotProvider(
+        tutorID: PrefUtils.gettutorid(),
+        date: _dateController.text,
+        startTime: _startTimeController.text,
+        endTime: _endTimeController.text,
+        topic: _selectedTopic,
+        description: _shortDescriptionController.text,
+      ),
+    );
     // Navigator.pop(context);
   }
 
@@ -269,7 +394,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                 TextFormField(
                                   controller: _endTimeController,
                                   readOnly: true,
-                                  onTap: _pickEndTime,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: ConstString.text(
                                       language,

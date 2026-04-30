@@ -90,6 +90,7 @@ class ConstString {
     'deleteSuccess': 'Slot deleted successfully',
     'availabilitySlot': 'Availability slot',
     'cancel': 'Cancel',
+    'done': 'Done',
     'apply': 'Apply',
     'primary': 'Primary',
     'target': 'Target',
@@ -355,6 +356,7 @@ class ConstString {
 
     'conversation': '대화',
     'pronunciation': '발음',
+    'done': '완료',
     'homeworkHelp': '숙제 도움',
     'culture': '문화',
 
