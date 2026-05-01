@@ -10,10 +10,11 @@ import 'package:language_learning_app/model/student_profile/tutor_profile_create
 part 'tutor_profile_create_event.dart';
 part 'tutor_profile_create_state.dart';
 
-class TutorProfileCreateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileCreateState> {
+class TutorProfileCreateBloc
+    extends Bloc<TutorProfileCreateEvent, TutorProfileCreateState> {
   TutorProfileCreateBloc() : super(TutorProfileCreateInitial()) {
     on<TutorProfileCreateProvider>((event, emit) async {
-        emit(TutorProfileCreateLoading());
+      emit(TutorProfileCreateLoading());
       try {
         final reponse = await http.post(
           Uri.parse(ConstApiUrl.tutorcreateprofile),
@@ -22,7 +23,6 @@ class TutorProfileCreateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
             "Authorization": "Bearer ${PrefUtils.getToken()}",
           },
           body: jsonEncode({
-            "headline": event.headline,
             "name": event.displayname,
             "timezone": event.timezone,
             "bio": event.bio,
@@ -35,9 +35,7 @@ class TutorProfileCreateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
         if (reponse.statusCode == 200) {
           final data = jsonDecode(reponse.body);
           emit(
-            TutorProfileCreateSuccess(
-              TutorCreateProfileModel.fromJson(data),
-            ),
+            TutorProfileCreateSuccess(TutorCreateProfileModel.fromJson(data)),
           );
         } else {
           final data = jsonDecode(reponse.body);
@@ -50,11 +48,11 @@ class TutorProfileCreateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
   }
 }
 
-
-class TutorProfileUpdateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileCreateState> {
+class TutorProfileUpdateBloc
+    extends Bloc<TutorProfileCreateEvent, TutorProfileCreateState> {
   TutorProfileUpdateBloc() : super(TutorProfileCreateInitial()) {
     on<TutorProfileCreateProvider>((event, emit) async {
-        emit(TutorProfileCreateLoading());
+      emit(TutorProfileCreateLoading());
       try {
         final reponse = await http.put(
           Uri.parse(ConstApiUrl.tutorcreateprofile),
@@ -63,7 +61,6 @@ class TutorProfileUpdateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
             "Authorization": "Bearer ${PrefUtils.getToken()}",
           },
           body: jsonEncode({
-            "headline": event.headline,
             "name": event.displayname,
             "timezone": event.timezone,
             "bio": event.bio,
@@ -76,9 +73,7 @@ class TutorProfileUpdateBloc extends Bloc<TutorProfileCreateEvent, TutorProfileC
         if (reponse.statusCode == 200) {
           final data = jsonDecode(reponse.body);
           emit(
-            TutorProfileCreateSuccess(
-              TutorCreateProfileModel.fromJson(data),
-            ),
+            TutorProfileCreateSuccess(TutorCreateProfileModel.fromJson(data)),
           );
         } else {
           final data = jsonDecode(reponse.body);

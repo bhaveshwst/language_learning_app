@@ -4,6 +4,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/timezone_helper.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
@@ -30,7 +31,6 @@ class TutorProfileCompletePage extends StatefulWidget {
 
 class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
   String? _timezone;
-  late final bool _isTimezoneLocked;
   String? _primaryLanguage;
   String? _targetLanguage;
   final Set<String> _selectedInterests = {};
@@ -43,7 +43,6 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
       TutorProfileUpdateBloc();
 
   final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _headlinecontroller = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   List<TextEditingController> _topicControllers = [];
   bool _isPublished = false;
@@ -52,6 +51,46 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
       .map((c) => c.text.trim())
       .where((v) => v.isNotEmpty)
       .toList();
+
+  List<String> _languageItemsFromState(ProfileCommonApiSuccess state) {
+    return List<String>.from(state.profileCommonAPI.data?.language ?? []);
+  }
+
+  List<String> _tutorPrimaryLanguageOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (_targetLanguage == null) return options;
+    return options.where((e) => e != _targetLanguage).toList();
+  }
+
+  List<String> _tutorLanguageFluencyOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (_primaryLanguage == null) return options;
+    return options.where((e) => e != _primaryLanguage).toList();
+  }
+
+  void _syncTimezoneFromApiIfNeeded(ProfileCommonApiSuccess state) {
+    if ((_timezone ?? '').trim().isNotEmpty) return;
+    final timezoneOptions = List<String>.from(
+      state.profileCommonAPI.data?.timezone ?? [],
+    );
+    final matched = TimezoneHelper.matchDeviceTimezoneFromApi(timezoneOptions);
+    if (matched != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _timezone = matched);
+      });
+    }
+  }
+
+  Widget _fieldHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
 
   void _addTopicField() {
     setState(() {
@@ -90,16 +129,18 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
       _isPublished = PrefUtils.getIsPublished();
     }
 
-    _headlinecontroller.text = PrefUtils.getHeadline();
     _displayNameController.text = PrefUtils.getname();
     _timezone = PrefUtils.gettimezone() == "" ? null : PrefUtils.gettimezone();
-    _isTimezoneLocked = (_timezone ?? '').trim().isNotEmpty;
     _primaryLanguage = PrefUtils.getprimarylanguage() == ""
         ? null
         : PrefUtils.getprimarylanguage();
     _targetLanguage = PrefUtils.gettargetlanguage() == ""
         ? null
         : PrefUtils.gettargetlanguage();
+    if ((_primaryLanguage ?? '').trim().isNotEmpty &&
+        _primaryLanguage == _targetLanguage) {
+      _targetLanguage = null;
+    }
     _selectedInterests.addAll(PrefUtils.getintrested());
     _bioController.text = PrefUtils.getbio();
   }
@@ -130,9 +171,12 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
       ],
       child: Scaffold(
         appBar: AppBar(
-          leading: GestureDetector(onTap: () {
-            Navigator.pop(context);
-          },child: Icon(Icons.arrow_back_ios_new_rounded)),
+          leading: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Icon(Icons.arrow_back_ios_new_rounded),
+          ),
           title: Text(
             t('profileTitle'),
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
@@ -157,71 +201,65 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                   return Center(child: Text(state.message));
                 }
                 if (state is ProfileCommonApiSuccess) {
+                  _syncTimezoneFromApiIfNeeded(state);
                   return state.profileCommonAPI.data == null
                       ? SizedBox.shrink()
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: ConstSize.grid * 2),
-                            AuthTextField(
-                              hint: t('headline'),
-                              controller: _headlinecontroller,
-                            ),
-                            const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('displayName')),
                             AuthTextField(
                               hint: t('displayName'),
                               controller: _displayNameController,
                             ),
                             const SizedBox(height: ConstSize.grid * 2),
-                            IgnorePointer(
-                              ignoring: _isTimezoneLocked,
-                              child: Opacity(
-                                opacity: _isTimezoneLocked ? 0.65 : 1,
-                                child: AppDropdownButton2<String>(
-                                  hintText: t('timezone'),
-                                  value: _timezone,
-                                  items: List<String>.from(
-                                    state.profileCommonAPI.data?.timezone ?? [],
-                                  ),
-                                  itemLabelBuilder: (v) {
-                                    return v.toString();
-                                  },
-                                  onChanged: (v) {
-                                    if (_isTimezoneLocked) return;
-                                    setState(() => _timezone = v);
-                                  },
-                                ),
+                            _fieldHeader(t('timezone')),
+                            AppDropdownButton2<String>(
+                              hintText: t('timezone'),
+                              value: _timezone,
+                              items: List<String>.from(
+                                state.profileCommonAPI.data?.timezone ?? [],
                               ),
+                              itemLabelBuilder: (v) {
+                                return v.toString();
+                              },
+                              onChanged: (v) {
+                                setState(() => _timezone = v);
+                              },
                             ),
 
                             const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('primaryLanguage')),
                             AppDropdownButton2<String>(
-                              hintText: widget.role == UserRole.becomeTutor
-                                  ? t('primaryTaught')
-                                  : t('primaryLanguage'),
+                              hintText: t('primaryLanguage'),
                               value: _primaryLanguage,
-                              items: List<String>.from(
-                                state.profileCommonAPI.data?.language ?? [],
-                              ),
+                              items: _tutorPrimaryLanguageOptions(state),
                               itemLabelBuilder: (v) => v,
-                              onChanged: (v) =>
-                                  setState(() => _primaryLanguage = v),
+                              onChanged: (v) => setState(() {
+                                _primaryLanguage = v;
+                                if (_targetLanguage == v) {
+                                  _targetLanguage = null;
+                                }
+                              }),
                             ),
                             const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('languageFluency')),
                             AppDropdownButton2<String>(
-                              hintText: widget.role == UserRole.becomeTutor
-                                  ? t('targetSpoken')
-                                  : t('targetLanguage'),
+                              hintText: t('languageFluency'),
                               value: _targetLanguage,
-                              items: List<String>.from(
-                                state.profileCommonAPI.data?.language ?? [],
-                              ),
+                              items: _tutorLanguageFluencyOptions(state),
                               itemLabelBuilder: (v) => v,
-                              onChanged: (v) =>
-                                  setState(() => _targetLanguage = v),
+                              onChanged: (v) => setState(() {
+                                _targetLanguage = v;
+                                if (_primaryLanguage == v) {
+                                  _primaryLanguage = null;
+                                }
+                              }),
                             ),
                             if (widget.role == UserRole.becomeTutor) ...[
                               const SizedBox(height: ConstSize.grid * 2),
+                              _fieldHeader(t('topics')),
 
                               ..._topicControllers.asMap().entries.map((entry) {
                                 final index = entry.key;
@@ -311,6 +349,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                             ],
                             if (widget.role == UserRole.findTutor) ...[
                               const SizedBox(height: ConstSize.grid * 2),
+                              _fieldHeader(t('interests')),
                               Text(
                                 t('interests'),
                                 style: const TextStyle(
@@ -350,6 +389,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                               ),
                             ],
                             const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('shortBio')),
                             AuthTextField(
                               hint: t('shortBio'),
                               maxLines: 3,
@@ -385,9 +425,6 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                   await PrefUtils.settimezone(_timezone ?? '');
                                   await PrefUtils.setprimarylanguage(
                                     _primaryLanguage ?? '',
-                                  );
-                                  await PrefUtils.setHeadline(
-                                    _headlinecontroller.text.trim(),
                                   );
                                   await PrefUtils.setTopics(_topicValues);
                                   await PrefUtils.settargetlanguage(
@@ -428,24 +465,6 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                       t('enterDisplayNameError'),
                                     );
                                   } else if (widget.role ==
-                                          UserRole.becomeTutor &&
-                                      _headlinecontroller.text.trim().isEmpty) {
-                                    commonAlertDialog(
-                                      context,
-                                      t('enterHeadlineError'),
-                                    );
-                                  } else if (widget.role ==
-                                          UserRole.becomeTutor &&
-                                      _headlinecontroller.text
-                                          .trim()
-                                          .isNotEmpty &&
-                                      _headlinecontroller.text.trim().length <
-                                          10) {
-                                    commonAlertDialog(
-                                      context,
-                                      t('enterHeadlineErrorLength'),
-                                    );
-                                  } else if (widget.role ==
                                           UserRole.findTutor &&
                                       _primaryLanguage == null) {
                                     commonAlertDialog(
@@ -464,14 +483,14 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                       _primaryLanguage == null) {
                                     commonAlertDialog(
                                       context,
-                                      t('selectPrimaryTaughtError'),
+                                      t('selectPrimaryLanguageError'),
                                     );
                                   } else if (widget.role ==
                                           UserRole.becomeTutor &&
                                       _targetLanguage == null) {
                                     commonAlertDialog(
                                       context,
-                                      t('selectTargetSpokenError'),
+                                      t('selectLanguageFluencyError'),
                                     );
                                   } else if (widget.role ==
                                           UserRole.findTutor &&
@@ -487,15 +506,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                       context,
                                       t('enterShortBioError'),
                                     );
-                                  } else if (_bioController.text
-                                          .trim()
-                                          .isNotEmpty &&
-                                      _bioController.text.trim().length < 50) {
-                                    commonAlertDialog(
-                                      context,
-                                      t('enterShortBioErrorLength'),
-                                    );
-                                  } else if (widget.role ==
+                                  }  else if (widget.role ==
                                               UserRole.becomeTutor &&
                                           _topicControllers.isEmpty ||
                                       _topicControllers.every(
@@ -509,8 +520,6 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                   } else {
                                     _tutorProfileUpdateBloc.add(
                                       TutorProfileCreateProvider(
-                                        headline: _headlinecontroller.text
-                                            .trim(),
                                         displayname: _displayNameController.text
                                             .trim(),
                                         timezone: _timezone ?? '',

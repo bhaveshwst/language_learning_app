@@ -8,7 +8,8 @@ class CreateTutorProfileScreen extends StatefulWidget {
   const CreateTutorProfileScreen({super.key});
 
   @override
-  State<CreateTutorProfileScreen> createState() => _CreateTutorProfileScreenState();
+  State<CreateTutorProfileScreen> createState() =>
+      _CreateTutorProfileScreenState();
 }
 
 class _CreateTutorProfileScreenState extends State<CreateTutorProfileScreen> {
@@ -32,13 +33,6 @@ class _CreateTutorProfileScreenState extends State<CreateTutorProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const TextField(
-                decoration: InputDecoration(
-                  labelText: 'Tutor Headline',
-                  hintText: 'Friendly Korean tutor for teens',
-                ),
-              ),
-              const SizedBox(height: ConstSize.grid * 2),
               const TextField(
                 maxLines: 4,
                 decoration: InputDecoration(
@@ -76,7 +70,9 @@ class _CreateTutorProfileScreenState extends State<CreateTutorProfileScreen> {
                   return FilterChip(
                     label: Text(topic),
                     selected: selected,
-                    selectedColor: ConstColor.primaryBlue.withValues(alpha: 0.14),
+                    selectedColor: ConstColor.primaryBlue.withValues(
+                      alpha: 0.14,
+                    ),
                     side: const BorderSide(color: ConstColor.border),
                     onSelected: (value) {
                       setState(() {

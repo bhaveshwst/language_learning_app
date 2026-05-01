@@ -81,11 +81,19 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
   }
 
+  TimeOfDay _normalizeTo5MinuteStep(TimeOfDay time) {
+    final roundedMinute = ((time.minute / 5).round() * 5) % 60;
+    final carryHour = ((time.minute / 5).round() * 5) ~/ 60;
+    final hour = (time.hour + carryHour) % 24;
+    return TimeOfDay(hour: hour, minute: roundedMinute);
+  }
+
   Future<DateTime?> _showCupertinoDatePicker({
     required DateTime initialDate,
   }) async {
-    final minDate = DateTime(2025);
-    final maxDate = DateTime(2030);
+    final currentYear = DateTime.now().year;
+    final minDate = DateTime(currentYear - 5, 1, 1);
+    final maxDate = DateTime(currentYear + 5, 12, 31);
     final safeInitialDate = initialDate.isBefore(minDate)
         ? minDate
         : initialDate;
@@ -138,13 +146,14 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
   Future<TimeOfDay?> _showCupertinoTimePicker({
     required TimeOfDay initialTime,
   }) async {
+    final normalizedInitialTime = _normalizeTo5MinuteStep(initialTime);
     final now = DateTime.now();
     DateTime tempPickedDateTime = DateTime(
       now.year,
       now.month,
       now.day,
-      initialTime.hour,
-      initialTime.minute,
+      normalizedInitialTime.hour,
+      normalizedInitialTime.minute,
     );
     final result = await showModalBottomSheet<TimeOfDay?>(
       context: context,
@@ -184,6 +193,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.time,
                   use24hFormat: false,
+                  minuteInterval: 5,
                   initialDateTime: tempPickedDateTime,
                   onDateTimeChanged: (value) {
                     tempPickedDateTime = value;
@@ -243,6 +253,21 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     // _formKey.currentState?.validate();
   }
 
+  Future<void> _pickEndTime() async {
+    final baseInitial =
+        _selectedEndTime ??
+        (_selectedStartTime != null
+            ? _addMinutesToTime(_selectedStartTime!, 30)
+            : TimeOfDay.now());
+    final picked = await _showCupertinoTimePicker(initialTime: baseInitial);
+    if (picked == null) return;
+
+    setState(() {
+      _selectedEndTime = picked;
+      _endTimeController.text = _formatTime(picked);
+    });
+  }
+
   void _onSubmit(AppLanguage language) {
     FocusScope.of(context).unfocus();
 
@@ -285,7 +310,6 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(PrefUtils.gettutorid());
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => _tutorTopicsBloc),
@@ -394,7 +418,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                 TextFormField(
                                   controller: _endTimeController,
                                   readOnly: true,
-                                  enabled: false,
+                                  onTap: _pickEndTime,
                                   decoration: InputDecoration(
                                     labelText: ConstString.text(
                                       language,
@@ -423,6 +447,19 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                         language,
                                         'invalidTimeRangeError',
                                       );
+                                    }
+                                    if (_selectedStartTime != null &&
+                                        _selectedEndTime != null) {
+                                      final diffMinutes =
+                                          _minutesFromTime(_selectedEndTime!) -
+                                          _minutesFromTime(_selectedStartTime!);
+                                      if (diffMinutes < 5 ||
+                                          diffMinutes % 5 != 0) {
+                                        return ConstString.text(
+                                          language,
+                                          'timeIntervalFiveError',
+                                        );
+                                      }
                                     }
                                     return null;
                                   },

@@ -300,10 +300,10 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
               final bio = (data.bio ?? '').trim();
               if (bio.isNotEmpty) await PrefUtils.setbio(bio);
 
-              final taught = (data.languagesTaught ?? '').trim();
+              final taught = (data.languagesSpoken ?? '').trim();
               if (taught.isNotEmpty) await PrefUtils.settargetlanguage(taught);
 
-              final spoken = (data.languagesSpoken ?? '').trim();
+              final spoken = (data.languagesTaught ?? '').trim();
               if (spoken.isNotEmpty) await PrefUtils.setprimarylanguage(spoken);
 
               final topics =

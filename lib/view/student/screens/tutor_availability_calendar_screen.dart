@@ -8,7 +8,6 @@ import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/tutor_avaibility_model.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
 import 'package:language_learning_app/view/student/screens/booking_screen.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 class TutorAvailabilityCalendarScreen extends StatefulWidget {
   const TutorAvailabilityCalendarScreen({
@@ -28,10 +27,11 @@ class TutorAvailabilityCalendarScreen extends StatefulWidget {
 class _TutorAvailabilityCalendarScreenState
     extends State<TutorAvailabilityCalendarScreen> {
   final TutorAvailabilityBloc _tutorAvailabilityBloc = TutorAvailabilityBloc();
-  late final DateTime _firstDay;
-  late final DateTime _lastDay;
-  late DateTime _focusedDay;
-  DateTime? _selectedDay;
+  final ScrollController _rangeScrollController = ScrollController();
+  _AvailabilityViewMode _viewMode = _AvailabilityViewMode.week;
+  int _selectedRangeIndex = -1;
+  int _lastAutoScrolledIndex = -1;
+  _AvailabilityViewMode? _lastAutoScrolledMode;
 
   /// Grouped by date for fast lookup and calendar markers.
   Map<DateTime, List<Map<String, dynamic>>> _availabilityByDate = {};
@@ -39,29 +39,14 @@ class _TutorAvailabilityCalendarScreenState
   @override
   void initState() {
     super.initState();
-    _firstDay = DateTime.utc(1500, 1, 1);
-    _lastDay = DateTime.utc(3500, 12, 31);
-    _focusedDay = DateTime.now();
-    _selectedDay = _normalizeDate(_focusedDay);
-
     final tutorId = widget.tutorId.trim();
     if (tutorId.isNotEmpty) {
       _tutorAvailabilityBloc.add(FetchTutorAvailability(tutorId: tutorId));
     }
   }
 
-  @override
-  void dispose() {
-    _tutorAvailabilityBloc.close();
-    super.dispose();
-  }
-
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
-  }
-
-  List<Map<String, dynamic>> _eventsForDay(DateTime day) {
-    return _availabilityByDate[_normalizeDate(day)] ?? const [];
   }
 
   Map<DateTime, List<Map<String, dynamic>>> _groupAvailabilityByDateFromApi(
@@ -84,52 +69,146 @@ class _TutorAvailabilityCalendarScreenState
 
       final startTime = (row.startTime ?? '').trim();
       final endTime = (row.endTime ?? '').trim();
-
-      final timeLabel = endTime.isEmpty ? startTime : '$startTime - $endTime';
-      final timezone = (row.timezone ?? '').trim();
-      final timezoneLabel = timezone.isEmpty ? '-' : timezone;
       grouped.putIfAbsent(normalized, () => <Map<String, dynamic>>[]);
       grouped[normalized]!.add({
         'date': normalized,
-        'slots': [
-          {
-            'time': timeLabel.isEmpty ? '-' : timeLabel,
-            'durationMin': _tryComputeDurationMinutes(startTime, endTime),
-            'status': 'availableStatus',
-            'timezone': timezoneLabel,
-          },
-        ],
+        'startTime': startTime,
+        'endTime': endTime,
+        'timezone': (row.timezone ?? '').trim(),
       });
     }
 
     return grouped;
   }
 
-  int? _tryComputeDurationMinutes(String start, String end) {
-    final s = _tryParseTimeOfDay(start);
-    final e = _tryParseTimeOfDay(end);
-    if (s == null || e == null) return null;
-    final startMin = s.hour * 60 + s.minute;
-    final endMin = e.hour * 60 + e.minute;
-    final diff = endMin - startMin;
-    return diff > 0 ? diff : null;
+  List<_DateRangeItem> _weekRangesForMonth(DateTime monthDate) {
+    final firstDay = DateTime(monthDate.year, monthDate.month, 1);
+    final lastDay = DateTime(monthDate.year, monthDate.month + 1, 0);
+    final ranges = <_DateRangeItem>[];
+    var current = firstDay;
+    while (!current.isAfter(lastDay)) {
+      var end = current.add(const Duration(days: 6));
+      if (end.isAfter(lastDay)) {
+        end = lastDay;
+      }
+      ranges.add(
+        _DateRangeItem(
+          start: current,
+          end: end,
+          label:
+              '${_formatDayMonthYear(current)} - ${_formatDayMonthYear(end)}',
+        ),
+      );
+      current = end.add(const Duration(days: 1));
+    }
+    return ranges;
   }
 
-  TimeOfDay? _tryParseTimeOfDay(String input) {
-    final raw = input.trim();
-    if (raw.isEmpty) return null;
+  _DateRangeItem _monthRange(DateTime monthDate) {
+    final start = DateTime(monthDate.year, monthDate.month, 1);
+    final end = DateTime(monthDate.year, monthDate.month + 1, 0);
+    return _DateRangeItem(
+      start: start,
+      end: end,
+      label: '${_formatDayMonthYear(start)} - ${_formatDayMonthYear(end)}',
+    );
+  }
 
-    // Accept "HH:mm" or "HH:mm:ss"
-    final parts = raw.split(':');
-    if (parts.length >= 2) {
-      final h = int.tryParse(parts[0]);
-      final m = int.tryParse(parts[1]);
-      if (h != null && m != null && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-        return TimeOfDay(hour: h, minute: m);
+  List<_DateRangeItem> _currentRanges() {
+    final now = DateTime.now();
+    final startYear = now.year - 5;
+    final endYear = now.year + 5;
+    final months = <DateTime>[];
+    for (int year = startYear; year <= endYear; year++) {
+      for (int month = 1; month <= 12; month++) {
+        months.add(DateTime(year, month, 1));
       }
     }
+    if (_viewMode == _AvailabilityViewMode.week) {
+      return months.expand(_weekRangesForMonth).toList();
+    }
+    return months.map(_monthRange).toList();
+  }
 
-    return null;
+  String _formatDayMonth(DateTime date) {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = date.day.toString().padLeft(2, '0');
+    return '$day ${monthNames[date.month - 1]}';
+  }
+
+  String _formatDayMonthYear(DateTime date) {
+    return '${_formatDayMonth(date)} ${date.year}';
+  }
+
+  List<DateTime> _daysInRange(DateTime start, DateTime end) {
+    final days = <DateTime>[];
+    var current = _normalizeDate(start);
+    final normalizedEnd = _normalizeDate(end);
+    while (!current.isAfter(normalizedEnd)) {
+      days.add(current);
+      current = current.add(const Duration(days: 1));
+    }
+    return days;
+  }
+
+  int _defaultRangeIndexForMode() {
+    final now = DateTime.now();
+    final startYear = now.year - 5;
+    if (_viewMode == _AvailabilityViewMode.month) {
+      return ((now.year - startYear) * 12) + (now.month - 1);
+    }
+
+    int index = 0;
+    for (int year = startYear; year < now.year; year++) {
+      for (int month = 1; month <= 12; month++) {
+        index += _weekRangesForMonth(DateTime(year, month, 1)).length;
+      }
+    }
+    for (int month = 1; month < now.month; month++) {
+      index += _weekRangesForMonth(DateTime(now.year, month, 1)).length;
+    }
+    final weekInMonth = (now.day - 1) ~/ 7;
+    return index + weekInMonth;
+  }
+
+  void _scrollToSelectedRangeIfNeeded(List<_DateRangeItem> ranges) {
+    if (!mounted) return;
+    if (_selectedRangeIndex < 0 || _selectedRangeIndex >= ranges.length) return;
+    final shouldScroll =
+        _lastAutoScrolledIndex != _selectedRangeIndex ||
+        _lastAutoScrolledMode != _viewMode;
+    if (!shouldScroll) return;
+
+    _lastAutoScrolledIndex = _selectedRangeIndex;
+    _lastAutoScrolledMode = _viewMode;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_rangeScrollController.hasClients) return;
+      const estimatedChipWidth = 220.0;
+      final target = (_selectedRangeIndex * estimatedChipWidth);
+      final clamped = target.clamp(
+        0.0,
+        _rangeScrollController.position.maxScrollExtent,
+      );
+      _rangeScrollController.animateTo(
+        clamped,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -173,64 +252,125 @@ class _TutorAvailabilityCalendarScreenState
                     _availabilityByDate = _groupAvailabilityByDateFromApi(rows);
                   }
 
-                  final selectedDateData =
-                      _eventsForDay(_selectedDay ?? _focusedDay).expand((
-                        entry,
-                      ) {
-                        final List<dynamic> slots =
-                            (entry['slots'] as List<dynamic>? ?? []);
-                        return slots.cast<Map<String, dynamic>>();
-                      }).toList();
+                  final ranges = _currentRanges();
+                  if (_selectedRangeIndex < 0 ||
+                      _selectedRangeIndex >= ranges.length) {
+                    _selectedRangeIndex = _defaultRangeIndexForMode().clamp(
+                      0,
+                      ranges.length - 1,
+                    );
+                  }
+                  _scrollToSelectedRangeIfNeeded(ranges);
+                  final selectedRange = ranges[_selectedRangeIndex];
+                  final days = _daysInRange(
+                    selectedRange.start,
+                    selectedRange.end,
+                  );
+                  final daysWithData = days
+                      .where(
+                        (day) =>
+                            (_availabilityByDate[day] ?? const []).isNotEmpty,
+                      )
+                      .toList();
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(ConstSize.grid * 2),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TableCalendar<Map<String, dynamic>>(
-                          firstDay: _firstDay,
-                          lastDay: _lastDay,
-                          focusedDay: _focusedDay,
-                          availableCalendarFormats: {
-                            CalendarFormat.month: t('month'),
-                          },
-                          calendarFormat: CalendarFormat.month,
-                          selectedDayPredicate: (day) =>
-                              isSameDay(_selectedDay, day),
-                          eventLoader: _eventsForDay,
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = _normalizeDate(selectedDay);
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                          onPageChanged: (focusedDay) {
-                            _focusedDay = focusedDay;
-                          },
-                          headerStyle: const HeaderStyle(
-                            titleCentered: true,
-                            formatButtonVisible: false,
-                          ),
-                          calendarStyle: CalendarStyle(
-                            todayDecoration: BoxDecoration(
-                              color: ConstColor.accentTeal.withValues(
-                                alpha: 0.7,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ModeButton(
+                                selected:
+                                    _viewMode == _AvailabilityViewMode.week,
+                                label: t('weeklyCalendar'),
+                                onTap: () {
+                                  setState(() {
+                                    _viewMode = _AvailabilityViewMode.week;
+                                    final ranges = _currentRanges();
+                                    _selectedRangeIndex =
+                                        _defaultRangeIndexForMode().clamp(
+                                          0,
+                                          ranges.length - 1,
+                                        );
+                                  });
+                                },
                               ),
-                              shape: BoxShape.circle,
                             ),
-                            selectedDecoration: const BoxDecoration(
-                              color: ConstColor.primaryBlue,
-                              shape: BoxShape.circle,
+                            const SizedBox(width: ConstSize.grid),
+                            Expanded(
+                              child: _ModeButton(
+                                selected:
+                                    _viewMode == _AvailabilityViewMode.month,
+                                label: t('month'),
+                                onTap: () {
+                                  setState(() {
+                                    _viewMode = _AvailabilityViewMode.month;
+                                    final ranges = _currentRanges();
+                                    _selectedRangeIndex =
+                                        _defaultRangeIndexForMode().clamp(
+                                          0,
+                                          ranges.length - 1,
+                                        );
+                                  });
+                                },
+                              ),
                             ),
-                            markerDecoration: const BoxDecoration(
-                              color: ConstColor.primaryBlue,
-                              shape: BoxShape.circle,
-                            ),
-                            markersMaxCount: 1,
+                          ],
+                        ),
+                        const SizedBox(height: ConstSize.grid * 2),
+                        SizedBox(
+                          height: 44,
+                          child: ListView.separated(
+                            controller: _rangeScrollController,
+                            scrollDirection: Axis.horizontal,
+                            itemCount: ranges.length,
+                            separatorBuilder: (_, index) =>
+                                const SizedBox(width: ConstSize.grid),
+                            itemBuilder: (_, index) {
+                              final range = ranges[index];
+                              final selected = index == _selectedRangeIndex;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedRangeIndex = index;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: ConstSize.grid * 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? ConstColor.primaryBlue
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                      ConstSize.radiusM,
+                                    ),
+                                    border: Border.all(
+                                      color: selected
+                                          ? ConstColor.primaryBlue
+                                          : ConstColor.border,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    range.label,
+                                    style: TextStyle(
+                                      color: selected
+                                          ? Colors.white
+                                          : ConstColor.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(height: ConstSize.grid * 4),
-                        if (selectedDateData.isEmpty)
+                        const SizedBox(height: ConstSize.grid * 2),
+                        if (daysWithData.isEmpty)
                           Text(
                             t('noDataOnDate'),
                             style: const TextStyle(
@@ -238,20 +378,8 @@ class _TutorAvailabilityCalendarScreenState
                             ),
                           )
                         else
-                          ...selectedDateData.map((slotData) {
-                            final normalizedDate = _normalizeDate(
-                              (slotData['date'] as DateTime?) ?? _focusedDay,
-                            );
-                            final dateStr =
-                                '${normalizedDate.year.toString().padLeft(4, '0')}-'
-                                '${normalizedDate.month.toString().padLeft(2, '0')}-'
-                                '${normalizedDate.day.toString().padLeft(2, '0')}';
-                            final timeStr = (slotData['time'] ?? '').toString();
-                            final parts = timeStr.split('-');
-                            final startTime =
-                                (parts.isNotEmpty ? parts.first : '').trim();
-                            final endTime = (parts.length >= 2 ? parts[1] : '')
-                                .trim();
+                          ...daysWithData.map((day) {
+                            final slots = _availabilityByDate[day] ?? const [];
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.only(
@@ -261,52 +389,90 @@ class _TutorAvailabilityCalendarScreenState
                                 ConstSize.grid * 1.5,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F8FF),
+                                color: const Color(0xFFF7F9FD),
                                 borderRadius: BorderRadius.circular(
                                   ConstSize.radiusM,
                                 ),
                                 border: Border.all(color: ConstColor.border),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Center(
-                                    child: Text(
-                                      '${t('time')}: ${slotData['time']}\n${slotData['timezone']}',
+                                  Text(
+                                    _formatDayMonth(day),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => BookingScreen(
-                                            tutorName: widget.tutorName,
-                                            tutorId: widget.tutorId,
-                                            prefillSlotDate: dateStr,
-                                            prefillSlotStartTime: startTime,
-                                            prefillSlotEndTime: endTime,
+                                  const SizedBox(height: 4),
+                                  ...slots.map((slot) {
+                                    final start = (slot['startTime'] ?? '')
+                                        .toString();
+                                    final end = (slot['endTime'] ?? '')
+                                        .toString();
+                                    final timezone = (slot['timezone'] ?? '')
+                                        .toString();
+                                    final text = end.trim().isEmpty
+                                        ? start
+                                        : '$start - $end';
+                                    final dateStr =
+                                        '${day.year.toString().padLeft(4, '0')}-'
+                                        '${day.month.toString().padLeft(2, '0')}-'
+                                        '${day.day.toString().padLeft(2, '0')}';
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              timezone.isEmpty
+                                                  ? text
+                                                  : '$text ($timezone)',
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: ConstColor.primaryBlue,
-                                        borderRadius: BorderRadius.circular(6),
+                                          const SizedBox(width: ConstSize.grid),
+                                          SizedBox(
+                                            height: 30,
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                                backgroundColor:
+                                                    ConstColor.primaryBlue,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        BookingScreen(
+                                                          tutorName:
+                                                              widget.tutorName,
+                                                          tutorId:
+                                                              widget.tutorId,
+                                                          prefillSlotDate:
+                                                              dateStr,
+                                                          prefillSlotStartTime:
+                                                              start,
+                                                          prefillSlotEndTime:
+                                                              end,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(t('book')),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      child: Text(
-                                        t('book'),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                    );
+                                  }),
                                 ],
                               ),
                             );
@@ -320,6 +486,64 @@ class _TutorAvailabilityCalendarScreenState
           ),
         );
       },
+    );
+  }
+
+  @override
+  void dispose() {
+    _tutorAvailabilityBloc.close();
+    _rangeScrollController.dispose();
+    super.dispose();
+  }
+}
+
+enum _AvailabilityViewMode { week, month }
+
+class _DateRangeItem {
+  const _DateRangeItem({
+    required this.start,
+    required this.end,
+    required this.label,
+  });
+
+  final DateTime start;
+  final DateTime end;
+  final String label;
+}
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({
+    required this.selected,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: selected ? ConstColor.primaryBlue : Colors.white,
+          borderRadius: BorderRadius.circular(ConstSize.radiusM),
+          border: Border.all(
+            color: selected ? ConstColor.primaryBlue : ConstColor.border,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : ConstColor.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }

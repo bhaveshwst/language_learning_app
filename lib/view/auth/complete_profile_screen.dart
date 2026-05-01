@@ -4,6 +4,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/timezone_helper.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
@@ -44,7 +45,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       TutorProfileCreateBloc();
 
   final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _headlinecontroller = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   List<TextEditingController> _topicControllers = [];
   bool _isPublished = false;
@@ -53,6 +53,66 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       .map((c) => c.text.trim())
       .where((v) => v.isNotEmpty)
       .toList();
+
+  List<String> _languageItemsFromState(ProfileCommonApiSuccess state) {
+    return List<String>.from(state.profileCommonAPI.data?.language ?? []);
+  }
+
+  List<String> _tutorPrimaryLanguageOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (widget.role != UserRole.becomeTutor || _targetLanguage == null) {
+      return options;
+    }
+    return options.where((e) => e != _targetLanguage).toList();
+  }
+
+  List<String> _tutorLanguageFluencyOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (widget.role != UserRole.becomeTutor || _primaryLanguage == null) {
+      return options;
+    }
+    return options.where((e) => e != _primaryLanguage).toList();
+  }
+
+  List<String> _studentPrimaryLanguageOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (widget.role != UserRole.findTutor || _targetLanguage == null) {
+      return options;
+    }
+    return options.where((e) => e != _targetLanguage).toList();
+  }
+
+  List<String> _studentTargetLanguageOptions(ProfileCommonApiSuccess state) {
+    final options = _languageItemsFromState(state);
+    if (widget.role != UserRole.findTutor || _primaryLanguage == null) {
+      return options;
+    }
+    return options.where((e) => e != _primaryLanguage).toList();
+  }
+
+  void _syncTimezoneFromApiIfNeeded(ProfileCommonApiSuccess state) {
+    if ((_timezone ?? '').trim().isNotEmpty) return;
+    final timezoneOptions = List<String>.from(
+      state.profileCommonAPI.data?.timezone ?? [],
+    );
+    final matched = TimezoneHelper.matchDeviceTimezoneFromApi(timezoneOptions);
+    if (matched != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _timezone = matched);
+      });
+    }
+  }
+
+  Widget _fieldHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
 
   void _addTopicField() {
     setState(() {
@@ -78,8 +138,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (widget.role == UserRole.becomeTutor) {
       // Start with one topic field for tutor sign-up.
       _topicControllers = [TextEditingController()];
-      // Default is "No" when becoming a tutor.
-      _isPublished = false;
+      // Default is "Yes" when becoming a tutor.
+      _isPublished = true;
+      if ((_primaryLanguage ?? '').trim().isNotEmpty &&
+          _primaryLanguage == _targetLanguage) {
+        _targetLanguage = null;
+      }
     }
   }
 
@@ -123,6 +187,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               return Center(child: Text(state.message));
             }
             if (state is ProfileCommonApiSuccess) {
+              _syncTimezoneFromApiIfNeeded(state);
               return state.profileCommonAPI.data == null
                   ? SizedBox.shrink()
                   : Column(
@@ -135,20 +200,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (widget.role == UserRole.becomeTutor) ...[
-                          const SizedBox(height: ConstSize.grid * 2),
-                          AuthTextField(
-                            hint: t('headline'),
-                            controller: _headlinecontroller,
-                          ),
-                        ],
-
                         const SizedBox(height: ConstSize.grid * 2),
+                        _fieldHeader(t('displayName')),
                         AuthTextField(
                           hint: t('displayName'),
                           controller: _displayNameController,
                         ),
                         const SizedBox(height: ConstSize.grid * 2),
+                        _fieldHeader(t('timezone')),
                         AppDropdownButton2<String>(
                           hintText: t('timezone'),
                           value: _timezone,
@@ -162,32 +221,52 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         ),
 
                         const SizedBox(height: ConstSize.grid * 2),
+                        _fieldHeader(
+                          widget.role == UserRole.becomeTutor
+                              ? t('primaryLanguage')
+                              : t('yourPrimaryLanguage'),
+                        ),
                         AppDropdownButton2<String>(
                           hintText: widget.role == UserRole.becomeTutor
-                              ? t('primaryTaught')
-                              : t('primaryLanguage'),
+                              ? t('primaryLanguage')
+                              : t('yourPrimaryLanguage'),
                           value: _primaryLanguage,
-                          items: List<String>.from(
-                            state.profileCommonAPI.data?.language ?? [],
-                          ),
+                          items: widget.role == UserRole.becomeTutor
+                              ? _tutorPrimaryLanguageOptions(state)
+                              : _studentPrimaryLanguageOptions(state),
                           itemLabelBuilder: (v) => v,
-                          onChanged: (v) =>
-                              setState(() => _primaryLanguage = v),
+                          onChanged: (v) => setState(() {
+                            _primaryLanguage = v;
+                            if (_targetLanguage == v) {
+                              _targetLanguage = null;
+                            }
+                          }),
                         ),
                         const SizedBox(height: ConstSize.grid * 2),
+                        _fieldHeader(
+                          widget.role == UserRole.becomeTutor
+                              ? t('languageFluency')
+                              : t('targetLanguage'),
+                        ),
                         AppDropdownButton2<String>(
                           hintText: widget.role == UserRole.becomeTutor
-                              ? t('targetSpoken')
+                              ? t('languageFluency')
                               : t('targetLanguage'),
                           value: _targetLanguage,
-                          items: List<String>.from(
-                            state.profileCommonAPI.data?.language ?? [],
-                          ),
+                          items: widget.role == UserRole.becomeTutor
+                              ? _tutorLanguageFluencyOptions(state)
+                              : _studentTargetLanguageOptions(state),
                           itemLabelBuilder: (v) => v,
-                          onChanged: (v) => setState(() => _targetLanguage = v),
+                          onChanged: (v) => setState(() {
+                            _targetLanguage = v;
+                            if (_primaryLanguage == v) {
+                              _primaryLanguage = null;
+                            }
+                          }),
                         ),
                         if (widget.role == UserRole.becomeTutor) ...[
                           const SizedBox(height: ConstSize.grid * 2),
+                          _fieldHeader(t('topics')),
 
                           ..._topicControllers.asMap().entries.map((entry) {
                             final index = entry.key;
@@ -198,6 +277,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                     ? 0
                                     : ConstSize.grid,
                               ),
+
                               child: AuthTextField(
                                 hint: index == 0
                                     ? t('topic')
@@ -276,11 +356,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         ],
                         if (widget.role == UserRole.findTutor) ...[
                           const SizedBox(height: ConstSize.grid * 2),
-                          Text(
-                            t('interests'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: ConstSize.grid),
+                          _fieldHeader(t('interests')),
+
                           Wrap(
                             spacing: 3,
                             runSpacing: 0,
@@ -312,6 +389,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           ),
                         ],
                         const SizedBox(height: ConstSize.grid * 2),
+                        _fieldHeader(t('shortBio')),
                         AuthTextField(
                           hint: t('shortBio'),
                           maxLines: 3,
@@ -349,9 +427,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               );
                               await PrefUtils.settargetlanguage(
                                 _targetLanguage ?? '',
-                              );
-                              await PrefUtils.setHeadline(
-                                _headlinecontroller.text.trim(),
                               );
                               await PrefUtils.setTopics(_topicValues);
 
@@ -415,9 +490,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                     await PrefUtils.setprimarylanguage(
                                       _primaryLanguage ?? '',
                                     );
-                                    await PrefUtils.setHeadline(
-                                      _headlinecontroller.text.trim(),
-                                    );
                                     await PrefUtils.setTopics(_topicValues);
                                     await PrefUtils.settargetlanguage(
                                       _targetLanguage ?? '',
@@ -461,26 +533,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         t('enterDisplayNameError'),
                                       );
                                     } else if (widget.role ==
-                                            UserRole.becomeTutor &&
-                                        _headlinecontroller.text
-                                            .trim()
-                                            .isEmpty) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterHeadlineError'),
-                                      );
-                                    } else if (widget.role ==
-                                            UserRole.becomeTutor &&
-                                        _headlinecontroller.text
-                                            .trim()
-                                            .isNotEmpty &&
-                                        _headlinecontroller.text.trim().length <
-                                            10) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterHeadlineErrorLength'),
-                                      );
-                                    } else if (widget.role ==
                                             UserRole.findTutor &&
                                         _primaryLanguage == null) {
                                       commonAlertDialog(
@@ -499,14 +551,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         _primaryLanguage == null) {
                                       commonAlertDialog(
                                         context,
-                                        t('selectPrimaryTaughtError'),
+                                        t('selectPrimaryLanguageError'),
                                       );
                                     } else if (widget.role ==
                                             UserRole.becomeTutor &&
                                         _targetLanguage == null) {
                                       commonAlertDialog(
                                         context,
-                                        t('selectTargetSpokenError'),
+                                        t('selectLanguageFluencyError'),
                                       );
                                     } else if (widget.role ==
                                             UserRole.findTutor &&
@@ -521,15 +573,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       commonAlertDialog(
                                         context,
                                         t('enterShortBioError'),
-                                      );
-                                    } else if (_bioController.text
-                                            .trim()
-                                            .isNotEmpty &&
-                                        _bioController.text.trim().length <
-                                            50) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterShortBioErrorLength'),
                                       );
                                     } else if (widget.role ==
                                             UserRole.becomeTutor &&
@@ -546,8 +589,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       if (widget.role == UserRole.becomeTutor) {
                                         _tutorProfileCreateBloc.add(
                                           TutorProfileCreateProvider(
-                                            headline: _headlinecontroller.text
-                                                .trim(),
                                             displayname: _displayNameController
                                                 .text
                                                 .trim(),
