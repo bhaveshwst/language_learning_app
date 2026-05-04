@@ -14,6 +14,7 @@ import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TutorDashboardShell extends StatefulWidget {
   const TutorDashboardShell({super.key});
@@ -225,13 +226,17 @@ class _TutorSettingsScreen extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.description_outlined,
                     titleKey: 'termsAndConditions',
-                    onTap: () {},
+                    onTap: () {
+                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/terms"));
+                    },
                   ),
                   const Divider(height: 1, color: ConstColor.border),
                   _SettingsTile(
                     icon: Icons.lock_outline,
                     titleKey: 'privacyPolicy',
-                    onTap: () {},
+                    onTap: () {
+                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/privacy"));
+                    },
                   ),
                   // const Divider(height: 1, color: ConstColor.border),
                   // _SettingsTile(

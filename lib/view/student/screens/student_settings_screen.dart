@@ -12,6 +12,7 @@ import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/view/auth/app_welcome_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_profile_complete_page.dart';
 import 'package:language_learning_app/view/student/screens/student_report_list_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StudentSettingsScreen extends StatelessWidget {
   const StudentSettingsScreen({super.key});
@@ -97,13 +98,17 @@ class StudentSettingsScreen extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.description_outlined,
                     titleKey: 'termsAndConditions',
-                    onTap: () {},
+                    onTap: () {
+                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/terms"));
+                    },
                   ),
                   const Divider(height: 1, color: ConstColor.border),
                   _SettingsTile(
                     icon: Icons.lock_outline,
                     titleKey: 'privacyPolicy',
-                    onTap: () {},
+                    onTap: () {
+                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/privacy"));
+                    },
                   ),
                   const Divider(height: 1, color: ConstColor.border),
                   _SettingsTile(
