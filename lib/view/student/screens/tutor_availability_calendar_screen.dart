@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/tutor_avaibility_model.dart';
@@ -85,7 +86,6 @@ class _TutorAvailabilityCalendarScreenState
       final startTime = (row.startTime ?? '').trim();
       final endTime = (row.endTime ?? '').trim();
 
-      final timeLabel = endTime.isEmpty ? startTime : '$startTime - $endTime';
       final timezone = (row.timezone ?? '').trim();
       final timezoneLabel = timezone.isEmpty ? '-' : timezone;
       grouped.putIfAbsent(normalized, () => <Map<String, dynamic>>[]);
@@ -93,7 +93,8 @@ class _TutorAvailabilityCalendarScreenState
         'date': normalized,
         'slots': [
           {
-            'time': timeLabel.isEmpty ? '-' : timeLabel,
+            'startTime': startTime,
+            'endTime': endTime,
             'durationMin': _tryComputeDurationMinutes(startTime, endTime),
             'status': 'availableStatus',
             'timezone': timezoneLabel,
@@ -246,12 +247,16 @@ class _TutorAvailabilityCalendarScreenState
                                 '${normalizedDate.year.toString().padLeft(4, '0')}-'
                                 '${normalizedDate.month.toString().padLeft(2, '0')}-'
                                 '${normalizedDate.day.toString().padLeft(2, '0')}';
-                            final timeStr = (slotData['time'] ?? '').toString();
-                            final parts = timeStr.split('-');
                             final startTime =
-                                (parts.isNotEmpty ? parts.first : '').trim();
-                            final endTime = (parts.length >= 2 ? parts[1] : '')
-                                .trim();
+                                (slotData['startTime'] ?? '').toString().trim();
+                            final endTime =
+                                (slotData['endTime'] ?? '').toString().trim();
+                            final timeDisplay =
+                                TimeDisplayFormat.formatApiClockRangeForDisplay(
+                              startTime,
+                              endTime,
+                              Localizations.localeOf(context),
+                            );
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.only(
@@ -274,7 +279,7 @@ class _TutorAvailabilityCalendarScreenState
                                 children: [
                                   Center(
                                     child: Text(
-                                      '${t('time')}: ${slotData['time']}\n${slotData['timezone']}',
+                                      '${t('time')}: $timeDisplay\n${slotData['timezone']}',
                                     ),
                                   ),
                                   GestureDetector(

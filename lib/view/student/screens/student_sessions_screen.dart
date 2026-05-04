@@ -8,6 +8,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
@@ -680,6 +681,7 @@ class _TutorSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
     return Container(
       padding: const EdgeInsets.all(ConstSize.grid * 2),
       decoration: BoxDecoration(
@@ -746,7 +748,10 @@ class _TutorSessionCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.timeLabel,
+                              TimeDisplayFormat.formatSlotRangeLabelForDisplay(
+                                item.timeLabel,
+                                locale,
+                              ),
                               style: const TextStyle(
                                 color: ConstColor.primaryBlue,
                                 fontWeight: FontWeight.w600,
@@ -935,7 +940,10 @@ class _ReportSessionReasonDialogState
     extends State<_ReportSessionReasonDialog> {
   final TextEditingController _controller = TextEditingController();
   String? _selectedType;
+  /// 1–5 when user taps stars (Review only).
+  int? _rating;
   static const List<String> _reportTypes = ['Report', 'Review'];
+  static const String _reviewType = 'Review';
 
   String t(String key) => ConstString.text(widget.language, key);
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -61,10 +62,17 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     return '$year-$month-$day';
   }
 
-  String _formatTime(TimeOfDay time) {
+  /// 24-hour `HH:mm` for API payloads.
+  String _formatTime24h(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  /// 12-hour display for the read-only fields (API still uses [_formatTime24h]).
+  String _formatTime12hDisplay(TimeOfDay time, Locale locale) {
+    final dt = DateTime(2000, 1, 1, time.hour, time.minute);
+    return DateFormat.jm(locale.toString()).format(dt);
   }
 
   int _minutesFromTime(TimeOfDay time) => (time.hour * 60) + time.minute;
@@ -236,6 +244,8 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
   }
 
   Future<void> _pickStartTime() async {
+    if (!mounted) return;
+    final locale = Localizations.localeOf(context);
     final picked = await _showCupertinoTimePicker(
       initialTime: _selectedStartTime ?? TimeOfDay.now(),
     );
@@ -247,13 +257,15 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     setState(() {
       _selectedStartTime = picked;
       _selectedEndTime = autoEndTime;
-      _startTimeController.text = _formatTime(picked);
-      _endTimeController.text = _formatTime(autoEndTime);
+      _startTimeController.text = _formatTime12hDisplay(picked, locale);
+      _endTimeController.text = _formatTime12hDisplay(autoEndTime, locale);
     });
     // _formKey.currentState?.validate();
   }
 
   Future<void> _pickEndTime() async {
+    if (!mounted) return;
+    final locale = Localizations.localeOf(context);
     final baseInitial =
         _selectedEndTime ??
         (_selectedStartTime != null
@@ -264,7 +276,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
 
     setState(() {
       _selectedEndTime = picked;
-      _endTimeController.text = _formatTime(picked);
+      _endTimeController.text = _formatTime12hDisplay(picked, locale);
     });
   }
 
@@ -289,8 +301,12 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
       TutorAddSlotProvider(
         tutorID: PrefUtils.gettutorid(),
         date: _dateController.text,
-        startTime: _startTimeController.text,
-        endTime: _endTimeController.text,
+        startTime: _selectedStartTime != null
+            ? _formatTime24h(_selectedStartTime!)
+            : '',
+        endTime: _selectedEndTime != null
+            ? _formatTime24h(_selectedEndTime!)
+            : '',
         topic: _selectedTopic,
         description: _shortDescriptionController.text,
       ),

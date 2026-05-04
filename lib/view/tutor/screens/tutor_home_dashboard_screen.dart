@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
@@ -226,12 +227,10 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     return '$datePart · $timePart';
   }
 
-  String _bookingTimeRangeLine(tutor_sessions.Data row) {
+  String _bookingTimeRangeLine(tutor_sessions.Data row, Locale locale) {
     final start = (row.startTime ?? '').trim();
     final end = (row.endTime ?? '').trim();
-    if (start.isEmpty && end.isEmpty) return '-';
-    if (end.isEmpty) return start;
-    return '$start - $end';
+    return TimeDisplayFormat.formatApiClockRangeForDisplay(start, end, locale);
   }
 
   List<tutor_sessions.Data> _upcomingPreview(List<tutor_sessions.Data> rows) {
@@ -496,7 +495,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                                     ? (row.studentName ?? '').trim()
                                     : '-',
                                 time: _bookingScheduleLine(row, locale),
-                                focus: _bookingTimeRangeLine(row),
+                                focus: _bookingTimeRangeLine(row, locale),
                                 timezone: (row.studentTimezone ?? '').trim(),
                               ),
                               if (i < preview.length - 1)

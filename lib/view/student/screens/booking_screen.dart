@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
@@ -10,7 +11,6 @@ import 'package:language_learning_app/model/tutor_avaibility_model.dart'
     as tutor_availability;
 import 'package:language_learning_app/provider/book_session/book_session_bloc.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
-import 'package:language_learning_app/view/student/screens/student_sessions_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 
@@ -110,13 +110,17 @@ class _BookingScreenState extends State<BookingScreen> {
     super.dispose();
   }
 
-  String _slotDateTimeLabel(tutor_availability.Data s) {
+  String _slotDateTimeLabel(tutor_availability.Data s, Locale locale) {
     final date = (s.date ?? '').trim();
     final start = (s.startTime ?? '').trim();
     final end = (s.endTime ?? '').trim();
-    final time = end.isEmpty ? start : '$start - $end';
-    if (date.isEmpty) return time.isEmpty ? '-' : time;
-    if (time.isEmpty) return date;
+    final time = TimeDisplayFormat.formatApiClockRangeForDisplay(
+      start,
+      end,
+      locale,
+    );
+    if (date.isEmpty) return time == '-' ? '-' : time;
+    if (time == '-') return date;
     return '$date • $time';
   }
 
@@ -148,6 +152,7 @@ class _BookingScreenState extends State<BookingScreen> {
             itemBuilder: (_, index) {
               final slot = _slots[index];
               final isSelected = _selectedSlot == slot;
+              final locale = Localizations.localeOf(bottomSheetContext);
               return InkWell(
                 onTap: () => Navigator.pop(bottomSheetContext, slot),
                 child: Padding(
@@ -169,7 +174,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _slotDateTimeLabel(slot),
+                              _slotDateTimeLabel(slot, locale),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -481,6 +486,9 @@ class _BookingScreenState extends State<BookingScreen> {
                                               Text(
                                                 _slotDateTimeLabel(
                                                   _selectedSlot!,
+                                                  Localizations.localeOf(
+                                                    context,
+                                                  ),
                                                 ),
                                                 style: const TextStyle(
                                                   fontSize: 15,

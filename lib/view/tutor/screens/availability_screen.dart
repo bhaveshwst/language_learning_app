@@ -5,6 +5,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
@@ -406,8 +407,16 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           final language = isKorean
                                               ? AppLanguage.korean
                                               : AppLanguage.english;
+                                          final locale =
+                                              Localizations.localeOf(context);
+                                          final timeLine =
+                                              TimeDisplayFormat.formatApiClockRangeForDisplay(
+                                                (slot.startTime ?? '').trim(),
+                                                (slot.endTime ?? '').trim(),
+                                                locale,
+                                              );
                                           return Text(
-                                            '${ConstString.text(language, 'time')}: ${slot.startTime ?? '-'} - ${slot.endTime ?? '-'}',
+                                            '${ConstString.text(language, 'time')}: $timeLine',
                                           );
                                         },
                                       ),

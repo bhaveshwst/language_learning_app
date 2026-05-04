@@ -8,6 +8,7 @@ import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/constants/time_display_format.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
@@ -592,6 +593,13 @@ class _SlotSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final firstRow = group.rows.first;
+    final timeDisplay = TimeDisplayFormat.formatApiClockRangeForDisplay(
+      (firstRow.startTime ?? '').trim(),
+      (firstRow.endTime ?? '').trim(),
+      locale,
+    );
     final showJoin = group.status == 'current' || group.status == 'upcoming';
     final canJoin = group.status == 'current';
     final showAnalytics = group.status == 'past';
@@ -632,7 +640,7 @@ class _SlotSessionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            group.timeLabel,
+                            timeDisplay,
                             style: const TextStyle(
                               color: ConstColor.primaryBlue,
                               fontWeight: FontWeight.w700,
