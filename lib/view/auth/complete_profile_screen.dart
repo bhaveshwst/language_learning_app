@@ -35,6 +35,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _timezone;
   String? _primaryLanguage;
   String? _targetLanguage;
+
+  /// Tutor only: multiple "languages you speak" → serialized as `"English, Spanish"` for API/prefs.
+  final Set<String> _tutorSpokenLanguages = {};
   final Set<String> _selectedInterests = {};
 
   String t(String key) => ConstString.text(widget.language, key);
@@ -60,10 +63,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   List<String> _tutorPrimaryLanguageOptions(ProfileCommonApiSuccess state) {
     final options = _languageItemsFromState(state);
-    if (widget.role != UserRole.becomeTutor || _targetLanguage == null) {
+    if (widget.role != UserRole.becomeTutor) {
       return options;
     }
-    return options.where((e) => e != _targetLanguage).toList();
+    return options.where((e) => !_tutorSpokenLanguages.contains(e)).toList();
+  }
+
+  String _serializedTutorSpokenLanguages() {
+    final list = _tutorSpokenLanguages.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return list.join(', ');
   }
 
   List<String> _tutorLanguageFluencyOptions(ProfileCommonApiSuccess state) {
@@ -140,10 +149,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _topicControllers = [TextEditingController()];
       // Default is "Yes" when becoming a tutor.
       _isPublished = true;
-      if ((_primaryLanguage ?? '').trim().isNotEmpty &&
-          _primaryLanguage == _targetLanguage) {
-        _targetLanguage = null;
-      }
     }
   }
 
@@ -242,7 +247,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             itemLabelBuilder: (v) => v,
                             onChanged: (v) => setState(() {
                               _primaryLanguage = v;
-                              if (_targetLanguage == v) {
+                              if (widget.role == UserRole.becomeTutor) {
+                                _tutorSpokenLanguages.remove(v);
+                              } else if (_targetLanguage == v) {
                                 _targetLanguage = null;
                               }
                             }),
@@ -253,22 +260,48 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 ? t('languageFluency')
                                 : t('targetLanguage'),
                           ),
-                          AppDropdownButton2<String>(
-                            hintText: widget.role == UserRole.becomeTutor
-                                ? t('languageFluency')
-                                : t('targetLanguage'),
-                            value: _targetLanguage,
-                            items: widget.role == UserRole.becomeTutor
-                                ? _tutorLanguageFluencyOptions(state)
-                                : _studentTargetLanguageOptions(state),
-                            itemLabelBuilder: (v) => v,
-                            onChanged: (v) => setState(() {
-                              _targetLanguage = v;
-                              if (_primaryLanguage == v) {
-                                _primaryLanguage = null;
-                              }
-                            }),
-                          ),
+                          if (widget.role == UserRole.becomeTutor) ...[
+                            Wrap(
+                              spacing: 3,
+                              runSpacing: 0,
+                              children: _tutorLanguageFluencyOptions(state).map(
+                                (lang) {
+                                  final selected = _tutorSpokenLanguages
+                                      .contains(lang);
+                                  return FilterChip(
+                                    label: Text(lang),
+                                    selected: selected,
+                                    onSelected: (value) {
+                                      setState(() {
+                                        if (value) {
+                                          _tutorSpokenLanguages.add(lang);
+                                        } else {
+                                          _tutorSpokenLanguages.remove(lang);
+                                        }
+                                      });
+                                    },
+                                    selectedColor: ConstColor.primaryBlue
+                                        .withValues(alpha: 0.16),
+                                    side: const BorderSide(
+                                      color: ConstColor.border,
+                                    ),
+                                  );
+                                },
+                              ).toList(),
+                            ),
+                          ] else
+                            AppDropdownButton2<String>(
+                              hintText: t('targetLanguage'),
+                              value: _targetLanguage,
+                              items: _studentTargetLanguageOptions(state),
+                              itemLabelBuilder: (v) => v,
+                              onChanged: (v) => setState(() {
+                                _targetLanguage = v;
+                                if (_primaryLanguage == v) {
+                                  _primaryLanguage = null;
+                                }
+                              }),
+                            ),
                           if (widget.role == UserRole.becomeTutor) ...[
                             const SizedBox(height: ConstSize.grid * 2),
                             _fieldHeader(t('topics')),
@@ -497,7 +530,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       );
                                       await PrefUtils.setTopics(_topicValues);
                                       await PrefUtils.settargetlanguage(
-                                        _targetLanguage ?? '',
+                                        widget.role == UserRole.becomeTutor
+                                            ? _serializedTutorSpokenLanguages()
+                                            : (_targetLanguage ?? ''),
                                       );
                                       await PrefUtils.setintrested(
                                         widget.role == UserRole.becomeTutor
@@ -560,7 +595,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         );
                                       } else if (widget.role ==
                                               UserRole.becomeTutor &&
-                                          _targetLanguage == null) {
+                                          _tutorSpokenLanguages.isEmpty) {
                                         commonAlertDialog(
                                           context,
                                           t('selectLanguageFluencyError'),
@@ -602,7 +637,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                               primarytaught:
                                                   _primaryLanguage ?? '',
                                               targetspoken:
-                                                  _targetLanguage ?? '',
+                                                  _serializedTutorSpokenLanguages(),
                                               topics: _topicValues,
                                               bio: _bioController.text.trim(),
                                               ispublished: _isPublished == true

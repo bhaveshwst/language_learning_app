@@ -65,7 +65,7 @@ class ConstString {
     'timezoneLockedProfileHint':
         'Your timezone was saved when you first signed in and cannot be changed here.',
     'primaryLanguage': 'Subject you teach',
-    'yourPrimaryLanguage': '',
+    'yourPrimaryLanguage': 'Your Primary Language',
     'targetLanguage': 'Target Language',
     'primaryTaught': 'Primary Language',
     'targetSpoken': 'Language fluency',

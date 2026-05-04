@@ -35,6 +35,8 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
   bool _lockTimezoneEdit = false;
   String? _primaryLanguage;
   String? _targetLanguage;
+  /// Tutor (becomeTutor) only: multiple languages you speak → `"English, Spanish"` for API/prefs.
+  final Set<String> _tutorSpokenLanguages = {};
   final Set<String> _selectedInterests = {};
 
   String t(String key) => ConstString.text(widget.language, key);
@@ -60,8 +62,17 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
 
   List<String> _tutorPrimaryLanguageOptions(ProfileCommonApiSuccess state) {
     final options = _languageItemsFromState(state);
+    if (widget.role == UserRole.becomeTutor) {
+      return options.where((e) => !_tutorSpokenLanguages.contains(e)).toList();
+    }
     if (_targetLanguage == null) return options;
     return options.where((e) => e != _targetLanguage).toList();
+  }
+
+  String _serializedTutorSpokenLanguages() {
+    final list = _tutorSpokenLanguages.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return list.join(', ');
   }
 
   List<String> _tutorLanguageFluencyOptions(ProfileCommonApiSuccess state) {
@@ -138,12 +149,25 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
     _primaryLanguage = PrefUtils.getprimarylanguage() == ""
         ? null
         : PrefUtils.getprimarylanguage();
-    _targetLanguage = PrefUtils.gettargetlanguage() == ""
-        ? null
-        : PrefUtils.gettargetlanguage();
-    if ((_primaryLanguage ?? '').trim().isNotEmpty &&
-        _primaryLanguage == _targetLanguage) {
-      _targetLanguage = null;
+    final savedTarget = PrefUtils.gettargetlanguage().trim();
+    if (widget.role == UserRole.becomeTutor) {
+      if (savedTarget.isNotEmpty) {
+        for (final part in savedTarget.split(RegExp(r'\s*,\s*'))) {
+          final p = part.trim();
+          if (p.isNotEmpty) {
+            _tutorSpokenLanguages.add(p);
+          }
+        }
+      }
+      if ((_primaryLanguage ?? '').trim().isNotEmpty) {
+        _tutorSpokenLanguages.remove(_primaryLanguage);
+      }
+    } else {
+      _targetLanguage = savedTarget.isEmpty ? null : savedTarget;
+      if ((_primaryLanguage ?? '').trim().isNotEmpty &&
+          _primaryLanguage == _targetLanguage) {
+        _targetLanguage = null;
+      }
     }
     _selectedInterests.addAll(PrefUtils.getintrested());
     _bioController.text = PrefUtils.getbio();
@@ -252,25 +276,59 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                               itemLabelBuilder: (v) => v,
                               onChanged: (v) => setState(() {
                                 _primaryLanguage = v;
-                                if (_targetLanguage == v) {
+                                if (widget.role == UserRole.becomeTutor) {
+                                  _tutorSpokenLanguages.remove(v);
+                                } else if (_targetLanguage == v) {
                                   _targetLanguage = null;
                                 }
                               }),
                             ),
                             const SizedBox(height: ConstSize.grid * 2),
                             _fieldHeader(t('languageFluency')),
-                            AppDropdownButton2<String>(
-                              hintText: t('languageFluency'),
-                              value: _targetLanguage,
-                              items: _tutorLanguageFluencyOptions(state),
-                              itemLabelBuilder: (v) => v,
-                              onChanged: (v) => setState(() {
-                                _targetLanguage = v;
-                                if (_primaryLanguage == v) {
-                                  _primaryLanguage = null;
-                                }
-                              }),
-                            ),
+                            if (widget.role == UserRole.becomeTutor)
+                              Wrap(
+                                spacing: 3,
+                                runSpacing: 0,
+                                children: _tutorLanguageFluencyOptions(state)
+                                    .map((lang) {
+                                      final selected = _tutorSpokenLanguages
+                                          .contains(lang);
+                                      return FilterChip(
+                                        label: Text(lang),
+                                        selected: selected,
+                                        onSelected: (value) {
+                                          setState(() {
+                                            if (value) {
+                                              _tutorSpokenLanguages.add(lang);
+                                            } else {
+                                              _tutorSpokenLanguages.remove(
+                                                lang,
+                                              );
+                                            }
+                                          });
+                                        },
+                                        selectedColor: ConstColor.primaryBlue
+                                            .withValues(alpha: 0.16),
+                                        side: const BorderSide(
+                                          color: ConstColor.border,
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
+                              )
+                            else
+                              AppDropdownButton2<String>(
+                                hintText: t('languageFluency'),
+                                value: _targetLanguage,
+                                items: _tutorLanguageFluencyOptions(state),
+                                itemLabelBuilder: (v) => v,
+                                onChanged: (v) => setState(() {
+                                  _targetLanguage = v;
+                                  if (_primaryLanguage == v) {
+                                    _primaryLanguage = null;
+                                  }
+                                }),
+                              ),
                             if (widget.role == UserRole.becomeTutor) ...[
                               const SizedBox(height: ConstSize.grid * 2),
                               _fieldHeader(t('topics')),
@@ -442,7 +500,9 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                   );
                                   await PrefUtils.setTopics(_topicValues);
                                   await PrefUtils.settargetlanguage(
-                                    _targetLanguage ?? '',
+                                    widget.role == UserRole.becomeTutor
+                                        ? _serializedTutorSpokenLanguages()
+                                        : (_targetLanguage ?? ''),
                                   );
                                   await PrefUtils.setintrested(
                                     widget.role == UserRole.becomeTutor
@@ -501,7 +561,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                     );
                                   } else if (widget.role ==
                                           UserRole.becomeTutor &&
-                                      _targetLanguage == null) {
+                                      _tutorSpokenLanguages.isEmpty) {
                                     commonAlertDialog(
                                       context,
                                       t('selectLanguageFluencyError'),
@@ -538,7 +598,10 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                             .trim(),
                                         timezone: _timezone ?? '',
                                         primarytaught: _primaryLanguage ?? '',
-                                        targetspoken: _targetLanguage ?? '',
+                                        targetspoken:
+                                            widget.role == UserRole.becomeTutor
+                                            ? _serializedTutorSpokenLanguages()
+                                            : (_targetLanguage ?? ''),
                                         topics: _topicValues,
                                         bio: _bioController.text.trim(),
                                         ispublished: _isPublished == true
