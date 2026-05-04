@@ -46,6 +46,21 @@ class _SignupScreenState extends State<SignupScreen> {
     return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email);
   }
 
+  /// Tutor: any birth year from 1900 through this calendar year.
+  /// Student (ages 14–17): birth years derived from [DateTime.now] so they stay correct when the year rolls over.
+  List<int> get _birthYearItems {
+    final y = DateTime.now().year;
+    if (widget.role == UserRole.becomeTutor) {
+      return List.generate(y - 1900 + 1, (i) => y - i);
+    }
+    final youngestBirthYear = y - 14; // turns 14 this year
+    final oldestBirthYear = y - 17; // turns 17 this year
+    return List.generate(
+      youngestBirthYear - oldestBirthYear + 1,
+      (i) => youngestBirthYear - i,
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -67,6 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
 
             const SizedBox(height: ConstSize.grid * 3),
+            _fieldHeader(t('selectCountry')),
             AppDropdownButton2<String>(
               hintText: t('country'),
               value: _country,
@@ -84,6 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
             const SizedBox(height: ConstSize.grid * 2),
+            _fieldHeader(t('enterEmail')),
             AuthTextField(
               hint: t('schoolEmail'),
               controller: _emailController,
@@ -98,16 +115,19 @@ class _SignupScreenState extends State<SignupScreen> {
             //   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             // ),
             const SizedBox(height: 20),
+            _fieldHeader(t('selectBirthYear')),
             AppDropdownButton2<int>(
               hintText: t('birthYear'),
               value: _selectedYear,
-              items: List.generate(14, (index) => 2012 - index),
+              items: _birthYearItems,
               itemLabelBuilder: (year) => '$year',
               onChanged: (year) => setState(() => _selectedYear = year),
             ),
             const SizedBox(height: ConstSize.grid * 1),
             Text(
-              t('ageRule'),
+              widget.role == UserRole.becomeTutor
+                  ? ""
+                  : t('ageRule'),
               style: const TextStyle(
                 color: ConstColor.textSecondary,
                 fontSize: 12,
@@ -204,6 +224,15 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+  Widget _fieldHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }

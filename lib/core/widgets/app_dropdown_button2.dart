@@ -16,6 +16,7 @@ class AppDropdownButton2<T> extends StatefulWidget {
     required this.onChanged,
     this.value,
     this.theme = AppDropdownTheme.theme1,
+    this.enabled = true,
   });
 
   final String hintText;
@@ -24,6 +25,7 @@ class AppDropdownButton2<T> extends StatefulWidget {
   final ValueChanged<T?> onChanged;
   final T? value;
   final AppDropdownTheme theme;
+  final bool enabled;
 
   @override
   State<AppDropdownButton2<T>> createState() => _AppDropdownButton2State<T>();
@@ -85,10 +87,12 @@ class _AppDropdownButton2State<T> extends State<AppDropdownButton2<T>> {
               )
               .toList(),
           valueListenable: _valueListenable,
-          onChanged: (val) {
-            _valueListenable.value = val;
-            widget.onChanged(val);
-          },
+          onChanged: widget.enabled
+              ? (val) {
+                  _valueListenable.value = val;
+                  widget.onChanged(val);
+                }
+              : null,
           buttonStyleData: ButtonStyleData(
             height: ConstSize.buttonHeight,
             padding: const EdgeInsets.symmetric(horizontal: 0),

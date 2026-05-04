@@ -34,6 +34,8 @@ class StudentProfileCompletePage extends StatefulWidget {
 class _StudentProfileCompletePageState
     extends State<StudentProfileCompletePage> {
   String? _timezone;
+  /// True when a timezone was already saved locally (first-time signup / dashboard sync).
+  bool _lockTimezoneEdit = false;
   String? _primaryLanguage;
   String? _targetLanguage;
   final Set<String> _selectedInterests = {};
@@ -92,7 +94,9 @@ class _StudentProfileCompletePageState
     super.initState();
     _profileCommonApiBloc.add(FetchProfileCommonApi());
     _displayNameController.text = PrefUtils.getname();
-    _timezone = PrefUtils.gettimezone() == "" ? null : PrefUtils.gettimezone();
+    final savedTz = PrefUtils.gettimezone().trim();
+    _lockTimezoneEdit = savedTz.isNotEmpty;
+    _timezone = savedTz.isEmpty ? null : savedTz;
     _primaryLanguage = PrefUtils.getprimarylanguage() == ""
         ? null
         : PrefUtils.getprimarylanguage();
@@ -161,10 +165,21 @@ class _StudentProfileCompletePageState
                                 state.profileCommonAPI.data?.timezone ?? [],
                               ),
                               itemLabelBuilder: (v) => v.toString(),
+                              enabled: !_lockTimezoneEdit,
                               onChanged: (v) {
                                 setState(() => _timezone = v);
                               },
                             ),
+                            if (_lockTimezoneEdit) ...[
+                              const SizedBox(height: ConstSize.grid * 1),
+                              Text(
+                                t('timezoneLockedProfileHint'),
+                                style: const TextStyle(
+                                  color: ConstColor.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: ConstSize.grid * 2),
                             _fieldHeader(t('yourPrimaryLanguage')),
                             AppDropdownButton2<String>(
@@ -195,11 +210,8 @@ class _StudentProfileCompletePageState
                             ),
                             const SizedBox(height: ConstSize.grid * 2),
                             _fieldHeader(t('interests')),
-                            Text(
-                              t('interests'),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: ConstSize.grid),
+                            
+                            
                             Wrap(
                               spacing: 3,
                               runSpacing: 0,

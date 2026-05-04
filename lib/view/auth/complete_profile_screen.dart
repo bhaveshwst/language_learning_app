@@ -171,468 +171,476 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         BlocProvider(create: (context) => _studentProfileCreateBloc),
         BlocProvider(create: (context) => _tutorProfileCreateBloc),
       ],
-      child: AuthScreenShell(
-        child: BlocBuilder<ProfileCommonApiBloc, ProfileCommonApiState>(
-          builder: (context, state) {
-            if (state is ProfileCommonApiInitial) {
-              return SizedBox.shrink();
-            }
-            if (state is ProfileCommonApiLoading) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height / 1.5,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (state is ProfileCommonApiError) {
-              return Center(child: Text(state.message));
-            }
-            if (state is ProfileCommonApiSuccess) {
-              _syncTimezoneFromApiIfNeeded(state);
-              return state.profileCommonAPI.data == null
-                  ? SizedBox.shrink()
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t('profileTitle'),
-                          style: const TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _fieldHeader(t('displayName')),
-                        AuthTextField(
-                          hint: t('displayName'),
-                          controller: _displayNameController,
-                        ),
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _fieldHeader(t('timezone')),
-                        AppDropdownButton2<String>(
-                          hintText: t('timezone'),
-                          value: _timezone,
-                          items: List<String>.from(
-                            state.profileCommonAPI.data?.timezone ?? [],
-                          ),
-                          itemLabelBuilder: (v) {
-                            return v.toString();
-                          },
-                          onChanged: (v) => setState(() => _timezone = v),
-                        ),
+      child: PopScope(
+        canPop: false,
 
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _fieldHeader(
-                          widget.role == UserRole.becomeTutor
-                              ? t('primaryLanguage')
-                              : t('yourPrimaryLanguage'),
-                        ),
-                        AppDropdownButton2<String>(
-                          hintText: widget.role == UserRole.becomeTutor
-                              ? t('primaryLanguage')
-                              : t('yourPrimaryLanguage'),
-                          value: _primaryLanguage,
-                          items: widget.role == UserRole.becomeTutor
-                              ? _tutorPrimaryLanguageOptions(state)
-                              : _studentPrimaryLanguageOptions(state),
-                          itemLabelBuilder: (v) => v,
-                          onChanged: (v) => setState(() {
-                            _primaryLanguage = v;
-                            if (_targetLanguage == v) {
-                              _targetLanguage = null;
-                            }
-                          }),
-                        ),
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _fieldHeader(
-                          widget.role == UserRole.becomeTutor
-                              ? t('languageFluency')
-                              : t('targetLanguage'),
-                        ),
-                        AppDropdownButton2<String>(
-                          hintText: widget.role == UserRole.becomeTutor
-                              ? t('languageFluency')
-                              : t('targetLanguage'),
-                          value: _targetLanguage,
-                          items: widget.role == UserRole.becomeTutor
-                              ? _tutorLanguageFluencyOptions(state)
-                              : _studentTargetLanguageOptions(state),
-                          itemLabelBuilder: (v) => v,
-                          onChanged: (v) => setState(() {
-                            _targetLanguage = v;
-                            if (_primaryLanguage == v) {
-                              _primaryLanguage = null;
-                            }
-                          }),
-                        ),
-                        if (widget.role == UserRole.becomeTutor) ...[
-                          const SizedBox(height: ConstSize.grid * 2),
-                          _fieldHeader(t('topics')),
-
-                          ..._topicControllers.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final controller = entry.value;
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: index == _topicControllers.length - 1
-                                    ? 0
-                                    : ConstSize.grid,
-                              ),
-
-                              child: AuthTextField(
-                                hint: index == 0
-                                    ? t('topic')
-                                    : '${t('topic')} ${index + 1}',
-                                controller: controller,
-                                suffixIcon: index == 0
-                                    ? null
-                                    : IconButton(
-                                        onPressed: () =>
-                                            _removeTopicField(index),
-                                        icon: const Icon(
-                                          Icons.remove_circle_outline,
-                                        ),
-                                        tooltip: 'Remove',
-                                      ),
-                              ),
-                            );
-                          }),
-                          SizedBox(height: ConstSize.grid),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () {
-                                _addTopicField();
-                              },
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                decoration: BoxDecoration(
-                                  color: ConstColor.primaryBlue,
-                                  borderRadius: BorderRadius.circular(
-                                    ConstSize.radiusM,
-                                  ),
-                                ),
-                                child: Icon(Icons.add, color: Colors.white),
-                              ),
+        child: AuthScreenShell(
+          showAppBar: false,
+          child: BlocBuilder<ProfileCommonApiBloc, ProfileCommonApiState>(
+            builder: (context, state) {
+              if (state is ProfileCommonApiInitial) {
+                return SizedBox.shrink();
+              }
+              if (state is ProfileCommonApiLoading) {
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height / 1.5,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (state is ProfileCommonApiError) {
+                return Center(child: Text(state.message));
+              }
+              if (state is ProfileCommonApiSuccess) {
+                _syncTimezoneFromApiIfNeeded(state);
+                return state.profileCommonAPI.data == null
+                    ? SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 20),
+                          Text(
+                            t('profileTitle'),
+                            style: const TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: ConstSize.grid),
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 9,
-                                child: Text(
-                                  t('isPublished'),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 4,
-                                child: ToggleButtons(
-                                  isSelected: [_isPublished, !_isPublished],
-                                  onPressed: (index) {
-                                    setState(() {
-                                      _isPublished = index == 0;
-                                    });
-                                  },
-                                  borderRadius: BorderRadius.circular(
-                                    ConstSize.radiusM,
-                                  ),
-                                  selectedColor: ConstColor.textPrimary,
-                                  fillColor: ConstColor.primaryBlue,
-                                  color: ConstColor.textPrimary,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 50,
-                                    minHeight: 30,
-                                  ),
-                                  children: [Text(t('yes')), Text(t('no'))],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (widget.role == UserRole.findTutor) ...[
                           const SizedBox(height: ConstSize.grid * 2),
-                          _fieldHeader(t('interests')),
+                          _fieldHeader(t('displayName')),
+                          AuthTextField(
+                            hint: t('displayName'),
+                            controller: _displayNameController,
+                          ),
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _fieldHeader(t('timezone')),
+                          AppDropdownButton2<String>(
+                            hintText: t('timezone'),
+                            value: _timezone,
+                            items: List<String>.from(
+                              state.profileCommonAPI.data?.timezone ?? [],
+                            ),
+                            itemLabelBuilder: (v) {
+                              return v.toString();
+                            },
+                            onChanged: (v) => setState(() => _timezone = v),
+                          ),
 
-                          Wrap(
-                            spacing: 3,
-                            runSpacing: 0,
-                            children: state.profileCommonAPI.data!.interest!
-                                .map((interest) {
-                                  final selected = _selectedInterests.contains(
-                                    interest,
-                                  );
-                                  return FilterChip(
-                                    label: Text(interest),
-                                    selected: selected,
-                                    onSelected: (value) {
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _fieldHeader(
+                            widget.role == UserRole.becomeTutor
+                                ? t('primaryLanguage')
+                                : t('yourPrimaryLanguage'),
+                          ),
+                          AppDropdownButton2<String>(
+                            hintText: widget.role == UserRole.becomeTutor
+                                ? t('primaryLanguage')
+                                : t('yourPrimaryLanguage'),
+                            value: _primaryLanguage,
+                            items: widget.role == UserRole.becomeTutor
+                                ? _tutorPrimaryLanguageOptions(state)
+                                : _studentPrimaryLanguageOptions(state),
+                            itemLabelBuilder: (v) => v,
+                            onChanged: (v) => setState(() {
+                              _primaryLanguage = v;
+                              if (_targetLanguage == v) {
+                                _targetLanguage = null;
+                              }
+                            }),
+                          ),
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _fieldHeader(
+                            widget.role == UserRole.becomeTutor
+                                ? t('languageFluency')
+                                : t('targetLanguage'),
+                          ),
+                          AppDropdownButton2<String>(
+                            hintText: widget.role == UserRole.becomeTutor
+                                ? t('languageFluency')
+                                : t('targetLanguage'),
+                            value: _targetLanguage,
+                            items: widget.role == UserRole.becomeTutor
+                                ? _tutorLanguageFluencyOptions(state)
+                                : _studentTargetLanguageOptions(state),
+                            itemLabelBuilder: (v) => v,
+                            onChanged: (v) => setState(() {
+                              _targetLanguage = v;
+                              if (_primaryLanguage == v) {
+                                _primaryLanguage = null;
+                              }
+                            }),
+                          ),
+                          if (widget.role == UserRole.becomeTutor) ...[
+                            const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('topics')),
+
+                            ..._topicControllers.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final controller = entry.value;
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == _topicControllers.length - 1
+                                      ? 0
+                                      : ConstSize.grid,
+                                ),
+
+                                child: AuthTextField(
+                                  hint: index == 0
+                                      ? t('topic')
+                                      : '${t('topic')} ${index + 1}',
+                                  controller: controller,
+                                  suffixIcon: index == 0
+                                      ? null
+                                      : IconButton(
+                                          onPressed: () =>
+                                              _removeTopicField(index),
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                          ),
+                                          tooltip: 'Remove',
+                                        ),
+                                ),
+                              );
+                            }),
+                            SizedBox(height: ConstSize.grid),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () {
+                                  _addTopicField();
+                                },
+                                child: Container(
+                                  height: 40,
+                                  width: 40,
+                                  decoration: BoxDecoration(
+                                    color: ConstColor.primaryBlue,
+                                    borderRadius: BorderRadius.circular(
+                                      ConstSize.radiusM,
+                                    ),
+                                  ),
+                                  child: Icon(Icons.add, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: ConstSize.grid),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 9,
+                                  child: Text(
+                                    t('isPublished'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: ToggleButtons(
+                                    isSelected: [_isPublished, !_isPublished],
+                                    onPressed: (index) {
                                       setState(() {
-                                        if (value) {
-                                          _selectedInterests.add(interest);
-                                        } else {
-                                          _selectedInterests.remove(interest);
-                                        }
+                                        _isPublished = index == 0;
                                       });
                                     },
-                                    selectedColor: ConstColor.primaryBlue
-                                        .withValues(alpha: 0.16),
-                                    side: const BorderSide(
-                                      color: ConstColor.border,
+                                    borderRadius: BorderRadius.circular(
+                                      ConstSize.radiusM,
                                     ),
-                                  );
-                                })
-                                .toList(),
-                          ),
-                        ],
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _fieldHeader(t('shortBio')),
-                        AuthTextField(
-                          hint: t('shortBio'),
-                          maxLines: 3,
-                          controller: _bioController,
-                        ),
-
-                        const SizedBox(height: ConstSize.grid * 3),
-                        BlocListener<
-                          StudentProfileCreateBloc,
-                          StudentProfileCreateState
-                        >(
-                          listener: (context, state) async {
-                            if (state is StudentProfileCreateInitial) {
-                            } else if (state is StudentProfileCreateLoading) {
-                              showDialog(
-                                barrierDismissible: false,
-                                context: context,
-                                builder: (context) {
-                                  return Center(
-                                    child: const CircularProgressIndicator(),
-                                  );
-                                },
-                              );
-                            } else if (state is StudentProfileCreateError) {
-                              Navigator.pop(context);
-                              commonAlertDialog(context, state.message);
-                            } else if (state is StudentProfileCreateSuccess) {
-                              Navigator.pop(context);
-                              await PrefUtils.setname(
-                                _displayNameController.text.trim(),
-                              );
-                              await PrefUtils.settimezone(_timezone ?? '');
-                              await PrefUtils.setprimarylanguage(
-                                _primaryLanguage ?? '',
-                              );
-                              await PrefUtils.settargetlanguage(
-                                _targetLanguage ?? '',
-                              );
-                              await PrefUtils.setTopics(_topicValues);
-
-                              await PrefUtils.setintrested(
-                                widget.role == UserRole.becomeTutor
-                                    ? _topicValues
-                                    : _selectedInterests.toList(),
-                              );
-                              if (widget.role == UserRole.becomeTutor) {
-                                await PrefUtils.setIsPublished(_isPublished);
-                              }
-                              await PrefUtils.setbio(
-                                _bioController.text.trim(),
-                              );
-
-                              final Widget targetDashboard =
-                                  widget.role == UserRole.becomeTutor
-                                  ? const TutorDashboardShell()
-                                  : const StudentDashboardShell();
-
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => targetDashboard,
+                                    selectedColor: ConstColor.textPrimary,
+                                    fillColor: ConstColor.primaryBlue,
+                                    color: ConstColor.textPrimary,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 50,
+                                      minHeight: 30,
+                                    ),
+                                    children: [Text(t('yes')), Text(t('no'))],
+                                  ),
                                 ),
-                                (route) => false,
-                              );
-                            }
-                          },
-                          child:
-                              BlocListener<
-                                TutorProfileCreateBloc,
-                                TutorProfileCreateState
-                              >(
-                                listener: (context, state) async {
-                                  if (state is TutorProfileCreateInitial) {
-                                  } else if (state
-                                      is TutorProfileCreateLoading) {
-                                    showDialog(
-                                      barrierDismissible: false,
-                                      context: context,
-                                      builder: (context) {
-                                        return Center(
-                                          child:
-                                              const CircularProgressIndicator(),
-                                        );
+                              ],
+                            ),
+                          ],
+                          if (widget.role == UserRole.findTutor) ...[
+                            const SizedBox(height: ConstSize.grid * 2),
+                            _fieldHeader(t('interests')),
+
+                            Wrap(
+                              spacing: 3,
+                              runSpacing: 0,
+                              children: state.profileCommonAPI.data!.interest!
+                                  .map((interest) {
+                                    final selected = _selectedInterests
+                                        .contains(interest);
+                                    return FilterChip(
+                                      label: Text(interest),
+                                      selected: selected,
+                                      onSelected: (value) {
+                                        setState(() {
+                                          if (value) {
+                                            _selectedInterests.add(interest);
+                                          } else {
+                                            _selectedInterests.remove(interest);
+                                          }
+                                        });
                                       },
-                                    );
-                                  } else if (state is TutorProfileCreateError) {
-                                    Navigator.pop(context);
-                                    commonAlertDialog(context, state.message);
-                                  } else if (state
-                                      is TutorProfileCreateSuccess) {
-                                    Navigator.pop(context);
-                                    await PrefUtils.setname(
-                                      _displayNameController.text.trim(),
-                                    );
-                                    await PrefUtils.settimezone(
-                                      _timezone ?? '',
-                                    );
-                                    await PrefUtils.setprimarylanguage(
-                                      _primaryLanguage ?? '',
-                                    );
-                                    await PrefUtils.setTopics(_topicValues);
-                                    await PrefUtils.settargetlanguage(
-                                      _targetLanguage ?? '',
-                                    );
-                                    await PrefUtils.setintrested(
-                                      widget.role == UserRole.becomeTutor
-                                          ? _topicValues
-                                          : _selectedInterests.toList(),
-                                    );
-                                    if (widget.role == UserRole.becomeTutor) {
-                                      await PrefUtils.setIsPublished(
-                                        _isPublished,
-                                      );
-                                    }
-                                    await PrefUtils.setbio(
-                                      _bioController.text.trim(),
-                                    );
-
-                                    final Widget targetDashboard =
-                                        widget.role == UserRole.becomeTutor
-                                        ? const TutorDashboardShell()
-                                        : const StudentDashboardShell();
-
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => targetDashboard,
+                                      selectedColor: ConstColor.primaryBlue
+                                          .withValues(alpha: 0.16),
+                                      side: const BorderSide(
+                                        color: ConstColor.border,
                                       ),
-                                      (route) => false,
                                     );
-                                  }
-                                },
-                                child: AuthPrimaryButton(
-                                  text: t('continue'),
-                                  onPressed: () {
-                                    if (_displayNameController.text
-                                        .trim()
-                                        .isEmpty) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterDisplayNameError'),
+                                  })
+                                  .toList(),
+                            ),
+                          ],
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _fieldHeader(t('shortBio')),
+                          AuthTextField(
+                            hint: t('shortBio'),
+                            maxLines: 3,
+                            controller: _bioController,
+                          ),
+
+                          const SizedBox(height: ConstSize.grid * 3),
+                          BlocListener<
+                            StudentProfileCreateBloc,
+                            StudentProfileCreateState
+                          >(
+                            listener: (context, state) async {
+                              if (state is StudentProfileCreateInitial) {
+                              } else if (state is StudentProfileCreateLoading) {
+                                showDialog(
+                                  barrierDismissible: false,
+                                  context: context,
+                                  builder: (context) {
+                                    return Center(
+                                      child: const CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+                              } else if (state is StudentProfileCreateError) {
+                                Navigator.pop(context);
+                                commonAlertDialog(context, state.message);
+                              } else if (state is StudentProfileCreateSuccess) {
+                                Navigator.pop(context);
+                                await PrefUtils.setname(
+                                  _displayNameController.text.trim(),
+                                );
+                                await PrefUtils.settimezone(_timezone ?? '');
+                                await PrefUtils.setprimarylanguage(
+                                  _primaryLanguage ?? '',
+                                );
+                                await PrefUtils.settargetlanguage(
+                                  _targetLanguage ?? '',
+                                );
+                                await PrefUtils.setTopics(_topicValues);
+
+                                await PrefUtils.setintrested(
+                                  widget.role == UserRole.becomeTutor
+                                      ? _topicValues
+                                      : _selectedInterests.toList(),
+                                );
+                                if (widget.role == UserRole.becomeTutor) {
+                                  await PrefUtils.setIsPublished(_isPublished);
+                                }
+                                await PrefUtils.setbio(
+                                  _bioController.text.trim(),
+                                );
+
+                                final Widget targetDashboard =
+                                    widget.role == UserRole.becomeTutor
+                                    ? const TutorDashboardShell()
+                                    : const StudentDashboardShell();
+
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => targetDashboard,
+                                  ),
+                                  (route) => false,
+                                );
+                              }
+                            },
+                            child:
+                                BlocListener<
+                                  TutorProfileCreateBloc,
+                                  TutorProfileCreateState
+                                >(
+                                  listener: (context, state) async {
+                                    if (state is TutorProfileCreateInitial) {
+                                    } else if (state
+                                        is TutorProfileCreateLoading) {
+                                      showDialog(
+                                        barrierDismissible: false,
+                                        context: context,
+                                        builder: (context) {
+                                          return Center(
+                                            child:
+                                                const CircularProgressIndicator(),
+                                          );
+                                        },
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.findTutor &&
-                                        _primaryLanguage == null) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectPrimaryLanguageError'),
+                                    } else if (state
+                                        is TutorProfileCreateError) {
+                                      Navigator.pop(context);
+                                      commonAlertDialog(context, state.message);
+                                    } else if (state
+                                        is TutorProfileCreateSuccess) {
+                                      Navigator.pop(context);
+                                      await PrefUtils.setname(
+                                        _displayNameController.text.trim(),
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.findTutor &&
-                                        _targetLanguage == null) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectTargetLanguageError'),
+                                      await PrefUtils.settimezone(
+                                        _timezone ?? '',
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.becomeTutor &&
-                                        _primaryLanguage == null) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectPrimaryLanguageError'),
+                                      await PrefUtils.setprimarylanguage(
+                                        _primaryLanguage ?? '',
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.becomeTutor &&
-                                        _targetLanguage == null) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectLanguageFluencyError'),
+                                      await PrefUtils.setTopics(_topicValues);
+                                      await PrefUtils.settargetlanguage(
+                                        _targetLanguage ?? '',
                                       );
-                                    } else if (widget.role ==
-                                            UserRole.findTutor &&
-                                        _selectedInterests.isEmpty) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('selectInterestsError'),
+                                      await PrefUtils.setintrested(
+                                        widget.role == UserRole.becomeTutor
+                                            ? _topicValues
+                                            : _selectedInterests.toList(),
                                       );
-                                    } else if (_bioController.text
-                                        .trim()
-                                        .isEmpty) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterShortBioError'),
-                                      );
-                                    } else if (widget.role ==
-                                            UserRole.becomeTutor &&
-                                        (_topicControllers.isEmpty ||
-                                            _topicControllers.every(
-                                              (element) =>
-                                                  element.text.trim().isEmpty,
-                                            ))) {
-                                      commonAlertDialog(
-                                        context,
-                                        t('enterTopicError'),
-                                      );
-                                    } else {
                                       if (widget.role == UserRole.becomeTutor) {
-                                        _tutorProfileCreateBloc.add(
-                                          TutorProfileCreateProvider(
-                                            displayname: _displayNameController
-                                                .text
-                                                .trim(),
-                                            timezone: _timezone ?? '',
-                                            primarytaught:
-                                                _primaryLanguage ?? '',
-                                            targetspoken: _targetLanguage ?? '',
-                                            topics: _topicValues,
-                                            bio: _bioController.text.trim(),
-                                            ispublished: _isPublished == true
-                                                ? "True"
-                                                : "False",
-                                          ),
-                                        );
-                                      } else {
-                                        _studentProfileCreateBloc.add(
-                                          StudentProfileCreateProvider(
-                                            displayname: _displayNameController
-                                                .text
-                                                .trim(),
-                                            timezone: _timezone ?? '',
-                                            primarylanguage:
-                                                _primaryLanguage ?? '',
-                                            targetlanguage:
-                                                _targetLanguage ?? '',
-                                            intrested:
-                                                widget.role ==
-                                                    UserRole.becomeTutor
-                                                ? _topicValues
-                                                : _selectedInterests.toList(),
-                                            bio: _bioController.text.trim(),
-                                          ),
+                                        await PrefUtils.setIsPublished(
+                                          _isPublished,
                                         );
                                       }
+                                      await PrefUtils.setbio(
+                                        _bioController.text.trim(),
+                                      );
+
+                                      final Widget targetDashboard =
+                                          widget.role == UserRole.becomeTutor
+                                          ? const TutorDashboardShell()
+                                          : const StudentDashboardShell();
+
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => targetDashboard,
+                                        ),
+                                        (route) => false,
+                                      );
                                     }
                                   },
+                                  child: AuthPrimaryButton(
+                                    text: t('continue'),
+                                    onPressed: () {
+                                      if (_displayNameController.text
+                                          .trim()
+                                          .isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('enterDisplayNameError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.findTutor &&
+                                          _primaryLanguage == null) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectPrimaryLanguageError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.findTutor &&
+                                          _targetLanguage == null) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectTargetLanguageError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.becomeTutor &&
+                                          _primaryLanguage == null) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectPrimaryLanguageError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.becomeTutor &&
+                                          _targetLanguage == null) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectLanguageFluencyError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.findTutor &&
+                                          _selectedInterests.isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectInterestsError'),
+                                        );
+                                      } else if (_bioController.text
+                                          .trim()
+                                          .isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('enterShortBioError'),
+                                        );
+                                      } else if (widget.role ==
+                                              UserRole.becomeTutor &&
+                                          (_topicControllers.isEmpty ||
+                                              _topicControllers.every(
+                                                (element) =>
+                                                    element.text.trim().isEmpty,
+                                              ))) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('enterTopicError'),
+                                        );
+                                      } else {
+                                        if (widget.role ==
+                                            UserRole.becomeTutor) {
+                                          _tutorProfileCreateBloc.add(
+                                            TutorProfileCreateProvider(
+                                              displayname:
+                                                  _displayNameController.text
+                                                      .trim(),
+                                              timezone: _timezone ?? '',
+                                              primarytaught:
+                                                  _primaryLanguage ?? '',
+                                              targetspoken:
+                                                  _targetLanguage ?? '',
+                                              topics: _topicValues,
+                                              bio: _bioController.text.trim(),
+                                              ispublished: _isPublished == true
+                                                  ? "True"
+                                                  : "False",
+                                            ),
+                                          );
+                                        } else {
+                                          _studentProfileCreateBloc.add(
+                                            StudentProfileCreateProvider(
+                                              displayname:
+                                                  _displayNameController.text
+                                                      .trim(),
+                                              timezone: _timezone ?? '',
+                                              primarylanguage:
+                                                  _primaryLanguage ?? '',
+                                              targetlanguage:
+                                                  _targetLanguage ?? '',
+                                              intrested:
+                                                  widget.role ==
+                                                      UserRole.becomeTutor
+                                                  ? _topicValues
+                                                  : _selectedInterests.toList(),
+                                              bio: _bioController.text.trim(),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
-                        ),
-                      ],
-                    );
-            }
-            return SizedBox.shrink();
-          },
+                          ),
+                        ],
+                      );
+              }
+              return SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );

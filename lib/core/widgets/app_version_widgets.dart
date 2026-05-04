@@ -14,11 +14,7 @@ abstract final class AppVersionInfo {
 }
 
 class AppVersionLabel extends StatelessWidget {
-  const AppVersionLabel({
-    super.key,
-    required this.style,
-    this.textAlign,
-  });
+  const AppVersionLabel({super.key, required this.style, this.textAlign});
 
   final TextStyle style;
   final TextAlign? textAlign;
@@ -35,6 +31,38 @@ class AppVersionLabel extends StatelessWidget {
   }
 }
 
+class AppVersionWithLogo extends StatelessWidget {
+  const AppVersionWithLogo({
+    super.key,
+    required this.style,
+    this.textAlign,
+    this.logoSize = 25,
+    this.logoBottomSpacing = 2,
+  });
+
+  final TextStyle style;
+  final TextAlign? textAlign;
+  final double logoSize;
+  final double logoBottomSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Image.asset(
+          'assets/images/icon.png',
+          width: logoSize,
+          height: logoSize,
+        ),
+        SizedBox(height: logoBottomSpacing),
+        AppVersionLabel(style: style, textAlign: textAlign),
+      ],
+    );
+  }
+}
+
 /// Right side of [AppBar.actions] (gray, compact).
 class AppVersionAppBarAction extends StatelessWidget {
   const AppVersionAppBarAction({super.key});
@@ -44,12 +72,14 @@ class AppVersionAppBarAction extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: Center(
-        child: AppVersionLabel(
+        child: AppVersionWithLogo(
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade600,
           ),
+          logoSize: 25,
+          logoBottomSpacing: 1,
         ),
       ),
     );
@@ -64,7 +94,7 @@ class AppVersionHeaderBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 8),
-      child: AppVersionLabel(
+      child: AppVersionWithLogo(
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -83,7 +113,7 @@ class AppVersionFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: AppVersionLabel(
+      child: AppVersionWithLogo(
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
