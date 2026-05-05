@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:language_learning_app/core/services/firebase_messaging_background.dart';
+import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/theme/app_theme.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
@@ -276,16 +277,16 @@ class MyApp extends StatelessWidget {
           _buildWithFixedTextScale(context, child ?? const SizedBox.shrink()),
       home: forceUpdateRequired
           ? const ForceUpdateScreen()
-          : ValueListenableBuilder<bool>(
-              valueListenable: AppLanguageState.isKorean,
-              builder: (context, isKorean, _) {
+          : ValueListenableBuilder<AppLanguage>(
+              valueListenable: AppLanguageState.current,
+              builder: (context, language, _) {
                 final token = PrefUtils.getToken();
 
                 if (token.isEmpty) {
                   return HomePage(
-                    isKorean: isKorean,
+                    language: language,
                     onLanguageChanged: (value) {
-                      AppLanguageState.isKorean.value = value;
+                      AppLanguageState.setLanguage(value);
                     },
                   );
                 }
@@ -305,9 +306,9 @@ class MyApp extends StatelessWidget {
                 }
 
                 return HomePage(
-                  isKorean: isKorean,
+                  language: language,
                   onLanguageChanged: (value) {
-                    AppLanguageState.isKorean.value = value;
+                    AppLanguageState.setLanguage(value);
                   },
                 );
               },
@@ -316,4 +317,4 @@ class MyApp extends StatelessWidget {
   }
 }
 
-int zegoAppID = 0 ;
+int zegoAppID = 0;

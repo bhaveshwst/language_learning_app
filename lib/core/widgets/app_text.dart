@@ -22,10 +22,9 @@ class AppText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AppLanguageState.isKorean,
-      builder: (context, isKorean, _) {
-        final language = isKorean ? AppLanguage.korean : AppLanguage.english;
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: AppLanguageState.current,
+      builder: (context, language, _) {
         return Text(
           ConstString.text(language, textKey),
           style: style,
@@ -37,4 +36,3 @@ class AppText extends StatelessWidget {
     );
   }
 }
-

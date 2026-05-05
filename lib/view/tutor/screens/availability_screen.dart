@@ -69,9 +69,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   }
 
   Future<void> _confirmAndDelete(String slotId) async {
-    final language = AppLanguageState.isKorean.value
-        ? AppLanguage.korean
-        : AppLanguage.english;
+    final language = AppLanguageState.currentLanguage;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -203,9 +201,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           } else if (state is DeleteTutorSlotSuccess) {
             _hideDeleteLoader();
             _fetchSlots();
-            final language = AppLanguageState.isKorean.value
-                ? AppLanguage.korean
-                : AppLanguage.english;
+            final language = AppLanguageState.currentLanguage;
             final message = state.message.trim().isEmpty
                 ? ConstString.text(language, 'deleteSuccess')
                 : state.message;
@@ -269,9 +265,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         onTap: _pickFilterDate,
                         decoration: InputDecoration(
                           labelText: ConstString.text(
-                            AppLanguageState.isKorean.value
-                                ? AppLanguage.korean
-                                : AppLanguage.english,
+                            AppLanguageState.currentLanguage,
                             'date',
                           ),
                           hintText: 'YYYY-MM-DD',
@@ -302,12 +296,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       ),
                     ),
                     const SizedBox(width: ConstSize.grid / 2),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: AppLanguageState.isKorean,
-                      builder: (context, isKorean, _) {
-                        final language = isKorean
-                            ? AppLanguage.korean
-                            : AppLanguage.english;
+                    ValueListenableBuilder<AppLanguage>(
+                      valueListenable: AppLanguageState.current,
+                      builder: (context, language, _) {
                         return SizedBox(
                           height: 40,
                           width: 40,
@@ -384,13 +375,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 6),
-                                      ValueListenableBuilder<bool>(
+                                      ValueListenableBuilder<AppLanguage>(
                                         valueListenable:
-                                            AppLanguageState.isKorean,
-                                        builder: (context, isKorean, _) {
-                                          final language = isKorean
-                                              ? AppLanguage.korean
-                                              : AppLanguage.english;
+                                            AppLanguageState.current,
+                                        builder: (context, language, _) {
                                           return Text(
                                             '${ConstString.text(language, 'date')}: ${slot.date ?? '-'}',
                                             style: const TextStyle(
@@ -400,15 +388,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                         },
                                       ),
                                       const SizedBox(height: 2),
-                                      ValueListenableBuilder<bool>(
+                                      ValueListenableBuilder<AppLanguage>(
                                         valueListenable:
-                                            AppLanguageState.isKorean,
-                                        builder: (context, isKorean, _) {
-                                          final language = isKorean
-                                              ? AppLanguage.korean
-                                              : AppLanguage.english;
-                                          final locale =
-                                              Localizations.localeOf(context);
+                                            AppLanguageState.current,
+                                        builder: (context, language, _) {
+                                          final locale = Localizations.localeOf(
+                                            context,
+                                          );
                                           final timeLine =
                                               TimeDisplayFormat.formatApiClockRangeForDisplay(
                                                 (slot.startTime ?? '').trim(),
@@ -421,26 +407,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                         },
                                       ),
                                       const SizedBox(height: 2),
-                                      ValueListenableBuilder<bool>(
+                                      ValueListenableBuilder<AppLanguage>(
                                         valueListenable:
-                                            AppLanguageState.isKorean,
-                                        builder: (context, isKorean, _) {
-                                          final language = isKorean
-                                              ? AppLanguage.korean
-                                              : AppLanguage.english;
+                                            AppLanguageState.current,
+                                        builder: (context, language, _) {
                                           return Text(
                                             '${ConstString.text(language, 'topic')}: ${slot.topics?.trim().isNotEmpty == true ? slot.topics : '-'}',
                                           );
                                         },
                                       ),
                                       const SizedBox(height: 2),
-                                      ValueListenableBuilder<bool>(
+                                      ValueListenableBuilder<AppLanguage>(
                                         valueListenable:
-                                            AppLanguageState.isKorean,
-                                        builder: (context, isKorean, _) {
-                                          final language = isKorean
-                                              ? AppLanguage.korean
-                                              : AppLanguage.english;
+                                            AppLanguageState.current,
+                                        builder: (context, language, _) {
                                           return Text(
                                             '${ConstString.text(language, 'status')}: ${slot.status ?? '-'}',
                                             style: TextStyle(

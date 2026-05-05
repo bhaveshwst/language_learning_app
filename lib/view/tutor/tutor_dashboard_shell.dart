@@ -208,9 +208,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                     icon: Icons.person_outline,
                     titleKey: 'profile',
                     onTap: () {
-                      final language = AppLanguageState.isKorean.value
-                          ? AppLanguage.korean
-                          : AppLanguage.english;
+                      final language = AppLanguageState.currentLanguage;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -227,7 +225,9 @@ class _TutorSettingsScreen extends StatelessWidget {
                     icon: Icons.description_outlined,
                     titleKey: 'termsAndConditions',
                     onTap: () {
-                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/terms"));
+                      launchUrl(
+                        Uri.parse("https://konnected.wisdomsquare.net/terms"),
+                      );
                     },
                   ),
                   const Divider(height: 1, color: ConstColor.border),
@@ -235,7 +235,9 @@ class _TutorSettingsScreen extends StatelessWidget {
                     icon: Icons.lock_outline,
                     titleKey: 'privacyPolicy',
                     onTap: () {
-                      launchUrl(Uri.parse("https://konnected.wisdomsquare.net/privacy"));
+                      launchUrl(
+                        Uri.parse("https://konnected.wisdomsquare.net/privacy"),
+                      );
                     },
                   ),
                   // const Divider(height: 1, color: ConstColor.border),
@@ -260,9 +262,9 @@ class _TutorSettingsScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: ConstSize.grid),
-            ValueListenableBuilder<bool>(
-              valueListenable: AppLanguageState.isKorean,
-              builder: (context, isKorean, _) {
+            ValueListenableBuilder<AppLanguage>(
+              valueListenable: AppLanguageState.current,
+              builder: (context, language, _) {
                 return Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -274,16 +276,32 @@ class _TutorSettingsScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _LangButton(
-                          labelKey: 'english',
-                          active: !isKorean,
-                          onTap: () => AppLanguageState.isKorean.value = false,
+                          label: ConstString.text(
+                            AppLanguage.english,
+                            'english',
+                          ),
+                          active: language == AppLanguage.english,
+                          onTap: () =>
+                              AppLanguageState.setLanguage(AppLanguage.english),
                         ),
                       ),
                       Expanded(
                         child: _LangButton(
-                          labelKey: 'korean',
-                          active: isKorean,
-                          onTap: () => AppLanguageState.isKorean.value = true,
+                          label: ConstString.text(AppLanguage.korean, 'korean'),
+                          active: language == AppLanguage.korean,
+                          onTap: () =>
+                              AppLanguageState.setLanguage(AppLanguage.korean),
+                        ),
+                      ),
+                      Expanded(
+                        child: _LangButton(
+                          label: ConstString.text(
+                            AppLanguage.spanish,
+                            'spanish',
+                          ),
+                          active: language == AppLanguage.spanish,
+                          onTap: () =>
+                              AppLanguageState.setLanguage(AppLanguage.spanish),
                         ),
                       ),
                     ],
@@ -367,12 +385,12 @@ class _SectionCard extends StatelessWidget {
 
 class _LangButton extends StatelessWidget {
   const _LangButton({
-    required this.labelKey,
+    required this.label,
     required this.active,
     required this.onTap,
   });
 
-  final String labelKey;
+  final String label;
   final bool active;
   final VoidCallback onTap;
 
@@ -387,8 +405,8 @@ class _LangButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
-          child: AppText(
-            labelKey,
+          child: Text(
+            label,
             style: TextStyle(
               color: active ? Colors.white : ConstColor.textPrimary,
               fontWeight: FontWeight.w600,

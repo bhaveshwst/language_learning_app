@@ -253,12 +253,9 @@ class _BookingScreenState extends State<BookingScreen> {
           BlocProvider.value(value: _tutorAvailabilityBloc),
           BlocProvider.value(value: _bookSessionBloc),
         ],
-        child: ValueListenableBuilder<bool>(
-          valueListenable: AppLanguageState.isKorean,
-          builder: (context, isKorean, _) {
-            final language = isKorean
-                ? AppLanguage.korean
-                : AppLanguage.english;
+        child: ValueListenableBuilder<AppLanguage>(
+          valueListenable: AppLanguageState.current,
+          builder: (context, language, _) {
             String t(String key) => ConstString.text(language, key);
 
             return MultiBlocListener(
@@ -277,7 +274,6 @@ class _BookingScreenState extends State<BookingScreen> {
                         () {
                           Navigator.pop(context); // close dialog
                           Navigator.pop(context); // back
-                          
                         },
                       );
                     }
@@ -397,8 +393,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                       MaterialPageRoute(
                                         builder: (_) =>
                                             TutorAvailabilityCalendarScreen(
-                                              tutorName:
-                                                  widget.tutorName,
+                                              tutorName: widget.tutorName,
                                               tutorId: widget.tutorId,
                                             ),
                                       ),
@@ -566,10 +561,9 @@ class _BookingScreenState extends State<BookingScreen> {
                                       }
                                       String topic = "";
 
-
                                       final tutorId = widget.tutorId.trim();
-                                       topic = slot.topic ?? '';
-                                      
+                                      topic = slot.topic ?? '';
+
                                       final slotDate = (slot.date ?? '').trim();
                                       final startTime = (slot.startTime ?? '')
                                           .trim();

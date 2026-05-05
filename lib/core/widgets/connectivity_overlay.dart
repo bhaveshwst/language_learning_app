@@ -51,10 +51,9 @@ class _ConnectivityOverlayState extends State<ConnectivityOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AppLanguageState.isKorean,
-      builder: (context, isKorean, _) {
-        final lang = isKorean ? AppLanguage.korean : AppLanguage.english;
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: AppLanguageState.current,
+      builder: (context, lang, _) {
         final message = ConstString.text(lang, 'noInternetMessage');
 
         return Stack(
@@ -90,9 +89,7 @@ class _ConnectivityOverlayState extends State<ConnectivityOverlay> {
                             Expanded(
                               child: Text(
                                 message,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,

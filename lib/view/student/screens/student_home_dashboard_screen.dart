@@ -18,7 +18,6 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-
 class StudentHomeDashboardScreen extends StatefulWidget {
   const StudentHomeDashboardScreen({super.key});
 
@@ -40,10 +39,8 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   String _address = "";
   String _latitude = "";
   String _longitude = "";
-  String t(String key) => ConstString.text(
-    AppLanguageState.isKorean.value ? AppLanguage.korean : AppLanguage.english,
-    key,
-  );
+  String t(String key) =>
+      ConstString.text(AppLanguageState.currentLanguage, key);
 
   String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
 
@@ -100,7 +97,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     WidgetsBinding.instance.addObserver(this);
   }
 
-    Future<void> _getLocation() async {
+  Future<void> _getLocation() async {
     Position position = await _getGeoLocationPosition();
     _latitude = position.latitude.toString();
     _longitude = position.longitude.toString();
@@ -110,10 +107,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     await getAddressFromLatLong(position);
   }
 
-
-   Future<void> getAddressFromLatLong(Position position) async {
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
+  Future<void> getAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
 
     Placemark place = placemarks[0];
     _address =
@@ -121,8 +119,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     setState(() {});
   }
 
-
-    Future<Position> _getGeoLocationPosition() async {
+  Future<Position> _getGeoLocationPosition() async {
     bool serviceEnabled;
     LocationPermission permission;
     // Test if location services are enabled.
@@ -154,7 +151,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
         //             await Geolocator.openAppSettings();
         //           }
         //           }),
-                  
+
         //         ],
         //       );
         //     });
@@ -179,24 +176,27 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
       //               await Geolocator.openAppSettings();
       //             }
       //             }),
-                  
+
       //           ],
       //       );
       //     });
 
-      return Future.error(
-          t('locationPermissionsPermanentlyDenied'));
+      return Future.error(t('locationPermissionsPermanentlyDenied'));
     }
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse) {
       return await Geolocator.getCurrentPosition(
-          locationSettings:
-              LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+        ),
+      );
     }
     return await Geolocator.getCurrentPosition(
-        locationSettings:
-            LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
+    );
   }
 
   @override
@@ -288,13 +288,10 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             },
           ),
         ],
-        child: ValueListenableBuilder<bool>(
-          valueListenable: AppLanguageState.isKorean,
-          builder: (context, isKoreanAppLang, _) {
-            final language = isKoreanAppLang
-                ? AppLanguage.korean
-                : AppLanguage.english;
-            final studentPrimaryLanguage = isKoreanAppLang
+        child: ValueListenableBuilder<AppLanguage>(
+          valueListenable: AppLanguageState.current,
+          builder: (context, language, _) {
+            final studentPrimaryLanguage = language == AppLanguage.korean
                 ? 'Korean'
                 : 'English';
             final defaultTargetLanguage = studentPrimaryLanguage == 'Korean'
@@ -560,10 +557,9 @@ class _TutorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AppLanguageState.isKorean,
-      builder: (context, isKorean, _) {
-        final language = isKorean ? AppLanguage.korean : AppLanguage.english;
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: AppLanguageState.current,
+      builder: (context, language, _) {
         return Container(
           padding: const EdgeInsets.all(ConstSize.grid * 2),
           decoration: BoxDecoration(
@@ -771,12 +767,9 @@ class _FilterDialogState extends State<_FilterDialog> {
               Wrap(
                 spacing: 8,
                 children: widget.targetLanguages.map((lang) {
-                  final displayLang = ValueListenableBuilder<bool>(
-                    valueListenable: AppLanguageState.isKorean,
-                    builder: (context, isKorean, _) {
-                      final language = isKorean
-                          ? AppLanguage.korean
-                          : AppLanguage.english;
+                  final displayLang = ValueListenableBuilder<AppLanguage>(
+                    valueListenable: AppLanguageState.current,
+                    builder: (context, language, _) {
                       return Text(
                         lang == 'Korean'
                             ? ConstString.text(language, 'korean')
@@ -800,12 +793,9 @@ class _FilterDialogState extends State<_FilterDialog> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              ValueListenableBuilder<bool>(
-                valueListenable: AppLanguageState.isKorean,
-                builder: (context, isKorean, _) {
-                  final language = isKorean
-                      ? AppLanguage.korean
-                      : AppLanguage.english;
+              ValueListenableBuilder<AppLanguage>(
+                valueListenable: AppLanguageState.current,
+                builder: (context, language, _) {
                   return AppDropdownButton2<String>(
                     hintText: ConstString.text(language, 'availabilitySlot'),
                     value: _availabilitySlot,

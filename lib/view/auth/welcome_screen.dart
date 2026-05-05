@@ -10,19 +10,15 @@ import 'package:language_learning_app/view/auth/widgets/auth_screen_shell.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({
     super.key,
-    required this.isKorean,
+    required this.language,
     required this.onLanguageChanged,
   });
 
-  final bool isKorean;
-  final ValueChanged<bool> onLanguageChanged;
+  final AppLanguage language;
+  final ValueChanged<AppLanguage> onLanguageChanged;
 
   @override
   Widget build(BuildContext context) {
-    final AppLanguage language = isKorean
-        ? AppLanguage.korean
-        : AppLanguage.english;
-
     return AuthScreenShell(
       showAppBar: true,
       child: Column(
@@ -83,15 +79,22 @@ class WelcomeScreen extends StatelessWidget {
                 Expanded(
                   child: _LangButton(
                     label: ConstString.text(AppLanguage.english, 'english'),
-                    active: !isKorean,
-                    onTap: () => onLanguageChanged(false),
+                    active: language == AppLanguage.english,
+                    onTap: () => onLanguageChanged(AppLanguage.english),
                   ),
                 ),
                 Expanded(
                   child: _LangButton(
                     label: ConstString.text(AppLanguage.korean, 'korean'),
-                    active: isKorean,
-                    onTap: () => onLanguageChanged(true),
+                    active: language == AppLanguage.korean,
+                    onTap: () => onLanguageChanged(AppLanguage.korean),
+                  ),
+                ),
+                Expanded(
+                  child: _LangButton(
+                    label: ConstString.text(AppLanguage.spanish, 'spanish'),
+                    active: language == AppLanguage.spanish,
+                    onTap: () => onLanguageChanged(AppLanguage.spanish),
                   ),
                 ),
               ],

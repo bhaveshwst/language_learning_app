@@ -102,9 +102,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
 
   Future<Position> _getGeoLocationPosition() async {
     String t(String key) {
-      final language = AppLanguageState.isKorean.value
-          ? AppLanguage.korean
-          : AppLanguage.english;
+      final language = AppLanguageState.currentLanguage;
       return ConstString.text(language, key);
     }
 
@@ -298,12 +296,9 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
         value: _liveSessionAnalyticsBloc,
         child: BlocProvider.value(
           value: _liveSessionJoinBloc,
-          child: ValueListenableBuilder<bool>(
-            valueListenable: AppLanguageState.isKorean,
-            builder: (context, isKorean, _) {
-              final language = isKorean
-                  ? AppLanguage.korean
-                  : AppLanguage.english;
+          child: ValueListenableBuilder<AppLanguage>(
+            valueListenable: AppLanguageState.current,
+            builder: (context, language, _) {
               String t(String key) => ConstString.text(language, key);
 
               return MultiBlocListener(

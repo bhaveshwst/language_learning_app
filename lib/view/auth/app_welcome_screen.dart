@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/view/auth/welcome_screen.dart';
 
@@ -8,17 +9,16 @@ class AppWelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AppLanguageState.isKorean,
-      builder: (context, isKorean, _) {
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: AppLanguageState.current,
+      builder: (context, language, _) {
         return WelcomeScreen(
-          isKorean: isKorean,
+          language: language,
           onLanguageChanged: (value) {
-            AppLanguageState.isKorean.value = value;
+            AppLanguageState.setLanguage(value);
           },
         );
       },
     );
   }
 }
-

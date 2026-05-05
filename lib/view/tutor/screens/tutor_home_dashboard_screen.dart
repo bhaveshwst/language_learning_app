@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
@@ -35,10 +33,8 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
   final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
   final TutorSessionsBloc _tutorSessionsBloc = TutorSessionsBloc();
 
-  String t(String key) => ConstString.text(
-    AppLanguageState.isKorean.value ? AppLanguage.korean : AppLanguage.english,
-    key,
-  );
+  String t(String key) =>
+      ConstString.text(AppLanguageState.currentLanguage, key);
 
   String _address = "";
   String _latitude = "";
@@ -52,12 +48,11 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     if (tutorId.isNotEmpty) {
       _getTutorProfileBloc.add(FetchTutorProfile(tutorId: tutorId));
       _tutorSessionsBloc.add(FetchTutorSessions(tutorId: tutorId));
-      
     }
     WidgetsBinding.instance.addObserver(this);
   }
 
-    Future<void> _getLocation() async {
+  Future<void> _getLocation() async {
     Position position = await _getGeoLocationPosition();
     _latitude = position.latitude.toString();
     _longitude = position.longitude.toString();
@@ -67,10 +62,11 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     await getAddressFromLatLong(position);
   }
 
-
-   Future<void> getAddressFromLatLong(Position position) async {
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
+  Future<void> getAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
 
     Placemark place = placemarks[0];
     _address =
@@ -78,8 +74,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     setState(() {});
   }
 
-
-    Future<Position> _getGeoLocationPosition() async {
+  Future<Position> _getGeoLocationPosition() async {
     bool serviceEnabled;
     LocationPermission permission;
     // Test if location services are enabled.
@@ -111,7 +106,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
         //             await Geolocator.openAppSettings();
         //           }
         //           }),
-                  
+
         //         ],
         //       );
         //     });
@@ -136,24 +131,27 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
       //               await Geolocator.openAppSettings();
       //             }
       //             }),
-                  
+
       //           ],
       //       );
       //     });
 
-      return Future.error(
-          t('locationPermissionsPermanentlyDenied'));
+      return Future.error(t('locationPermissionsPermanentlyDenied'));
     }
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse) {
       return await Geolocator.getCurrentPosition(
-          locationSettings:
-              LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+        ),
+      );
     }
     return await Geolocator.getCurrentPosition(
-        locationSettings:
-            LocationSettings(accuracy: LocationAccuracy.bestForNavigation));
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
+    );
   }
 
   @override
@@ -262,9 +260,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
           BlocListener<GetTutorProfileBloc, GetTutorProfileState>(
             listener: (context, state) async {
               if (state is GetTutorProfileError) {
-                final language = AppLanguageState.isKorean.value
-                    ? AppLanguage.korean
-                    : AppLanguage.english;
+                final language = AppLanguageState.currentLanguage;
                 commonAlertDialogwithButton(
                   context,
                   t('profileIncomplete'),
@@ -314,8 +310,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                 await PrefUtils.setIsPublished(isPublished);
               }
 
-              
-                zegoAppID = state.model.zegoAppID ?? 0;
+              zegoAppID = state.model.zegoAppID ?? 0;
 
               if (!mounted) return;
               setState(() {});

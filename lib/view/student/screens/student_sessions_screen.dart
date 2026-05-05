@@ -104,9 +104,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
 
   Future<Position> _getGeoLocationPosition() async {
     String t(String key) {
-      final language = AppLanguageState.isKorean.value
-          ? AppLanguage.korean
-          : AppLanguage.english;
+      final language = AppLanguageState.currentLanguage;
       return ConstString.text(language, key);
     }
 
@@ -179,10 +177,9 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
         BlocProvider.value(value: _liveSessionJoinBloc),
         BlocProvider.value(value: _reportSessionBloc),
       ],
-      child: ValueListenableBuilder<bool>(
-        valueListenable: AppLanguageState.isKorean,
-        builder: (context, isKorean, _) {
-          final language = isKorean ? AppLanguage.korean : AppLanguage.english;
+      child: ValueListenableBuilder<AppLanguage>(
+        valueListenable: AppLanguageState.current,
+        builder: (context, language, _) {
           String t(String key) => ConstString.text(language, key);
 
           return MultiBlocListener(
@@ -940,6 +937,7 @@ class _ReportSessionReasonDialogState
     extends State<_ReportSessionReasonDialog> {
   final TextEditingController _controller = TextEditingController();
   String? _selectedType;
+
   /// 1–5 when user taps stars (Review only).
   int? _rating;
   static const List<String> _reportTypes = ['Report', 'Review'];

@@ -369,12 +369,9 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                         ),
                       ),
                       const SizedBox(height: ConstSize.grid * 2),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: AppLanguageState.isKorean,
-                        builder: (context, isKorean, _) {
-                          final language = isKorean
-                              ? AppLanguage.korean
-                              : AppLanguage.english;
+                      ValueListenableBuilder<AppLanguage>(
+                        valueListenable: AppLanguageState.current,
+                        builder: (context, language, _) {
                           return Form(
                             key: _formKey,
                             child: Column(
@@ -578,9 +575,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                               ),
                             ),
                             onPressed: () {
-                              final language = AppLanguageState.isKorean.value
-                                  ? AppLanguage.korean
-                                  : AppLanguage.english;
+                              final language = AppLanguageState.currentLanguage;
                               _onSubmit(language);
                             },
                             child: const AppText('submit'),

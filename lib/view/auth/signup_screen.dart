@@ -46,6 +46,32 @@ class _SignupScreenState extends State<SignupScreen> {
     return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email);
   }
 
+  String _countryToApiCode(String? country) {
+    switch ((country ?? '').toLowerCase()) {
+      case 'us':
+        return 'US';
+      case 'kr':
+        return 'KR';
+      case 'es':
+        return 'SP';
+      default:
+        return 'US';
+    }
+  }
+
+  String? _countryRuleText(String? country) {
+    switch ((country ?? '').toLowerCase()) {
+      case 'us':
+        return t('usEduRule');
+      case 'kr':
+        return t('krDomainRule');
+      case 'es':
+        return t('esDomainRule');
+      default:
+        return null;
+    }
+  }
+
   /// Tutor: any birth year from 1900 through this calendar year.
   /// Student (ages 14–17): birth years derived from [DateTime.now] so they stay correct when the year rolls over.
   List<int> get _birthYearItems {
@@ -69,7 +95,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isUs = (_country ?? 'us') == 'us';
+    final countryRule = _countryRuleText(_country);
     return BlocProvider(
       create: (context) => _signupBloc,
       child: AuthScreenShell(
@@ -86,19 +112,24 @@ class _SignupScreenState extends State<SignupScreen> {
             AppDropdownButton2<String>(
               hintText: t('country'),
               value: _country,
-              items: const ['us', 'kr'],
-              itemLabelBuilder: (v) =>
-                  v == 'us' ? t('unitedStates') : t('southKorea'),
+              items: const ['us', 'kr', 'es'],
+              itemLabelBuilder: (v) {
+                if (v == 'us') return t('unitedStates');
+                if (v == 'kr') return t('southKorea');
+                return t('spain');
+              },
               onChanged: (v) => setState(() => _country = v),
             ),
             const SizedBox(height: ConstSize.grid * 1),
-            Text(
-              isUs ? t('usEduRule') : t('krDomainRule'),
-              style: const TextStyle(
-                color: ConstColor.textSecondary,
-                fontSize: 12,
+            if (countryRule != null) ...[
+              Text(
+                countryRule,
+                style: const TextStyle(
+                  color: ConstColor.textSecondary,
+                  fontSize: 12,
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: ConstSize.grid * 2),
             _fieldHeader(t('enterEmail')),
             AuthTextField(
@@ -125,9 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: ConstSize.grid * 1),
             Text(
-              widget.role == UserRole.becomeTutor
-                  ? ""
-                  : t('ageRule'),
+              widget.role == UserRole.becomeTutor ? "" : t('ageRule'),
               style: const TextStyle(
                 color: ConstColor.textSecondary,
                 fontSize: 12,
@@ -148,20 +177,19 @@ class _SignupScreenState extends State<SignupScreen> {
                 } else if (state is SignupError) {
                   Navigator.pop(context);
                   commonAlertDialog(context, state.message);
-                }
-                else if (state is SignupSuccess) {
+                } else if (state is SignupSuccess) {
                   Navigator.pop(context);
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OtpVerificationScreen(
-                          language: widget.language,
-                          role: widget.role,
-                          authFlow: AuthFlow.signup,
-                          email: _emailController.text.trim(),
-                        ),
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OtpVerificationScreen(
+                        language: widget.language,
+                        role: widget.role,
+                        authFlow: AuthFlow.signup,
+                        email: _emailController.text.trim(),
                       ),
-                    );
+                    ),
+                  );
                 }
               },
               child: AuthPrimaryButton(
@@ -179,9 +207,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     _signupBloc.add(
                       SignupProvider(
                         email: _emailController.text.trim(),
-                        country: _country?.toLowerCase().toString() == "us" ? "US" : "KR",
+                        country: _countryToApiCode(_country),
                         birthyear: _selectedYear?.toString() ?? '',
-                        userrole: widget.role.name.toLowerCase().toString() == 'findtutor' ? 'student' : 'tutor',
+                        userrole:
+                            widget.role.name.toLowerCase().toString() ==
+                                'findtutor'
+                            ? 'student'
+                            : 'tutor',
                       ),
                     );
                   }
@@ -227,6 +259,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
+
   Widget _fieldHeader(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: ConstSize.grid),

@@ -135,10 +135,9 @@ class _TutorAvailabilityCalendarScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AppLanguageState.isKorean,
-      builder: (context, isKorean, _) {
-        final language = isKorean ? AppLanguage.korean : AppLanguage.english;
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: AppLanguageState.current,
+      builder: (context, language, _) {
         String t(String key) => ConstString.text(language, key);
 
         return BlocProvider.value(
@@ -247,16 +246,18 @@ class _TutorAvailabilityCalendarScreenState
                                 '${normalizedDate.year.toString().padLeft(4, '0')}-'
                                 '${normalizedDate.month.toString().padLeft(2, '0')}-'
                                 '${normalizedDate.day.toString().padLeft(2, '0')}';
-                            final startTime =
-                                (slotData['startTime'] ?? '').toString().trim();
-                            final endTime =
-                                (slotData['endTime'] ?? '').toString().trim();
+                            final startTime = (slotData['startTime'] ?? '')
+                                .toString()
+                                .trim();
+                            final endTime = (slotData['endTime'] ?? '')
+                                .toString()
+                                .trim();
                             final timeDisplay =
                                 TimeDisplayFormat.formatApiClockRangeForDisplay(
-                              startTime,
-                              endTime,
-                              Localizations.localeOf(context),
-                            );
+                                  startTime,
+                                  endTime,
+                                  Localizations.localeOf(context),
+                                );
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.only(
