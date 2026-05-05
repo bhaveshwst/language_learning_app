@@ -447,6 +447,13 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: _TutorCard(
+                                  rating:
+                                      tutorState
+                                          .recommendedTutorModel
+                                          .data
+                                          ?.tutors?[index]
+                                          .avaragerating ??
+                                      "0",
                                   name:
                                       tutorState
                                           .recommendedTutorModel
@@ -544,6 +551,7 @@ class _TutorCard extends StatelessWidget {
   const _TutorCard({
     required this.name,
     required this.primaryLanguage,
+    required this.rating,
 
     required this.onBook,
     required this.onCheckAvailability,
@@ -551,7 +559,7 @@ class _TutorCard extends StatelessWidget {
 
   final String name;
   final String primaryLanguage;
-
+  final String? rating;
   final VoidCallback onBook;
   final VoidCallback onCheckAvailability;
 
@@ -591,6 +599,19 @@ class _TutorCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+                  Text(
+                    rating != null && rating != '0' && rating != 'null' ? rating ?? "0" : '0',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Icon(
+                    rating != null && rating != '0' && rating != 'null'
+                        ? Icons.star
+                        : Icons.star_border,
+                    color: ConstColor.primaryBlue,
                   ),
                 ],
               ),

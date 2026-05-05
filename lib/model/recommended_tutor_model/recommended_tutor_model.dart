@@ -65,6 +65,7 @@ class Tutors {
   String? nextSlot;
   String? bio;
   String? targetlanguage;
+  String? avaragerating;
 
   Tutors({
     this.id,
@@ -74,6 +75,7 @@ class Tutors {
     this.nextSlot,
     this.bio,
     this.targetlanguage,
+    this.avaragerating,
   });
 
   Tutors.fromJson(Map<String, dynamic> json) {
@@ -84,6 +86,7 @@ class Tutors {
     nextSlot = json['next_slot'];
     bio = json['bio'];
     targetlanguage = json['target_language'];
+    avaragerating = json['average_rating'].toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -95,6 +98,7 @@ class Tutors {
     data['next_slot'] = nextSlot;
     data['bio'] = bio;
     data['target_language'] = targetlanguage;
+    data['average_rating'] = avaragerating;
     return data;
   }
 }

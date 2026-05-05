@@ -26,6 +26,7 @@ class ReportSessionBloc extends Bloc<ReportSessionEvent, ReportSessionState> {
             'session_id': event.sessionId,
             'reason': event.reason,
             'type': event.type,
+            'rating': event.rating,
           },
         );
 
@@ -42,11 +43,7 @@ class ReportSessionBloc extends Bloc<ReportSessionEvent, ReportSessionState> {
           if (code == '1') {
             emit(ReportSessionSuccess(ReportSessionModel.fromJson(decoded)));
           } else {
-            emit(
-              ReportSessionError(
-                (decoded['detail'] ?? 'Error').toString(),
-              ),
-            );
+            emit(ReportSessionError((decoded['detail'] ?? 'Error').toString()));
           }
         } else {
           final detail = decoded?['detail']?.toString();

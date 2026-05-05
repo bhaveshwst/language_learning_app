@@ -994,9 +994,44 @@ class _ReportSessionReasonDialogState
                     )
                     .toList(),
                 onChanged: (value) {
-                  setState(() => _selectedType = value);
+                  setState(() {
+                    _selectedType = value;
+                    if (value != _reviewType) {
+                      _rating = null;
+                    }
+                  });
                 },
               ),
+              if (_selectedType == _reviewType) ...[
+                const SizedBox(height: ConstSize.grid),
+                Text(
+                  t('sessionRatingLabel'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: List.generate(5, (index) {
+                    final star = index + 1;
+                    final selected = (_rating ?? 0) >= star;
+                    return IconButton(
+                      onPressed: () {
+                        setState(() => _rating = star);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      icon: Icon(
+                        selected ? Icons.star_rounded : Icons.star_border_rounded,
+                        color: selected
+                            ? const Color(0xFFFFC107)
+                            : ConstColor.textSecondary,
+                      ),
+                    );
+                  }),
+                ),
+              ],
               const SizedBox(height: ConstSize.grid),
               TextField(
                 controller: _controller,
@@ -1046,6 +1081,7 @@ class _ReportSessionReasonDialogState
                             sessionId: widget.sessionId,
                             reason: reason,
                             type: type,
+                            rating: _selectedType == _reviewType ? _rating : null,
                           ),
                         );
                       },

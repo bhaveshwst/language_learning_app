@@ -39,6 +39,7 @@ class ReportSessionListItem {
   String? status;
   String? createdAt;
   String? type;
+  String? rating;
 
   ReportSessionListItem({
     this.reportId,
@@ -50,6 +51,7 @@ class ReportSessionListItem {
     this.status,
     this.createdAt,
     this.type,
+    this.rating,
   });
 
   ReportSessionListItem.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,7 @@ class ReportSessionListItem {
     status = json['status']?.toString();
     createdAt = json['created_at']?.toString();
     type = json['type']?.toString();
+    rating = json['rating']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -75,6 +78,7 @@ class ReportSessionListItem {
     map['status'] = status;
     map['created_at'] = createdAt;
     map['type'] = type;
+    map['rating'] = rating;
     return map;
   }
 }

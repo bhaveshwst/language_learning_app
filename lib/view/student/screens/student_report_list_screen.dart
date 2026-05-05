@@ -165,12 +165,31 @@ class _StudentReportListScreenState extends State<StudentReportListScreen> {
                                       if ((item.tutorName ?? '')
                                           .trim()
                                           .isNotEmpty)
-                                        Text(
-                                          item.tutorName!.trim(),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.tutorName!.trim(),
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              item.rating != null && item.rating != '0' && item.rating != 'null' ? item.rating ?? "0" : '0',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            Icon(
+                                              item.rating != null && item.rating != '0' && item.rating != 'null'
+                                                  ? Icons.star
+                                                  : Icons.star_border,
+                                              color: ConstColor.primaryBlue,
+                                            ),
+                                          ],
                                         ),
                                       if ((item.tutorName ?? '')
                                           .trim()
