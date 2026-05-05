@@ -534,7 +534,7 @@ class _TutorMetricCard extends StatelessWidget {
             style: const TextStyle(
               color: ConstColor.textSecondary,
               fontWeight: FontWeight.w700,
-              fontSize: 12,
+              fontSize: 11.5,
             ),
           ),
           const SizedBox(height: 8),
