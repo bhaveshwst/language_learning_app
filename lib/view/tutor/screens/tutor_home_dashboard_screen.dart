@@ -310,7 +310,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                 await PrefUtils.setIsPublished(isPublished);
               }
 
-              zegoAppID = state.model.zegoAppID ?? 0;
+              zegoAppID = state.model.zegoAppID ?? 1896143529;
 
               if (!mounted) return;
               setState(() {});

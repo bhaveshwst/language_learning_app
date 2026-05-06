@@ -230,7 +230,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
           BlocListener<GetStudentProfileBloc, GetStudentProfileState>(
             listener: (context, state) async {
               if (state is GetStudentProfileSuccess) {
-                zegoAppID = state.model.zegoAppID ?? 0;
+                zegoAppID = state.model.zegoAppID ?? 1896143529;
                 await PrefUtils.setname(state.model.data?.displayName ?? '');
                 await PrefUtils.settimezone(state.model.data?.timezone ?? '');
                 await PrefUtils.setprimarylanguage(

@@ -317,4 +317,4 @@ class MyApp extends StatelessWidget {
   }
 }
 
-int zegoAppID = 0;
+int zegoAppID = 1896143529;
