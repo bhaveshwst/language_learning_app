@@ -66,11 +66,13 @@ class Tutors {
   String? bio;
   String? targetlanguage;
   String? avaragerating;
+  String? country;
 
   Tutors({
     this.id,
     this.displayName,
     this.teachesLanguages,
+    this.country,
     this.topics,
     this.nextSlot,
     this.bio,
@@ -87,6 +89,7 @@ class Tutors {
     bio = json['bio'];
     targetlanguage = json['target_language'];
     avaragerating = json['average_rating'].toString();
+    country = json['country'];
   }
 
   Map<String, dynamic> toJson() {
@@ -99,6 +102,7 @@ class Tutors {
     data['bio'] = bio;
     data['target_language'] = targetlanguage;
     data['average_rating'] = avaragerating;
+    data['country'] = country;
     return data;
   }
 }

@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
+import 'package:language_learning_app/core/constants/const_image.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
@@ -447,6 +448,45 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: _TutorCard(
+                                  flagimage:
+                                      tutorState
+                                              .recommendedTutorModel
+                                              .data
+                                              ?.tutors?[index]
+                                              .country ==
+                                          "US"
+                                      ? ConstImage.usFlag
+                                      : tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .country ==
+                                            "KR"
+                                      ? ConstImage.krFlag
+                                      : ConstImage.spFlag,
+                                  country:
+                                      tutorState
+                                              .recommendedTutorModel
+                                              .data
+                                              ?.tutors?[index]
+                                              .country ==
+                                          "US"
+                                      ? "United States"
+                                      : tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .country ==
+                                            "KR"
+                                      ? "South Korea"
+                                      : tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .country ==
+                                            "SP"
+                                      ? "Spain"
+                                      : "-",
                                   rating:
                                       tutorState
                                           .recommendedTutorModel
@@ -552,7 +592,8 @@ class _TutorCard extends StatelessWidget {
     required this.name,
     required this.primaryLanguage,
     required this.rating,
-
+    required this.country,
+    required this.flagimage,
     required this.onBook,
     required this.onCheckAvailability,
   });
@@ -560,6 +601,8 @@ class _TutorCard extends StatelessWidget {
   final String name;
   final String primaryLanguage;
   final String? rating;
+  final String? country;
+  final String? flagimage;
   final VoidCallback onBook;
   final VoidCallback onCheckAvailability;
 
@@ -592,16 +635,42 @@ class _TutorCard extends StatelessWidget {
                   ),
                   const SizedBox(width: ConstSize.grid * 1.5),
                   Expanded(
-                    child: Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              country ?? "-",
+                              style: const TextStyle(
+                                color: ConstColor.primaryBlue,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Image.asset(
+                              flagimage ?? "-",
+                              fit: BoxFit.contain,
+                              width: 25,
+                              height: 25,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   Text(
-                    rating != null && rating != '0' && rating != 'null' ? rating ?? "0" : '0',
+                    rating != null && rating != '0' && rating != 'null'
+                        ? rating ?? "0"
+                        : '0',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

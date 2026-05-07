@@ -112,6 +112,9 @@ flutter:
   assets:
     - assets/images/app_logo.png
     - assets/images/icon.png
+    - assets/images/usa_flag.png
+    - assets/images/korea_flag.png
+    - assets/images/spain_flag.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
