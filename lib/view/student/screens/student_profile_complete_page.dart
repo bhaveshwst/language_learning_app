@@ -20,7 +20,6 @@ import 'package:language_learning_app/provider/student_profile_create/student_pr
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_text_field.dart';
 import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
-import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
 
 /// Student profile completion page.
 /// This duplicates `CompleteProfileScreen` so the fields + API calls match.
