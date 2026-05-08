@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -493,8 +494,35 @@ class _StudentProfileCompletePageState
     );
   }
 
+  void _showImagePermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Permission Required'),
+          content: const Text(
+            'Camera or photo library permission is required to upload a profile picture. Please enable it in app settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void selectimage(ImageSource source) async {
-    final XFile? pickedFile = await ImagePicker().pickImage(source: source);
+    XFile? pickedFile;
+    try {
+      pickedFile = await ImagePicker().pickImage(source: source);
+    } on PlatformException catch (_) {
+      if (!mounted) return;
+      _showImagePermissionDialog();
+      return;
+    }
 
     if (pickedFile != null) {
       CroppedFile? croppedFile = await ImageCropper().cropImage(

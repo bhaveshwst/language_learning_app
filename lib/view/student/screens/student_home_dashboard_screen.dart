@@ -233,9 +233,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
               if (state is GetStudentProfileSuccess) {
                 zegoAppID = state.model.zegoAppID ?? 1896143529;
                 await PrefUtils.setname(state.model.data?.displayName ?? '');
-                await PrefUtils.setimagepath(
-                                  state.model.data?.imagepath ?? '',
-                                );
+                await PrefUtils.setimagepath(state.model.data?.imagepath ?? '');
                 await PrefUtils.settimezone(state.model.data?.timezone ?? '');
                 await PrefUtils.setprimarylanguage(
                   state.model.data?.primaryLanguage ?? '',
@@ -451,6 +449,13 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: _TutorCard(
+                                  imagepath:
+                                      tutorState
+                                          .recommendedTutorModel
+                                          .data
+                                          ?.tutors?[index]
+                                          .imagepath ??
+                                      "",
                                   flagimage:
                                       tutorState
                                               .recommendedTutorModel
@@ -599,6 +604,7 @@ class _TutorCard extends StatelessWidget {
     required this.flagimage,
     required this.onBook,
     required this.onCheckAvailability,
+    required this.imagepath,
   });
 
   final String name;
@@ -608,6 +614,7 @@ class _TutorCard extends StatelessWidget {
   final String? flagimage;
   final VoidCallback onBook;
   final VoidCallback onCheckAvailability;
+  final String? imagepath;
 
   @override
   Widget build(BuildContext context) {
@@ -626,16 +633,32 @@ class _TutorCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: ConstColor.primaryBlue.withValues(
-                      alpha: 0.16,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: ConstColor.primaryBlue),
+                      color: ConstColor.primaryBlue.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                      image: imagepath != null && imagepath != '' ? DecorationImage(
+                        image: NetworkImage(imagepath ?? ""),
+                        fit: BoxFit.cover,
+                      ) : null,
                     ),
-                    child: const Icon(
-                      Icons.person,
-                      color: ConstColor.primaryBlue,
-                    ),
+                    child: imagepath != null && imagepath != '' ? null : const Icon(Icons.person, color: ConstColor.primaryBlue),
                   ),
+                  // CircleAvatar(
+                  //   radius: 24,
+                  //   backgroundColor: ConstColor.primaryBlue.withValues(
+                  //     alpha: 0.16,
+                  //   ),
+                  //   child: imagepath != null && imagepath != ''
+                  //       ? Image.network(imagepath ?? "")
+                  //       : const Icon(
+                  //           Icons.person,
+                  //           color: ConstColor.primaryBlue,
+                  //         ),
+                  // ),
                   const SizedBox(width: ConstSize.grid * 1.5),
                   Expanded(
                     child: Column(

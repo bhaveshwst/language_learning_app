@@ -67,6 +67,7 @@ class Tutors {
   String? targetlanguage;
   String? avaragerating;
   String? country;
+  String? imagepath;
 
   Tutors({
     this.id,
@@ -78,6 +79,7 @@ class Tutors {
     this.bio,
     this.targetlanguage,
     this.avaragerating,
+    this.imagepath,
   });
 
   Tutors.fromJson(Map<String, dynamic> json) {
@@ -90,6 +92,7 @@ class Tutors {
     targetlanguage = json['target_language'];
     avaragerating = json['average_rating'].toString();
     country = json['country'];
+    imagepath = json['upload_image'];
   }
 
   Map<String, dynamic> toJson() {
@@ -103,6 +106,7 @@ class Tutors {
     data['target_language'] = targetlanguage;
     data['average_rating'] = avaragerating;
     data['country'] = country;
+    data['upload_image'] = imagepath;
     return data;
   }
 }
