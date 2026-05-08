@@ -25,6 +25,7 @@ class PrefUtils {
   // Keys
   static const String accessTokenKey = "access_token";
   static const String name = "name";
+  static const String imagepath = "upload_image";
   static const String timezone = "timezone";
   static const String primarylanguuage = "primary_language";
   static const String targetlanguage = "target_language";
@@ -67,6 +68,12 @@ class PrefUtils {
   }
   static String getname() {
     return _preferences?.getString(name) ?? "";
+  }
+  static Future setimagepath(String token) async {
+    await _preferences?.setString(imagepath, token);
+  }
+  static String getimagepath() {
+    return _preferences?.getString(imagepath) ?? "";
   }
   static Future settimezone(String token) async {
     await _preferences?.setString(timezone, token);

@@ -14,6 +14,7 @@ class StudentProfileCreateProvider extends StudentProfileCreateEvent {
   final String targetlanguage;
   final List<dynamic> intrested;
   final String bio;
+  final String imagepath;
 
   const StudentProfileCreateProvider({
     required this.displayname,
@@ -22,8 +23,9 @@ class StudentProfileCreateProvider extends StudentProfileCreateEvent {
     required this.targetlanguage,
     required this.intrested,
     required this.bio,
+    required this.imagepath,
   });
 
   @override
-  List<Object?> get props => [ displayname, timezone, primarylanguage, targetlanguage, intrested, bio ];
+  List<Object?> get props => [ displayname, timezone, primarylanguage, targetlanguage, intrested, bio, imagepath ];
 }

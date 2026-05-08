@@ -12,6 +12,7 @@ class ConstString {
     'becomeTutorSubtitle': 'Share your knowledge and language',
     'welcomeBack': 'Welcome Back',
     'createAccount': 'Create Account',
+    'selectProfilePictureError': 'Please select profile picture',
     'email': 'Email',
     'enterOtpError': 'Please enter OTP',
     'schoolEmail': 'School Email',
@@ -261,6 +262,7 @@ class ConstString {
     'confirmPassword': '비밀번호 확인',
     'forgotPassword': '비밀번호를 잊으셨나요?',
     'login': '로그인',
+    'selectProfilePictureError': '프로필 사진을 선택해 주세요',
     'signup': '회원가입',
     'dontHaveAccount': '계정이 없으신가요? 회원가입',
     'alreadyHaveAccount': '이미 계정이 있으신가요? 로그인',
@@ -587,6 +589,7 @@ class ConstString {
     'secondary': 'Secundario',
     'next': 'Siguiente',
     'book': 'Reservar',
+    'selectProfilePictureError': 'Por favor selecciona una imagen de perfil',
     'checkAvailability': 'Ver Disponibilidad',
     'bookSession': 'Reservar Sesión',
 

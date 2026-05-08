@@ -15,6 +15,7 @@ class TutorProfileCreateProvider extends TutorProfileCreateEvent {
   final List<dynamic> topics;
   final String bio;
   final String ispublished;
+  final String imagepath;
 
   const TutorProfileCreateProvider({
     required this.displayname,
@@ -24,6 +25,7 @@ class TutorProfileCreateProvider extends TutorProfileCreateEvent {
     required this.topics,
     required this.bio,
     required this.ispublished,
+    required this.imagepath,
   });
 
   @override
@@ -35,5 +37,6 @@ class TutorProfileCreateProvider extends TutorProfileCreateEvent {
     topics,
     bio,
     ispublished,
+    imagepath,
   ];
 }

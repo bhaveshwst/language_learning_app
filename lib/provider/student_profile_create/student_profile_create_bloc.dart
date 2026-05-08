@@ -30,6 +30,7 @@ class StudentProfileCreateBloc
             "target_language": event.targetlanguage,
             "interests": event.intrested,
             "bio": event.bio,
+            "upload_image" : event.imagepath,
           }),
         );
         if (reponse.statusCode == 200) {
@@ -70,6 +71,7 @@ class StudentProfileUpdateBloc
             "target_language": event.targetlanguage,
             "interests": event.intrested,
             "bio": event.bio,
+            "upload_image" : event.imagepath,
           }),
         );
         if (reponse.statusCode == 200) {

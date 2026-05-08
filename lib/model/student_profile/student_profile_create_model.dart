@@ -30,6 +30,7 @@ class Data {
   String? targetLanguage;
   List<dynamic>? interests;
   String? bio;
+  String? imagepath;
 
   Data({
     this.userId,
@@ -39,6 +40,7 @@ class Data {
     this.targetLanguage,
     this.interests,
     this.bio,
+    this.imagepath,
   });
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class Data {
     targetLanguage = json['target_language'];
     interests = json['interests'];
     bio = json['bio'];
+    imagepath = json['upload_image'];
   }
 
   Map<String, dynamic> toJson() {
@@ -60,6 +63,7 @@ class Data {
     data['target_language'] = targetLanguage;
     data['interests'] = interests;
     data['bio'] = bio;
+    data['upload_image'] = imagepath;
     return data;
   }
 }

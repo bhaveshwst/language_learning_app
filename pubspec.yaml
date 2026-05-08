@@ -57,6 +57,8 @@ dependencies:
   geolocator: ^14.0.2
   geocoding: ^4.0.0
   check_vpn_connection:
+  image_picker: ^1.2.2
+  image_cropper: ^12.2.1
   # freezed_annotation: ^3.1.0
 
 

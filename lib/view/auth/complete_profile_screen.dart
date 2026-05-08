@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -35,6 +40,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _timezone;
   String? _primaryLanguage;
   String? _targetLanguage;
+
+  File? _imagefile;
+  String? imagepath;
 
   /// Tutor only: multiple "languages you speak" → serialized as `"English, Spanish"` for API/prefs.
   final Set<String> _tutorSpokenLanguages = {};
@@ -208,6 +216,72 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             style: const TextStyle(
                               fontSize: 25,
                               fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: ConstSize.grid * 2),
+                          Center(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: ConstColor.colorWhite,
+                                  ),
+                                  height: 124,
+                                  width: 124,
+                                ),
+                                Container(
+                                  clipBehavior: Clip.hardEdge,
+                                  height: 120,
+                                  width: 120,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: ConstColor.colorBlack,
+                                      width: 2,
+                                    ),
+                                    color: ConstColor.primaryBlue,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: _imagefile == null || imagepath == ''
+                                      ? const Icon(
+                                          Icons.person,
+                                          color: ConstColor.colorWhite,
+                                          size: 55,
+                                        )
+                                      : _imagefile != null
+                                      ? Image.file(
+                                          _imagefile!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.network(
+                                          imagepath ?? '',
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      _pickPhoto();
+                                    },
+                                    child: Container(
+                                      height: 34,
+                                      width: 34,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: ConstColor.colorBlack,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_outlined,
+                                        size: 18,
+                                        color: ConstColor.colorWhite,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: ConstSize.grid * 2),
@@ -458,6 +532,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 await PrefUtils.setname(
                                   _displayNameController.text.trim(),
                                 );
+                                
                                 await PrefUtils.settimezone(_timezone ?? '');
                                 await PrefUtils.setprimarylanguage(
                                   _primaryLanguage ?? '',
@@ -565,7 +640,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   child: AuthPrimaryButton(
                                     text: t('continue'),
                                     onPressed: () {
-                                      if (_displayNameController.text
+                                      if (_imagefile == null) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('selectProfilePictureError'),
+                                        );
+                                      } 
+                                      else if (_displayNameController.text
                                           .trim()
                                           .isEmpty) {
                                         commonAlertDialog(
@@ -630,6 +711,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                             UserRole.becomeTutor) {
                                           _tutorProfileCreateBloc.add(
                                             TutorProfileCreateProvider(
+                                              imagepath: _imagefile != null
+                                                  ? base64Encode(
+                                                      _imagefile!
+                                                          .readAsBytesSync(),
+                                                    )
+                                                  : imagepath ?? "",
                                               displayname:
                                                   _displayNameController.text
                                                       .trim(),
@@ -648,6 +735,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                         } else {
                                           _studentProfileCreateBloc.add(
                                             StudentProfileCreateProvider(
+                                              imagepath: _imagefile != null
+                                                  ? base64Encode(
+                                                      _imagefile!
+                                                          .readAsBytesSync(),
+                                                    )
+                                                  : imagepath ?? "",
                                               displayname:
                                                   _displayNameController.text
                                                       .trim(),
@@ -679,5 +772,88 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         ),
       ),
     );
+  }
+
+  void _pickPhoto() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Text(
+            "Select Picture",
+            style: TextStyle(color: ConstColor.colorBlack),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                style: const ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    ConstColor.primaryBlue,
+                  ),
+                ),
+                child: const Text(
+                  ' Pick from Camera ',
+                  style: TextStyle(color: ConstColor.colorWhite),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  selectimage(ImageSource.camera);
+                },
+              ),
+              OutlinedButton(
+                style: ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    ConstColor.primaryBlue,
+                  ),
+                ),
+                child: const Text(
+                  'Select from Gallery',
+                  style: TextStyle(color: ConstColor.colorWhite),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  selectimage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 2),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void selectimage(ImageSource source) async {
+    final XFile? pickedFile = await ImagePicker().pickImage(source: source);
+
+    if (pickedFile != null) {
+      CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
+
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Colors.blue,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: false,
+          ),
+
+          IOSUiSettings(title: 'Crop Image'),
+        ],
+      );
+
+      if (croppedFile != null) {
+        setState(() {
+          _imagefile = File(croppedFile.path);
+        });
+      }
+    }
   }
 }

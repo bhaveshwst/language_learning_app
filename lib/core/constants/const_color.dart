@@ -13,4 +13,6 @@ class ConstColor {
   static const Color error = Color(0xFFE74C3C);
   static const Color success = Color(0xFF16A34A);
   static const Color grey = Colors.grey;
+  static const Color colorWhite = Colors.white;
+  static const Color colorBlack = Colors.black;
 }

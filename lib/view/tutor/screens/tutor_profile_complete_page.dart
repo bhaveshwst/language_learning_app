@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -13,6 +18,7 @@ import 'package:language_learning_app/provider/profile_common_api/profile_common
 import 'package:language_learning_app/provider/tutor_profile_create/tutor_profile_create_bloc.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_text_field.dart';
+import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
 
 class TutorProfileCompletePage extends StatefulWidget {
   const TutorProfileCompletePage({
@@ -31,13 +37,18 @@ class TutorProfileCompletePage extends StatefulWidget {
 
 class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
   String? _timezone;
+
   /// True when a timezone was already saved locally (first-time signup / dashboard sync).
   bool _lockTimezoneEdit = false;
   String? _primaryLanguage;
   String? _targetLanguage;
+
   /// Tutor (becomeTutor) only: multiple languages you speak → `"English, Spanish"` for API/prefs.
   final Set<String> _tutorSpokenLanguages = {};
   final Set<String> _selectedInterests = {};
+
+  File? _imagefile;
+  String? imagepath;
 
   String t(String key) => ConstString.text(widget.language, key);
   final ProfileCommonApiBloc _profileCommonApiBloc = ProfileCommonApiBloc();
@@ -145,6 +156,10 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
     _displayNameController.text = PrefUtils.getname();
     final savedTz = PrefUtils.gettimezone().trim();
     _lockTimezoneEdit = savedTz.isNotEmpty;
+    if( PrefUtils.getimagepath() != '') {
+imagepath = PrefUtils.getimagepath();
+    }
+    
     _timezone = savedTz.isEmpty ? null : savedTz;
     _primaryLanguage = PrefUtils.getprimarylanguage() == ""
         ? null
@@ -235,6 +250,64 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(height: ConstSize.grid * 2),
+                            Center(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    clipBehavior: Clip.hardEdge,
+                                    height: 120,
+                                    width: 120,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: ConstColor.colorBlack,
+                                        width: 2,
+                                      ),
+                                      color: ConstColor.primaryBlue,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: _imagefile == null && imagepath == ''
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: ConstColor.colorWhite,
+                                            size: 55,
+                                          )
+                                        : _imagefile != null
+                                        ? Image.file(
+                                            _imagefile!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.network(
+                                            imagepath ?? '',
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        _pickPhoto();
+                                      },
+                                      child: Container(
+                                        height: 34,
+                                        width: 34,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: ConstColor.colorBlack,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_outlined,
+                                          size: 18,
+                                          color: ConstColor.colorWhite,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: ConstSize.grid * 2),
                             _fieldHeader(t('displayName')),
                             AuthTextField(
@@ -522,8 +595,14 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                     context,
                                     "${state.tutorCreateProfileModel.detail}",
                                     () {
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
+                                     
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const TutorDashboardShell(),
+                                        ),
+                                        (route) => false,
+                                      );
                                     },
                                   );
                                 }
@@ -580,7 +659,7 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                       context,
                                       t('enterShortBioError'),
                                     );
-                                  }  else if (widget.role ==
+                                  } else if (widget.role ==
                                               UserRole.becomeTutor &&
                                           _topicControllers.isEmpty ||
                                       _topicControllers.every(
@@ -607,7 +686,11 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
                                         ispublished: _isPublished == true
                                             ? "True"
                                             : "False",
+                                        imagepath: _imagefile != null
+            ? base64Encode(_imagefile!.readAsBytesSync())
+            : imagepath ?? "",
                                       ),
+
                                     );
                                   }
                                 },
@@ -623,5 +706,88 @@ class _TutorProfileCompletePageState extends State<TutorProfileCompletePage> {
         ),
       ),
     );
+  }
+
+  void _pickPhoto() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Text(
+            "Select Picture",
+            style: TextStyle(color: ConstColor.colorBlack),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                style: const ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    ConstColor.primaryBlue,
+                  ),
+                ),
+                child: const Text(
+                  ' Pick from Camera ',
+                  style: TextStyle(color: ConstColor.colorWhite),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  selectimage(ImageSource.camera);
+                },
+              ),
+              OutlinedButton(
+                style: ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    ConstColor.primaryBlue,
+                  ),
+                ),
+                child: const Text(
+                  'Select from Gallery',
+                  style: TextStyle(color: ConstColor.colorWhite),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  selectimage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 2),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void selectimage(ImageSource source) async {
+    final XFile? pickedFile = await ImagePicker().pickImage(source: source);
+
+    if (pickedFile != null) {
+      CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
+
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Colors.blue,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: false,
+          ),
+
+          IOSUiSettings(title: 'Crop Image'),
+        ],
+      );
+
+      if (croppedFile != null) {
+        setState(() {
+          _imagefile = File(croppedFile.path);
+        });
+      }
+    }
   }
 }

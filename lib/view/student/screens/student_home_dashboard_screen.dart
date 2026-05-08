@@ -233,6 +233,9 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
               if (state is GetStudentProfileSuccess) {
                 zegoAppID = state.model.zegoAppID ?? 1896143529;
                 await PrefUtils.setname(state.model.data?.displayName ?? '');
+                await PrefUtils.setimagepath(
+                                  state.model.data?.imagepath ?? '',
+                                );
                 await PrefUtils.settimezone(state.model.data?.timezone ?? '');
                 await PrefUtils.setprimarylanguage(
                   state.model.data?.primaryLanguage ?? '',

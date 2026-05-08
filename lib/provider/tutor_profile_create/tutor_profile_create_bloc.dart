@@ -30,6 +30,7 @@ class TutorProfileCreateBloc
             "languages_spoken": event.targetspoken,
             "topics": event.topics,
             "is_published": event.ispublished,
+            "upload_image" : event.imagepath,
           }),
         );
         if (reponse.statusCode == 200) {
@@ -60,6 +61,7 @@ class TutorProfileUpdateBloc
             "Content-Type": "application/json",
             "Authorization": "Bearer ${PrefUtils.getToken()}",
           },
+          
           body: jsonEncode({
             "name": event.displayname,
             "timezone": event.timezone,
@@ -68,6 +70,7 @@ class TutorProfileUpdateBloc
             "languages_spoken": event.targetspoken,
             "topics": event.topics,
             "is_published": event.ispublished,
+            "upload_image" : event.imagepath,
           }),
         );
         if (reponse.statusCode == 200) {

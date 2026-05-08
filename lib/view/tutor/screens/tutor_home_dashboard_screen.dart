@@ -285,6 +285,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
 
               final name = (data.name ?? '').trim();
               if (name.isNotEmpty) await PrefUtils.setname(name);
+              await PrefUtils.setimagepath(
+                                  state.model.data?.imagepath ?? '',
+                                );
 
               final headline = (data.headline ?? '').trim();
               if (headline.isNotEmpty) await PrefUtils.setHeadline(headline);

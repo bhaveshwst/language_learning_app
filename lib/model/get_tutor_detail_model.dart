@@ -35,6 +35,7 @@ class Data {
   String? languagesSpoken;
   List<dynamic>? topics;
   bool? isPublished;
+  String? imagepath;
 
   Data({
     this.userId,
@@ -46,6 +47,7 @@ class Data {
     this.languagesSpoken,
     this.topics,
     this.isPublished,
+    this.imagepath,
   });
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,7 @@ class Data {
     languagesSpoken = json['languages_spoken'];
     topics = json['topics'];
     isPublished = json['is_published'];
+    imagepath = json['upload_image'];
   }
 
   Map<String, dynamic> toJson() {
@@ -71,6 +74,7 @@ class Data {
     data['languages_spoken'] = languagesSpoken;
     data['topics'] = topics;
     data['is_published'] = isPublished;
+    data['upload_image'] = imagepath;
     return data;
   }
 }
