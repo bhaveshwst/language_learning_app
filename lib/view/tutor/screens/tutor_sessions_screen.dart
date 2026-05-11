@@ -715,11 +715,34 @@ class _SlotSessionCard extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        const Icon(
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: ConstColor.primaryBlue.withValues(
+                              alpha: 0.16,
+                            ),
+                            shape: BoxShape.circle,
+                            image:
+                                row.studentprofile != null &&
+                                    row.studentprofile!.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(
+                                      (row.studentprofile ?? '').trim(),
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        if(row.studentprofile == null ||
+                                    row.studentprofile!.isEmpty)...[const Icon(
                           Icons.person_outline,
-                          size: 18,
+                          size: 20,
                           color: ConstColor.textSecondary,
                         ),
+                        ],
+                        
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(

@@ -322,6 +322,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                 separatorBuilder: (context, index) =>
                                     SizedBox(height: ConstSize.grid * 2),
                                 itemBuilder: (_, index) => _TutorSessionCard(
+                                  tutorprofile: (groups[index].tutorprofile).trim(),
                                   group: groups[index],
                                   onReport: (row) => _openReportSessionDialog(
                                     context,
@@ -570,6 +571,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
       }).toList();
 
       return _TutorSessionGroup(
+        tutorprofile: (tutorEntry.value.first.tutorprofile ?? '').trim(),
         tutorName: tutorEntry.key,
         dateGroups: dateGroups,
         showJoin: showJoin,
@@ -624,6 +626,7 @@ class _TabToggle extends StatelessWidget {
 class _TutorSessionGroup {
   const _TutorSessionGroup({
     required this.tutorName,
+    required this.tutorprofile,
     required this.dateGroups,
     required this.showJoin,
     required this.canJoin,
@@ -631,6 +634,7 @@ class _TutorSessionGroup {
     required this.showReport,
   });
   final String tutorName;
+  final String tutorprofile;
   final List<_SessionDateGroup> dateGroups;
   final bool showJoin;
 
@@ -664,6 +668,7 @@ class _SessionTimeItem {
 class _TutorSessionCard extends StatelessWidget {
   const _TutorSessionCard({
     required this.group,
+    required this.tutorprofile,
     required this.onJoin,
     required this.joiningSlotId,
     required this.onCancel,
@@ -673,6 +678,7 @@ class _TutorSessionCard extends StatelessWidget {
   final _TutorSessionGroup group;
   final ValueChanged<bookings.Data> onJoin;
   final String joiningSlotId;
+  final String tutorprofile;
   final ValueChanged<bookings.Data> onCancel;
   final ValueChanged<bookings.Data> onReport;
 
@@ -691,10 +697,24 @@ class _TutorSessionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor: ConstColor.accentTeal.withValues(alpha: 0.16),
-                child: const Icon(Icons.person, color: ConstColor.accentTeal),
+              Container(
+                width: 35,
+                height: 35,
+                decoration: BoxDecoration(
+                  color: ConstColor.primaryBlue.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                  image: tutorprofile.isNotEmpty ? DecorationImage(
+                    image: NetworkImage(tutorprofile),
+                    fit: BoxFit.cover,
+                  ) : null,
+                ),
               ),
+              if(tutorprofile.isEmpty)...[
+                CircleAvatar(
+                  backgroundColor: ConstColor.accentTeal.withValues(alpha: 0.16),
+                  child: const Icon(Icons.person, color: ConstColor.accentTeal),
+                ),
+              ],
               const SizedBox(width: ConstSize.grid),
               Text(
                 group.tutorName,

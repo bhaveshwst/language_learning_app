@@ -715,8 +715,6 @@ class _TutorCard extends StatelessWidget {
                 '${ConstString.text(language, 'language')}: $primaryLanguage',
                 style: const TextStyle(color: ConstColor.textSecondary),
               ),
-              const SizedBox(height: ConstSize.grid),
-
               const SizedBox(height: ConstSize.grid * 2),
               Row(
                 children: [

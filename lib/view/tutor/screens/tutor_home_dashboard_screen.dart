@@ -488,6 +488,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                             final row = entry.value;
                             return [
                               _BookingTile(
+                                studentprofile: (row.studentprofile ?? '').trim(),
                                 student:
                                     (row.studentName ?? '').trim().isNotEmpty
                                     ? (row.studentName ?? '').trim()
@@ -561,12 +562,14 @@ class _BookingTile extends StatelessWidget {
     required this.time,
     required this.focus,
     required this.timezone,
+    required this.studentprofile,
   });
 
   final String student;
   final String time;
   final String focus;
   final String timezone;
+  final String studentprofile;
 
   @override
   Widget build(BuildContext context) {
@@ -579,10 +582,24 @@ class _BookingTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
-            backgroundColor: Color(0x1A0F6CBD),
-            child: Icon(Icons.person, color: ConstColor.primaryBlue),
+          Container(
+            width: 35,
+            height: 35,
+            decoration: BoxDecoration(
+              color: ConstColor.primaryBlue.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+              image:  studentprofile.isNotEmpty ? DecorationImage(
+                image: NetworkImage(studentprofile),
+                fit: BoxFit.cover,
+              ) : null,
+            ),
           ),
+          if(studentprofile.isEmpty)...[
+            const CircleAvatar(
+              backgroundColor: Color(0x1A0F6CBD),
+              child: Icon(Icons.person, color: ConstColor.primaryBlue),
+            ),
+          ],
           const SizedBox(width: ConstSize.grid),
           Expanded(
             child: Column(
