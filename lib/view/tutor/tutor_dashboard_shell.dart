@@ -201,7 +201,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                     'tutorSettings',
                     style: TextStyle(
                       fontSize: 26,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       height: 1.1,
                       letterSpacing: -0.5,
                       color: ConstColor.textPrimary,
@@ -261,7 +261,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                 'language',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
                   color: ConstColor.textSecondary,
                 ),

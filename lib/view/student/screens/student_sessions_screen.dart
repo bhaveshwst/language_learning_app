@@ -4,6 +4,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -22,6 +23,14 @@ import 'package:language_learning_app/provider/report_session/report_session_blo
 import 'package:language_learning_app/view/student/screens/live_session_screen.dart';
 
 enum StudentSessionTab { upcoming, current, past }
+
+String _formatStudentSessionCardDate(String raw, Locale locale) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty || trimmed == '-') return raw;
+  final parsed = DateTime.tryParse(trimmed.split(' ').first);
+  if (parsed == null) return raw;
+  return DateFormat.yMMMEd(locale.toString()).format(parsed);
+}
 
 class StudentSessionsScreen extends StatefulWidget {
   const StudentSessionsScreen({super.key});
@@ -144,8 +153,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
       FetchStudentBookings(studentId: studentId, silentRefresh: true),
     );
     await _listStudentBookingsBloc.stream.firstWhere(
-      (s) =>
-          s is ListStudentBookingsSuccess || s is ListStudentBookingsError,
+      (s) => s is ListStudentBookingsSuccess || s is ListStudentBookingsError,
     );
   }
 
@@ -245,152 +253,197 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                 },
               ),
             ],
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(ConstSize.grid * 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Expanded(
-                          child: AppText(
-                            'sessions',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
+            child: ColoredBox(
+              color: ConstColor.background,
+              child: SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 17, horizontal: 17),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Expanded(
+                            child: AppText(
+                              'sessions',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.35,
+                                color: ConstColor.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                        const AppVersionHeaderBadge(),
-                      ],
-                    ),
-                    const SizedBox(height: ConstSize.grid * 2),
-                    _TabToggle(
-                      selected: _tab,
-                      onChanged: (value) => setState(() => _tab = value),
-                    ),
-                    const SizedBox(height: ConstSize.grid * 2),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: ConstColor.primaryBlue,
-                        onRefresh: _refreshStudentSessions,
-                        child: BlocBuilder<
-                          ListStudentBookingsBloc,
-                          ListStudentBookingsState
-                        >(
-                          builder: (context, state) {
-                            if (state is ListStudentBookingsInitial) {
-                              final studentId = PrefUtils.getstudentid()
-                                  .trim();
-                              if (studentId.isNotEmpty) {
-                                _listStudentBookingsBloc.add(
-                                  FetchStudentBookings(studentId: studentId),
+                          const AppVersionHeaderBadge(),
+                        ],
+                      ),
+                      const SizedBox(height: ConstSize.grid * 2),
+                      _StudentSessionTabBar(
+                        selected: _tab,
+                        onChanged: (value) => setState(() => _tab = value),
+                      ),
+                      const SizedBox(height: ConstSize.grid * 2),
+                      Expanded(
+                        child: RefreshIndicator(
+                          color: ConstColor.primaryBlue,
+                          onRefresh: _refreshStudentSessions,
+                          child: BlocBuilder<ListStudentBookingsBloc, ListStudentBookingsState>(
+                            builder: (context, state) {
+                              if (state is ListStudentBookingsInitial) {
+                                final studentId = PrefUtils.getstudentid()
+                                    .trim();
+                                if (studentId.isNotEmpty) {
+                                  _listStudentBookingsBloc.add(
+                                    FetchStudentBookings(studentId: studentId),
+                                  );
+                                }
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: const Center(
+                                          child: SizedBox(
+                                            width: 32,
+                                            height: 32,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: ConstColor.primaryBlue,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 );
                               }
-                              return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minHeight: constraints.maxHeight,
-                                      ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            }
-                            if (state is ListStudentBookingsLoading) {
-                              return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minHeight: constraints.maxHeight,
-                                      ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            }
-                            if (state is ListStudentBookingsError) {
-                              return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minHeight: constraints.maxHeight,
-                                      ),
-                                      child: Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(
-                                            ConstSize.grid * 2,
-                                          ),
-                                          child: Text(
-                                            state.message,
-                                            style: const TextStyle(
-                                              color: ConstColor.textSecondary,
+                              if (state is ListStudentBookingsLoading) {
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: const Center(
+                                          child: SizedBox(
+                                            width: 32,
+                                            height: 32,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: ConstColor.primaryBlue,
                                             ),
-                                            textAlign: TextAlign.center,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              );
-                            }
-
-                            final rows = state is ListStudentBookingsSuccess
-                                ? (state.model.data ??
-                                      const <bookings.Data>[])
-                                : const <bookings.Data>[];
-                            final groups = _groupsForTab(rows, _tab);
-
-                            if (groups.isEmpty) {
-                              return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minHeight: constraints.maxHeight,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          t('noData'),
-                                          style: const TextStyle(
-                                            color: ConstColor.textSecondary,
+                                    );
+                                  },
+                                );
+                              }
+                              if (state is ListStudentBookingsError) {
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(
+                                              ConstSize.grid * 2.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: ConstColor.border
+                                                    .withValues(alpha: 0.65),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              state.message,
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                                fontSize: 14,
+                                                height: 1.35,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              );
-                            }
+                                    );
+                                  },
+                                );
+                              }
 
-                            return ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: groups.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: ConstSize.grid * 2),
-                              itemBuilder: (_, index) => _TutorSessionCard(
-                                  tutorprofile: (groups[index].tutorprofile).trim(),
+                              final rows = state is ListStudentBookingsSuccess
+                                  ? (state.model.data ??
+                                        const <bookings.Data>[])
+                                  : const <bookings.Data>[];
+                              final groups = _groupsForTab(rows, _tab);
+
+                              if (groups.isEmpty) {
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: ConstSize.grid * 3,
+                                              vertical: ConstSize.grid * 2.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: ConstColor.border
+                                                    .withValues(alpha: 0.65),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              t('noData'),
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+
+                              return ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemCount: groups.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 14),
+                                itemBuilder: (_, index) => _TutorSessionCard(
+                                  tutorprofile: (groups[index].tutorprofile)
+                                      .trim(),
                                   group: groups[index],
                                   onReport: (row) => _openReportSessionDialog(
                                     context,
@@ -503,11 +556,12 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                   },
                                 ),
                               );
-                          },
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -652,42 +706,95 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
   }
 }
 
-class _TabToggle extends StatelessWidget {
-  const _TabToggle({required this.selected, required this.onChanged});
+class _StudentSessionTabBar extends StatelessWidget {
+  const _StudentSessionTabBar({
+    required this.selected,
+    required this.onChanged,
+  });
 
   final StudentSessionTab selected;
   final ValueChanged<StudentSessionTab> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      StudentSessionTab.upcoming,
-      StudentSessionTab.current,
-      StudentSessionTab.past,
+    final tabs = <(StudentSessionTab, String)>[
+      (StudentSessionTab.upcoming, 'upcoming'),
+      (StudentSessionTab.current, 'current'),
+      (StudentSessionTab.past, 'past'),
     ];
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < tabs.length; i++) ...[
+            if (i > 0) const SizedBox(width: 4),
+            Expanded(
+              child: _StudentSessionTabPill(
+                labelKey: tabs[i].$2,
+                selected: selected == tabs[i].$1,
+                onTap: () => onChanged(tabs[i].$1),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
-    return ToggleButtons(
-      isSelected: items.map((e) => e == selected).toList(),
-      onPressed: (index) => onChanged(items[index]),
-      borderRadius: BorderRadius.circular(ConstSize.radiusM),
-      constraints: const BoxConstraints(minHeight: 40, minWidth: 96),
-      selectedColor: Colors.white,
-      fillColor: ConstColor.primaryBlue,
-      color: ConstColor.textSecondary,
-      children: const [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('upcoming'),
+class _StudentSessionTabPill extends StatelessWidget {
+  const _StudentSessionTabPill({
+    required this.labelKey,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String labelKey;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? ConstColor.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: AppText(
+              labelKey,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
+                color: selected ? Colors.white : ConstColor.textSecondary,
+              ),
+            ),
+          ),
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('current'),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('past'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -734,6 +841,65 @@ class _SessionTimeItem {
   final bookings.Data row;
 }
 
+class _StudentSessionsTutorAvatar extends StatelessWidget {
+  const _StudentSessionsTutorAvatar({required this.imageUrl});
+
+  final String imageUrl;
+
+  static const double _size = 48;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = imageUrl.trim();
+    final hasUrl = trimmed.isNotEmpty;
+
+    final placeholder = Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ConstColor.primaryBlue.withValues(alpha: 0.12),
+      ),
+      child: const Icon(
+        Icons.person_rounded,
+        color: ConstColor.primaryBlue,
+        size: 26,
+      ),
+    );
+
+    if (!hasUrl) return placeholder;
+
+    return ClipOval(
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Image.network(
+          trimmed,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => placeholder,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+              child: const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ConstColor.primaryBlue,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _TutorSessionCard extends StatelessWidget {
   const _TutorSessionCard({
     required this.group,
@@ -755,247 +921,345 @@ class _TutorSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
     return Container(
-      padding: const EdgeInsets.all(ConstSize.grid * 2),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(ConstSize.radiusL),
-        border: Border.all(color: ConstColor.border),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                width: 35,
-                height: 35,
-                decoration: BoxDecoration(
-                  color: ConstColor.primaryBlue.withValues(alpha: 0.16),
-                  shape: BoxShape.circle,
-                  image: tutorprofile.isNotEmpty ? DecorationImage(
-                    image: NetworkImage(tutorprofile),
-                    fit: BoxFit.cover,
-                  ) : null,
-                ),
+                width: 4,
+                color: ConstColor.primaryBlue.withValues(alpha: 0.85),
               ),
-              if(tutorprofile.isEmpty)...[
-                CircleAvatar(
-                  backgroundColor: ConstColor.accentTeal.withValues(alpha: 0.16),
-                  child: const Icon(Icons.person, color: ConstColor.accentTeal),
-                ),
-              ],
-              const SizedBox(width: ConstSize.grid),
-              Text(
-                group.tutorName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _StudentSessionsTutorAvatar(imageUrl: tutorprofile),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              group.tutorName,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.25,
+                                color: ConstColor.textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      for (var di = 0; di < group.dateGroups.length; di++) ...[
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: di == group.dateGroups.length - 1 ? 0 : 10,
+                          ),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: ConstColor.background.withValues(
+                                alpha: 0.85,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: ConstColor.border.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _formatStudentSessionCardDate(
+                                    group.dateGroups[di].dateLabel,
+                                    locale,
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.2,
+                                    color: ConstColor.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                for (
+                                  var ii = 0;
+                                  ii < group.dateGroups[di].items.length;
+                                  ii++
+                                )
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom:
+                                          ii ==
+                                              group
+                                                      .dateGroups[di]
+                                                      .items
+                                                      .length -
+                                                  1
+                                          ? 0
+                                          : 10,
+                                    ),
+                                    child: _StudentSessionSlotTile(
+                                      item: group.dateGroups[di].items[ii],
+                                      group: group,
+                                      joiningSlotId: joiningSlotId,
+                                      locale: locale,
+                                      onJoin: onJoin,
+                                      onCancel: onCancel,
+                                      onReport: onReport,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: ConstSize.grid * 1.5),
-          ...group.dateGroups.map((dateGroup) {
-            return Container(
-              width: (!group.showJoin && !group.showCancel && !group.showReport)
-                  ? double.infinity
-                  : null,
-              margin: const EdgeInsets.only(bottom: ConstSize.grid * 1.5),
-              padding: const EdgeInsets.all(ConstSize.grid * 1.2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFF),
-                borderRadius: BorderRadius.circular(ConstSize.radiusM),
-                border: Border.all(color: ConstColor.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateGroup.dateLabel,
-                    style: const TextStyle(
-                      color: ConstColor.primaryBlue,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: ConstSize.grid),
-                  ...dateGroup.items.map((item) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: ConstSize.grid),
-                      child: Container(
-                        padding: const EdgeInsets.all(ConstSize.grid),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(
-                            ConstSize.radiusM,
-                          ),
-                          border: Border.all(color: ConstColor.border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              TimeDisplayFormat.formatSlotRangeLabelForDisplay(
-                                item.timeLabel,
-                                locale,
-                              ),
-                              style: const TextStyle(
-                                color: ConstColor.primaryBlue,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (item.topic.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const AppText(
-                                    'topic',
-                                    style: TextStyle(
-                                      color: ConstColor.textSecondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      item.topic,
-                                      style: const TextStyle(
-                                        color: ConstColor.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (item.tutorTimezone.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                'Tutor timezone: ${item.tutorTimezone}',
-                                style: const TextStyle(
-                                  color: ConstColor.textSecondary,
-                                ),
-                              ),
-                            ],
-                            if (item.viewerTimezone.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'Viewer timezone: ${item.viewerTimezone}',
-                                style: const TextStyle(
-                                  color: ConstColor.textSecondary,
-                                ),
-                              ),
-                            ],
-                            if (group.showJoin || group.showCancel) ...[
-                              const SizedBox(height: ConstSize.grid),
-                              Row(
-                                children: [
-                                  if (group.showJoin)
-                                    Expanded(
-                                      child:
-                                          BlocBuilder<
-                                            LiveSessionJoinBloc,
-                                            LiveSessionJoinState
-                                          >(
-                                            builder: (context, joinState) {
-                                              final currentSlotId =
-                                                  (item.row.slotId ??
-                                                          item.row.sessionId ??
-                                                          '')
-                                                      .trim();
-                                              final isJoiningThis =
-                                                  joinState
-                                                      is LiveSessionJoinLoading &&
-                                                  joiningSlotId.isNotEmpty &&
-                                                  joiningSlotId ==
-                                                      currentSlotId;
-                                              return ElevatedButton(
-                                                onPressed:
-                                                    group.canJoin &&
-                                                        !isJoiningThis
-                                                    ? () => onJoin(item.row)
-                                                    : null,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: group.canJoin
-                                                      ? ConstColor.primaryBlue
-                                                      : ConstColor.grey,
-                                                  disabledBackgroundColor:
-                                                      ConstColor.grey,
-                                                  foregroundColor: Colors.white,
-                                                  disabledForegroundColor:
-                                                      Colors.white70,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          ConstSize.radiusM,
-                                                        ),
-                                                  ),
-                                                ),
-                                                child: isJoiningThis
-                                                    ? const SizedBox(
-                                                        width: 18,
-                                                        height: 18,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                      )
-                                                    : const AppText('join'),
-                                              );
-                                            },
-                                          ),
-                                    ),
-                                  if (group.showJoin && group.showCancel)
-                                    const SizedBox(width: ConstSize.grid),
-                                  if (group.showCancel)
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () => onCancel(item.row),
-                                        style: OutlinedButton.styleFrom(
-                                          side: const BorderSide(
-                                            color: ConstColor.border,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              ConstSize.radiusM,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const AppText('cancel'),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                            if (group.showReport) ...[
-                              const SizedBox(height: ConstSize.grid),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: () => onReport(item.row),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                      color: ConstColor.border,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        ConstSize.radiusM,
-                                      ),
-                                    ),
-                                  ),
-                                  child: const AppText('reportSpam'),
-                                ),
-                              ),
-                            ],
-                          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentSessionSlotTile extends StatelessWidget {
+  const _StudentSessionSlotTile({
+    required this.item,
+    required this.group,
+    required this.joiningSlotId,
+    required this.locale,
+    required this.onJoin,
+    required this.onCancel,
+    required this.onReport,
+  });
+
+  final _SessionTimeItem item;
+  final _TutorSessionGroup group;
+  final String joiningSlotId;
+  final Locale locale;
+  final ValueChanged<bookings.Data> onJoin;
+  final ValueChanged<bookings.Data> onCancel;
+  final ValueChanged<bookings.Data> onReport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.75)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            TimeDisplayFormat.formatSlotRangeLabelForDisplay(
+              item.timeLabel,
+              locale,
+            ),
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.15,
+              color: ConstColor.primaryBlue,
+            ),
+          ),
+          if (item.topic.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.menu_book_rounded,
+                  size: 16,
+                  color: ConstColor.primaryBlue.withValues(alpha: 0.75),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppText(
+                        'topic',
+                        style: TextStyle(
+                          color: ConstColor.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
                       ),
-                    );
-                  }),
-                ],
+                      const SizedBox(height: 2),
+                      Text(
+                        item.topic,
+                        style: const TextStyle(
+                          color: ConstColor.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (item.tutorTimezone.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Tutor timezone: ${item.tutorTimezone}',
+              style: TextStyle(
+                color: ConstColor.textSecondary.withValues(alpha: 0.95),
+                fontSize: 12.5,
+                height: 1.35,
               ),
-            );
-          }),
+            ),
+          ],
+          if (item.viewerTimezone.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Viewer timezone: ${item.viewerTimezone}',
+              style: TextStyle(
+                color: ConstColor.textSecondary.withValues(alpha: 0.95),
+                fontSize: 12.5,
+                height: 1.35,
+              ),
+            ),
+          ],
+          if (group.showJoin || group.showCancel) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (group.showJoin)
+                  Expanded(
+                    child:
+                        BlocBuilder<LiveSessionJoinBloc, LiveSessionJoinState>(
+                          builder: (context, joinState) {
+                            final currentSlotId =
+                                (item.row.slotId ?? item.row.sessionId ?? '')
+                                    .trim();
+                            final isJoiningThis =
+                                joinState is LiveSessionJoinLoading &&
+                                joiningSlotId.isNotEmpty &&
+                                joiningSlotId == currentSlotId;
+                            return FilledButton(
+                              onPressed: group.canJoin && !isJoiningThis
+                                  ? () => onJoin(item.row)
+                                  : null,
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                backgroundColor: ConstColor.primaryBlue,
+                                disabledBackgroundColor: ConstColor.grey,
+                                foregroundColor: Colors.white,
+                                disabledForegroundColor: Colors.white70,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: isJoiningThis
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const AppText(
+                                      'join',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            );
+                          },
+                        ),
+                  ),
+                if (group.showJoin && group.showCancel)
+                  const SizedBox(width: 10),
+                if (group.showCancel)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => onCancel(item.row),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        foregroundColor: ConstColor.primaryBlue,
+                        side: BorderSide(
+                          color: ConstColor.primaryBlue.withValues(alpha: 0.45),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const AppText(
+                        'cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          if (group.showReport) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => onReport(item.row),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  foregroundColor: ConstColor.primaryBlue,
+                  side: BorderSide(
+                    color: ConstColor.primaryBlue.withValues(alpha: 0.45),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const AppText(
+                  'reportSpam',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1065,7 +1329,7 @@ class _ReportSessionReasonDialogState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: InputDecoration(
                   hintText: t('selectReportTypeHint'),
                   border: const OutlineInputBorder(),
@@ -1112,7 +1376,9 @@ class _ReportSessionReasonDialogState
                         minHeight: 36,
                       ),
                       icon: Icon(
-                        selected ? Icons.star_rounded : Icons.star_border_rounded,
+                        selected
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
                         color: selected
                             ? const Color(0xFFFFC107)
                             : ConstColor.textSecondary,
@@ -1170,7 +1436,9 @@ class _ReportSessionReasonDialogState
                             sessionId: widget.sessionId,
                             reason: reason,
                             type: type,
-                            rating: _selectedType == _reviewType ? _rating : null,
+                            rating: _selectedType == _reviewType
+                                ? _rating
+                                : null,
                           ),
                         );
                       },

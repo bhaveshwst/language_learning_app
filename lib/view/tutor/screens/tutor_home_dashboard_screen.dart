@@ -281,9 +281,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
 
               final name = (data.name ?? '').trim();
               if (name.isNotEmpty) await PrefUtils.setname(name);
-              await PrefUtils.setimagepath(
-                                  state.model.data?.imagepath ?? '',
-                                );
+              await PrefUtils.setimagepath(state.model.data?.imagepath ?? '');
 
               final headline = (data.headline ?? '').trim();
               if (headline.isNotEmpty) await PrefUtils.setHeadline(headline);
@@ -337,7 +335,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                         '${PrefUtils.getname()} 👋',
                         style: const TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -438,7 +436,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                                       child: AppText(
                                         'todaySessions',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w700,
                                           color: ConstColor.textPrimary,
                                         ),
                                       ),
@@ -462,7 +460,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                           'upcomingBookings',
                           style: TextStyle(
                             fontSize: 17,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.3,
                             color: ConstColor.textPrimary,
                           ),
@@ -487,17 +485,18 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                             final row = entry.value;
                             return [
                               _BookingTile(
-                                studentprofile:
-                                    (row.studentprofile ?? '').trim(),
+                                studentprofile: (row.studentprofile ?? '')
+                                    .trim(),
                                 student:
                                     (row.studentName ?? '').trim().isNotEmpty
                                     ? (row.studentName ?? '').trim()
                                     : '-',
                                 dateLine: _bookingDateOnlyLine(row, locale),
-                                timeRangeLine:
-                                    _bookingTimeRangeLine(row, locale),
-                                timezone:
-                                    (row.studentTimezone ?? '').trim(),
+                                timeRangeLine: _bookingTimeRangeLine(
+                                  row,
+                                  locale,
+                                ),
+                                timezone: (row.studentTimezone ?? '').trim(),
                               ),
                               if (i < preview.length - 1)
                                 const SizedBox(height: 10),
@@ -588,9 +587,7 @@ class _BookingTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: ConstColor.border.withValues(alpha: 0.65),
-        ),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
         boxShadow: [
           BoxShadow(
             color: ConstColor.primaryBlue.withValues(alpha: 0.05),
@@ -646,8 +643,9 @@ class _BookingTile extends StatelessWidget {
                                   child: Icon(
                                     Icons.event_rounded,
                                     size: 13,
-                                    color: ConstColor.textSecondary
-                                        .withValues(alpha: 0.85),
+                                    color: ConstColor.textSecondary.withValues(
+                                      alpha: 0.85,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 5),
@@ -670,8 +668,9 @@ class _BookingTile extends StatelessWidget {
                                   child: Icon(
                                     Icons.schedule_rounded,
                                     size: 13,
-                                    color: ConstColor.textSecondary
-                                        .withValues(alpha: 0.85),
+                                    color: ConstColor.textSecondary.withValues(
+                                      alpha: 0.85,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 5),
@@ -692,8 +691,9 @@ class _BookingTile extends StatelessWidget {
                                   Icon(
                                     Icons.public_rounded,
                                     size: 13,
-                                    color: ConstColor.textSecondary
-                                        .withValues(alpha: 0.75),
+                                    color: ConstColor.textSecondary.withValues(
+                                      alpha: 0.75,
+                                    ),
                                   ),
                                   const SizedBox(width: 5),
                                   Expanded(

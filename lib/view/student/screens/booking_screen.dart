@@ -23,6 +23,7 @@ class BookingScreen extends StatefulWidget {
     this.tutorBio = '',
     this.tutorLanguagesTaught = '',
     this.tutorLanguagesSpoken = '',
+    this.tutorImageUrl,
     this.prefillSlotDate,
     this.prefillSlotStartTime,
     this.prefillSlotEndTime,
@@ -34,6 +35,8 @@ class BookingScreen extends StatefulWidget {
   final String tutorBio;
   final String tutorLanguagesTaught;
   final String tutorLanguagesSpoken;
+  /// Full URL from API (`upload_image`); empty or null shows a person icon.
+  final String? tutorImageUrl;
   final String? prefillSlotDate;
   final String? prefillSlotStartTime;
   final String? prefillSlotEndTime;
@@ -133,9 +136,9 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<void> _showSlotPicker(AppLanguage language) async {
     final selected = await showModalBottomSheet<tutor_availability.Data>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: ConstColor.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (bottomSheetContext) {
         return SafeArea(
@@ -143,65 +146,81 @@ class _BookingScreenState extends State<BookingScreen> {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(
               ConstSize.grid * 2,
-              ConstSize.grid * 1.5,
               ConstSize.grid * 2,
               ConstSize.grid * 2,
+              ConstSize.grid * 2.5,
             ),
             itemCount: _slots.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              color: ConstColor.border.withValues(alpha: 0.75),
+            ),
             itemBuilder: (_, index) {
               final slot = _slots[index];
               final isSelected = _selectedSlot == slot;
               final locale = Localizations.localeOf(bottomSheetContext);
-              return InkWell(
-                onTap: () => Navigator.pop(bottomSheetContext, slot),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: ConstSize.grid * 1.2,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: (_) =>
-                            Navigator.pop(bottomSheetContext, slot),
-                        activeColor: ConstColor.primaryBlue,
-                      ),
-                      const SizedBox(width: ConstSize.grid),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _slotDateTimeLabel(slot, locale),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _slotTopicLabel(slot, language),
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
-                                height: 1.35,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              (slot.timezone ?? '').trim().isEmpty
-                                  ? '${ConstString.text(language, 'timezone')}: -'
-                                  : '${ConstString.text(language, 'timezone')}: ${(slot.timezone ?? '').trim()}',
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(bottomSheetContext, slot),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: (_) =>
+                              Navigator.pop(bottomSheetContext, slot),
+                          activeColor: ConstColor.primaryBlue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _slotDateTimeLabel(slot, locale),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.15,
+                                  color: ConstColor.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _slotTopicLabel(slot, language),
+                                style: TextStyle(
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.95,
+                                  ),
+                                  height: 1.35,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                (slot.timezone ?? '').trim().isEmpty
+                                    ? '${ConstString.text(language, 'timezone')}: -'
+                                    : '${ConstString.text(language, 'timezone')}: ${(slot.timezone ?? '').trim()}',
+                                style: TextStyle(
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.95,
+                                  ),
+                                  height: 1.35,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -219,18 +238,24 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _infoRow({required IconData icon, required String text}) {
     if (text.trim().isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: ConstColor.textSecondary),
-          const SizedBox(width: ConstSize.grid),
+          Icon(
+            icon,
+            size: 18,
+            color: ConstColor.primaryBlue.withValues(alpha: 0.75),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: ConstColor.textSecondary,
+              style: TextStyle(
+                color: ConstColor.textSecondary.withValues(alpha: 0.95),
                 height: 1.4,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -242,10 +267,22 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ConstColor.background,
       appBar: AppBar(
-        title: const AppText('booking'),
-        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: ConstColor.background,
+        foregroundColor: ConstColor.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        title: const AppText(
+          'booking',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.25,
+            color: ConstColor.textPrimary,
+          ),
+        ),
         actions: const [AppVersionAppBarAction()],
       ),
       body: MultiBlocProvider(
@@ -292,99 +329,163 @@ class _BookingScreenState extends State<BookingScreen> {
               ],
               child: SafeArea(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(ConstSize.grid * 2),
+                  padding: const EdgeInsets.fromLTRB(
+                    ConstSize.grid * 2,
+                    ConstSize.grid * 1.5,
+                    ConstSize.grid * 2,
+                    ConstSize.grid * 3,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Tutor details card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(ConstSize.grid * 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F8FF),
-                          borderRadius: BorderRadius.circular(
-                            ConstSize.radiusL,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: ConstColor.border.withValues(alpha: 0.65),
                           ),
-                          border: Border.all(color: ConstColor.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: ConstColor.primaryBlue.withValues(
+                                alpha: 0.06,
+                              ),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: Color(0x1A18B6A6),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: ConstColor.accentTeal,
-                                    size: 26,
+                                Container(
+                                  width: 4,
+                                  color: ConstColor.accentTeal.withValues(
+                                    alpha: 0.9,
                                   ),
                                 ),
-                                const SizedBox(width: ConstSize.grid * 1.5),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        widget.tutorName,
-                                        style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w800,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _BookingTutorAvatar(
+                                              imageUrl:
+                                                  widget.tutorImageUrl ?? '',
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    widget.tutorName,
+                                                    style: const TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      height: 1.15,
+                                                      letterSpacing: -0.35,
+                                                      color: ConstColor
+                                                          .textPrimary,
+                                                    ),
+                                                  ),
+                                                  if (widget.tutorHeadline
+                                                      .trim()
+                                                      .isNotEmpty) ...[
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      widget.tutorHeadline
+                                                          .trim(),
+                                                      style: TextStyle(
+                                                        color: ConstColor
+                                                            .textSecondary
+                                                            .withValues(
+                                                              alpha: 0.95,
+                                                            ),
+                                                        height: 1.35,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        widget.tutorHeadline.trim(),
-                                        style: const TextStyle(
-                                          color: ConstColor.textSecondary,
-                                          height: 1.3,
+                                        const SizedBox(height: 14),
+                                        _infoRow(
+                                          icon: Icons.school_outlined,
+                                          text: widget.tutorLanguagesTaught
+                                              .trim(),
                                         ),
-                                      ),
-                                    ],
+                                        _infoRow(
+                                          icon:
+                                              Icons.record_voice_over_outlined,
+                                          text: widget.tutorLanguagesSpoken
+                                              .trim(),
+                                        ),
+                                        if ((widget.tutorBio)
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            widget.tutorBio.trim(),
+                                            style: TextStyle(
+                                              color: ConstColor.textSecondary
+                                                  .withValues(alpha: 0.95),
+                                              height: 1.45,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: ConstSize.grid * 2),
-                            _infoRow(
-                              icon: Icons.school_outlined,
-                              text: widget.tutorLanguagesTaught.trim(),
-                            ),
-                            _infoRow(
-                              icon: Icons.record_voice_over_outlined,
-                              text: widget.tutorLanguagesSpoken.trim(),
-                            ),
-                            if ((widget.tutorBio).trim().isNotEmpty) ...[
-                              const SizedBox(height: ConstSize.grid),
-                              Text(
-                                widget.tutorBio.trim(),
-                                style: const TextStyle(
-                                  color: ConstColor.textSecondary,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: ConstSize.grid * 3),
+                      const SizedBox(height: 22),
 
-                      // Select slot header + calendar view
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const AppText(
-                            'selectSlot',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                          const Expanded(
+                            child: AppText(
+                              'selectSlot',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                                color: ConstColor.textPrimary,
+                              ),
                             ),
                           ),
                           TextButton.icon(
+                            style: TextButton.styleFrom(
+                              foregroundColor: ConstColor.primaryBlue,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                            ),
                             onPressed: widget.tutorId.trim().isEmpty
                                 ? null
                                 : () {
@@ -395,28 +496,41 @@ class _BookingScreenState extends State<BookingScreen> {
                                             TutorAvailabilityCalendarScreen(
                                               tutorName: widget.tutorName,
                                               tutorId: widget.tutorId,
+                                              tutorImageUrl:
+                                                  widget.tutorImageUrl,
                                             ),
                                       ),
                                     );
                                   },
-                            icon: const Icon(Icons.calendar_month_outlined),
-                            label: Text(t('calendarView')),
+                            icon: const Icon(
+                              Icons.calendar_month_rounded,
+                              size: 20,
+                            ),
+                            label: Text(
+                              t('calendarView'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: ConstSize.grid),
-
-                      // Select slot picker
+                      const SizedBox(height: 10),
                       BlocBuilder<
                         TutorAvailabilityBloc,
                         TutorAvailabilityState
                       >(
                         builder: (context, state) {
                           if (widget.tutorId.trim().isEmpty) {
-                            return Text(
-                              t('pleaseTryAgain'),
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                t('pleaseTryAgain'),
+                                style: const TextStyle(
+                                  color: ConstColor.textSecondary,
+                                  fontSize: 14,
+                                ),
                               ),
                             );
                           }
@@ -429,123 +543,186 @@ class _BookingScreenState extends State<BookingScreen> {
                           //   );
                           // }
                           if (state is TutorAvailabilityError) {
-                            return Text(
-                              state.message,
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                state.message,
+                                style: const TextStyle(
+                                  color: ConstColor.textSecondary,
+                                  fontSize: 14,
+                                  height: 1.35,
+                                ),
                               ),
                             );
                           }
 
                           if (_slots.isEmpty) {
-                            return Text(
-                              t('noData'),
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 18,
+                                horizontal: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: ConstColor.border.withValues(alpha: 0.75),
+                                ),
+                              ),
+                              child: Text(
+                                t('noData'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.95,
+                                  ),
+                                  fontSize: 14,
+                                ),
                               ),
                             );
                           }
 
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(
-                              ConstSize.radiusL,
-                            ),
-                            onTap: () => _showSlotPicker(language),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(
-                                ConstSize.grid * 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F9FD),
-                                border: Border.all(color: ConstColor.border),
-                                borderRadius: BorderRadius.circular(
-                                  ConstSize.radiusL,
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showSlotPicker(language),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _selectedSlot == null
-                                        ? Text(
-                                            t('selectSlot'),
-                                            style: const TextStyle(
-                                              color: ConstColor.textSecondary,
-                                              fontSize: 16,
-                                            ),
-                                          )
-                                        : Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _slotDateTimeLabel(
-                                                  _selectedSlot!,
-                                                  Localizations.localeOf(
-                                                    context,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: ConstColor.border.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: ConstColor.primaryBlue.withValues(
+                                        alpha: 0.04,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _selectedSlot == null
+                                          ? Text(
+                                              t('selectSlot'),
+                                              style: TextStyle(
+                                                color: ConstColor.textSecondary
+                                                    .withValues(alpha: 0.85),
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            )
+                                          : Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.schedule_rounded,
+                                                      size: 18,
+                                                      color: ConstColor
+                                                          .primaryBlue
+                                                          .withValues(
+                                                            alpha: 0.88,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        _slotDateTimeLabel(
+                                                          _selectedSlot!,
+                                                          Localizations.localeOf(
+                                                            context,
+                                                          ),
+                                                        ),
+                                                        style: const TextStyle(
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          letterSpacing: -0.2,
+                                                          color: ConstColor
+                                                              .textPrimary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  _slotTopicLabel(
+                                                    _selectedSlot!,
+                                                    language,
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: ConstColor
+                                                        .textSecondary
+                                                        .withValues(alpha: 0.95),
+                                                    height: 1.35,
+                                                    fontSize: 13,
                                                   ),
                                                 ),
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  ((_selectedSlot!.timezone ?? '')
+                                                          .trim()
+                                                          .isEmpty)
+                                                      ? '${t('timezone')}: -'
+                                                      : '${t('timezone')}: ${(_selectedSlot!.timezone ?? '').trim()}',
+                                                  style: TextStyle(
+                                                    color: ConstColor
+                                                        .textSecondary
+                                                        .withValues(alpha: 0.95),
+                                                    height: 1.35,
+                                                    fontSize: 12.5,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                _slotTopicLabel(
-                                                  _selectedSlot!,
-                                                  language,
-                                                ),
-                                                style: const TextStyle(
-                                                  color:
-                                                      ConstColor.textSecondary,
-                                                  height: 1.35,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                ((_selectedSlot!.timezone ?? '')
-                                                        .trim()
-                                                        .isEmpty)
-                                                    ? '${t('timezone')}: -'
-                                                    : '${t('timezone')}: ${(_selectedSlot!.timezone ?? '').trim()}',
-                                                style: const TextStyle(
-                                                  color:
-                                                      ConstColor.textSecondary,
-                                                  height: 1.35,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                  ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: ConstColor.textSecondary,
-                                  ),
-                                ],
+                                              ],
+                                            ),
+                                    ),
+                                    Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: ConstColor.textSecondary.withValues(
+                                        alpha: 0.65,
+                                      ),
+                                      size: 28,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
 
-                      const SizedBox(height: ConstSize.grid * 2),
-                      const SizedBox(height: ConstSize.grid * 3),
+                      const SizedBox(height: 24),
 
                       SizedBox(
-                        height: ConstSize.buttonHeight,
+                        height: 52,
                         width: double.infinity,
                         child: BlocBuilder<BookSessionBloc, BookSessionState>(
                           builder: (context, bookState) {
                             final isLoading = bookState is BookSessionLoading;
-                            return ElevatedButton(
-                              style: ElevatedButton.styleFrom(
+                            return FilledButton(
+                              style: FilledButton.styleFrom(
                                 backgroundColor: ConstColor.primaryBlue,
                                 foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    ConstSize.radiusM,
-                                  ),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
                               onPressed: isLoading
@@ -606,23 +783,91 @@ class _BookingScreenState extends State<BookingScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const AppText('confirmBooking'),
+                                  : const AppText(
+                                      'confirmBooking',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        letterSpacing: 0.15,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             );
                           },
                         ),
                       ),
 
-                      const SizedBox(height: ConstSize.grid * 2),
+                      const SizedBox(height: 18),
 
                       const AppText(
                         'cancellationPolicy',
                         style: TextStyle(
                           color: ConstColor.textSecondary,
                           fontSize: 12,
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingTutorAvatar extends StatelessWidget {
+  const _BookingTutorAvatar({required this.imageUrl});
+
+  final String imageUrl;
+
+  static const double _size = 52;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = imageUrl.trim();
+    final hasUrl = trimmed.isNotEmpty;
+
+    final placeholder = Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ConstColor.accentTeal.withValues(alpha: 0.15),
+      ),
+      child: const Icon(
+        Icons.person_rounded,
+        color: ConstColor.accentTeal,
+        size: 28,
+      ),
+    );
+
+    if (!hasUrl) return placeholder;
+
+    return ClipOval(
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: Image.network(
+          trimmed,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => placeholder,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: _size,
+              height: _size,
+              alignment: Alignment.center,
+              color: ConstColor.accentTeal.withValues(alpha: 0.08),
+              child: const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ConstColor.accentTeal,
                 ),
               ),
             );

@@ -16,10 +16,12 @@ class TutorAvailabilityCalendarScreen extends StatefulWidget {
     super.key,
     required this.tutorName,
     required this.tutorId,
+    this.tutorImageUrl,
   });
 
   final String tutorName;
   final String tutorId;
+  final String? tutorImageUrl;
 
   @override
   State<TutorAvailabilityCalendarScreen> createState() =>
@@ -143,26 +145,50 @@ class _TutorAvailabilityCalendarScreenState
         return BlocProvider.value(
           value: _tutorAvailabilityBloc,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: ConstColor.background,
             appBar: AppBar(
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              backgroundColor: ConstColor.background,
+              foregroundColor: ConstColor.textPrimary,
+              surfaceTintColor: Colors.transparent,
               title: Text(
                 '${widget.tutorName} ${t('availabilityCalendarTitle')}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.25,
+                  color: ConstColor.textPrimary,
+                ),
               ),
-              backgroundColor: Colors.white,
               actions: const [AppVersionAppBarAction()],
             ),
             body: SafeArea(
               child: BlocBuilder<TutorAvailabilityBloc, TutorAvailabilityState>(
                 builder: (context, state) {
                   if (state is TutorAvailabilityLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: ConstColor.primaryBlue,
+                      ),
+                    );
                   }
 
                   if (state is TutorAvailabilityError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(ConstSize.grid * 2),
-                        child: Text(state.message),
+                        child: Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: ConstColor.textSecondary,
+                            fontSize: 15,
+                            height: 1.35,
+                          ),
+                        ),
                       ),
                     );
                   }
@@ -183,58 +209,193 @@ class _TutorAvailabilityCalendarScreenState
                       }).toList();
 
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(ConstSize.grid * 2),
+                    padding: const EdgeInsets.fromLTRB(
+                      ConstSize.grid * 2,
+                      ConstSize.grid * 1.5,
+                      ConstSize.grid * 2,
+                      ConstSize.grid * 3,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TableCalendar<Map<String, dynamic>>(
-                          firstDay: _firstDay,
-                          lastDay: _lastDay,
-                          focusedDay: _focusedDay,
-                          availableCalendarFormats: {
-                            CalendarFormat.month: t('month'),
-                          },
-                          calendarFormat: CalendarFormat.month,
-                          selectedDayPredicate: (day) =>
-                              isSameDay(_selectedDay, day),
-                          eventLoader: _eventsForDay,
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = _normalizeDate(selectedDay);
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                          onPageChanged: (focusedDay) {
-                            _focusedDay = focusedDay;
-                          },
-                          headerStyle: const HeaderStyle(
-                            titleCentered: true,
-                            formatButtonVisible: false,
-                          ),
-                          calendarStyle: CalendarStyle(
-                            todayDecoration: BoxDecoration(
-                              color: ConstColor.accentTeal.withValues(
-                                alpha: 0.7,
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: ConstColor.border.withValues(alpha: 0.65),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ConstColor.primaryBlue.withValues(
+                                  alpha: 0.06,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
                               ),
-                              shape: BoxShape.circle,
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: TableCalendar<Map<String, dynamic>>(
+                              firstDay: _firstDay,
+                              lastDay: _lastDay,
+                              focusedDay: _focusedDay,
+                              availableCalendarFormats: {
+                                CalendarFormat.month: t('month'),
+                              },
+                              calendarFormat: CalendarFormat.month,
+                              selectedDayPredicate: (day) =>
+                                  isSameDay(_selectedDay, day),
+                              eventLoader: _eventsForDay,
+                              onDaySelected: (selectedDay, focusedDay) {
+                                setState(() {
+                                  _selectedDay = _normalizeDate(selectedDay);
+                                  _focusedDay = focusedDay;
+                                });
+                              },
+                              onPageChanged: (focusedDay) {
+                                _focusedDay = focusedDay;
+                              },
+                              daysOfWeekHeight: 36,
+                              rowHeight: 44,
+                              headerStyle: HeaderStyle(
+                                titleCentered: true,
+                                formatButtonVisible: false,
+                                titleTextStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: ConstColor.textPrimary,
+                                  letterSpacing: -0.2,
+                                ),
+                                leftChevronIcon: Icon(
+                                  Icons.chevron_left_rounded,
+                                  color: ConstColor.primaryBlue.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                  size: 28,
+                                ),
+                                rightChevronIcon: Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: ConstColor.primaryBlue.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                  size: 28,
+                                ),
+                              ),
+                              daysOfWeekStyle: DaysOfWeekStyle(
+                                weekdayStyle: TextStyle(
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                                weekendStyle: TextStyle(
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              calendarStyle: CalendarStyle(
+                                outsideDaysVisible: true,
+                                cellMargin: const EdgeInsets.all(4),
+                                defaultTextStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: ConstColor.textPrimary,
+                                ),
+                                weekendTextStyle: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                                outsideTextStyle: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                                todayDecoration: BoxDecoration(
+                                  color: ConstColor.accentTeal.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: ConstColor.accentTeal.withValues(
+                                      alpha: 0.75,
+                                    ),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                todayTextStyle: const TextStyle(
+                                  color: ConstColor.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                                selectedDecoration: const BoxDecoration(
+                                  color: ConstColor.primaryBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                selectedTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                                markerDecoration: const BoxDecoration(
+                                  color: ConstColor.primaryBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                markersMaxCount: 1,
+                                markersAlignment: Alignment.bottomCenter,
+                                markerMargin: const EdgeInsets.only(top: 18),
+                              ),
                             ),
-                            selectedDecoration: const BoxDecoration(
-                              color: ConstColor.primaryBlue,
-                              shape: BoxShape.circle,
-                            ),
-                            markerDecoration: const BoxDecoration(
-                              color: ConstColor.primaryBlue,
-                              shape: BoxShape.circle,
-                            ),
-                            markersMaxCount: 1,
                           ),
                         ),
-                        const SizedBox(height: ConstSize.grid * 4),
-                        if (selectedDateData.isEmpty)
+                        const SizedBox(height: 22),
+                        if (selectedDateData.isNotEmpty) ...[
                           Text(
-                            t('noDataOnDate'),
+                            t('availableSlotsTitle'),
                             style: const TextStyle(
-                              color: ConstColor.textSecondary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.15,
+                              color: ConstColor.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        if (selectedDateData.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: ConstColor.border.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            child: Text(
+                              t('noDataOnDate'),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: ConstColor.textSecondary.withValues(
+                                  alpha: 0.95,
+                                ),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                height: 1.35,
+                              ),
                             ),
                           )
                         else
@@ -258,63 +419,27 @@ class _TutorAvailabilityCalendarScreenState
                                   endTime,
                                   Localizations.localeOf(context),
                                 );
-                            return Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(
-                                bottom: ConstSize.grid,
-                              ),
-                              padding: const EdgeInsets.all(
-                                ConstSize.grid * 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF4F8FF),
-                                borderRadius: BorderRadius.circular(
-                                  ConstSize.radiusM,
-                                ),
-                                border: Border.all(color: ConstColor.border),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-
-                                children: [
-                                  Center(
-                                    child: Text(
-                                      '${t('time')}: $timeDisplay\n${slotData['timezone']}',
+                            final timezone = (slotData['timezone'] ?? '-')
+                                .toString();
+                            return _AvailabilitySlotRow(
+                              timeDisplay: timeDisplay,
+                              timezone: timezone,
+                              bookLabel: t('book'),
+                              onBook: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BookingScreen(
+                                      tutorName: widget.tutorName,
+                                      tutorId: widget.tutorId,
+                                      tutorImageUrl: widget.tutorImageUrl,
+                                      prefillSlotDate: dateStr,
+                                      prefillSlotStartTime: startTime,
+                                      prefillSlotEndTime: endTime,
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => BookingScreen(
-                                            tutorName: widget.tutorName,
-                                            tutorId: widget.tutorId,
-                                            prefillSlotDate: dateStr,
-                                            prefillSlotStartTime: startTime,
-                                            prefillSlotEndTime: endTime,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: ConstColor.primaryBlue,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        t('book'),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             );
                           }),
                       ],
@@ -326,6 +451,152 @@ class _TutorAvailabilityCalendarScreenState
           ),
         );
       },
+    );
+  }
+}
+
+class _AvailabilitySlotRow extends StatelessWidget {
+  const _AvailabilitySlotRow({
+    required this.timeDisplay,
+    required this.timezone,
+    required this.bookLabel,
+    required this.onBook,
+  });
+
+  final String timeDisplay;
+  final String timezone;
+  final String bookLabel;
+  final VoidCallback onBook;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                color: ConstColor.primaryBlue.withValues(alpha: 0.85),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Icon(
+                                    Icons.schedule_rounded,
+                                    size: 17,
+                                    color: ConstColor.primaryBlue.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    timeDisplay,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                      letterSpacing: -0.3,
+                                      color: ConstColor.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.public_rounded,
+                                  size: 15,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    timezone,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w500,
+                                      color: ConstColor.textSecondary
+                                          .withValues(alpha: 0.95),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: onBook,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ConstColor.primaryBlue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          minimumSize: const Size(0, 44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          bookLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

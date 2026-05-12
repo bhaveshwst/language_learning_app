@@ -236,7 +236,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               'availability',
                               style: TextStyle(
                                 fontSize: 26,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 height: 1.1,
                                 color: ConstColor.textPrimary,
                                 letterSpacing: -0.5,
@@ -420,7 +420,6 @@ class _FilterBar extends StatelessWidget {
   final VoidCallback onApplyFilter;
   final VoidCallback onClear;
   final double borderRadius;
-
 
   @override
   Widget build(BuildContext context) {

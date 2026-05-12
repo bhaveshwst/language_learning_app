@@ -390,7 +390,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                   'tutorSessions',
                                   style: TextStyle(
                                     fontSize: 26,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     height: 1.1,
                                     letterSpacing: -0.5,
                                     color: ConstColor.textPrimary,

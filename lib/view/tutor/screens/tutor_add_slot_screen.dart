@@ -399,7 +399,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
             'addSlot',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               letterSpacing: -0.3,
               color: ConstColor.textPrimary,
             ),
@@ -463,7 +463,7 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                             'addSlotDetails',
                             style: TextStyle(
                               fontSize: 17,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: -0.25,
                               color: ConstColor.textPrimary,
                             ),
@@ -494,7 +494,8 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                               return Form(
                                 key: _formKey,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     TextFormField(
                                       controller: _dateController,
@@ -509,7 +510,8 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                         language,
                                         labelKey: 'date',
                                         hintText: 'YYYY-MM-DD',
-                                        suffixIcon: Icons.calendar_today_rounded,
+                                        suffixIcon:
+                                            Icons.calendar_today_rounded,
                                       ),
                                       validator: (value) {
                                         if ((value ?? '').trim().isEmpty) {
@@ -572,7 +574,9 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                                         }
                                         if (_selectedStartTime != null &&
                                             _selectedEndTime != null &&
-                                            _minutesFromTime(_selectedEndTime!) <=
+                                            _minutesFromTime(
+                                                  _selectedEndTime!,
+                                                ) <=
                                                 _minutesFromTime(
                                                   _selectedStartTime!,
                                                 )) {

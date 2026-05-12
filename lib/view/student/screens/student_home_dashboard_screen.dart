@@ -221,374 +221,405 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => _recommendedTutorBloc),
-        BlocProvider(create: (context) => _getStudentProfileBloc),
-      ],
-      child: MultiBlocListener(
-        listeners: [
-          BlocListener<GetStudentProfileBloc, GetStudentProfileState>(
-            listener: (context, state) async {
-              if (state is GetStudentProfileSuccess) {
-                zegoAppID = state.model.zegoAppID ?? 1896143529;
-                await PrefUtils.setname(state.model.data?.displayName ?? '');
-                await PrefUtils.setimagepath(state.model.data?.imagepath ?? '');
-                await PrefUtils.settimezone(state.model.data?.timezone ?? '');
-                await PrefUtils.setprimarylanguage(
-                  state.model.data?.primaryLanguage ?? '',
-                );
-                await PrefUtils.settargetlanguage(
-                  state.model.data?.targetLanguage ?? '',
-                );
-                await PrefUtils.setbio(state.model.data?.bio ?? '');
-                await PrefUtils.setintrested(
-                  state.model.data?.interests
-                          ?.map((e) => e.toString())
-                          .toList() ??
-                      [],
-                );
-                if (!mounted) return;
-                setState(() {});
-              }
-              // if (state is! GetStudentProfileSuccess) return;
-              // final data = state.model.data;
-              // if (data == null) return;
-
-              // final name = (data.displayName ?? '').trim();
-              // if (name.isNotEmpty) await PrefUtils.setname(name);
-
-              // final timezone = (data.timezone ?? '').trim();
-              // if (timezone.isNotEmpty) await PrefUtils.settimezone(timezone);
-
-              // final primary = (data.primaryLanguage ?? '').trim();
-              // if (primary.isNotEmpty) await PrefUtils.setprimarylanguage(primary);
-
-              // final target = (data.targetLanguage ?? '').trim();
-              // if (target.isNotEmpty) await PrefUtils.settargetlanguage(target);
-
-              // final bio = (data.bio ?? '').trim();
-              // if (bio.isNotEmpty) await PrefUtils.setbio(bio);
-
-              // final interests = data.interests ?? const <String>[];
-              // if (interests.isNotEmpty) await PrefUtils.setintrested(interests);
-
-              // if (!mounted) return;
-              // setState(() {});
-            },
-          ),
-          BlocListener<RecommendedTutorBloc, RecommendedTutorState>(
-            bloc: _recommendedTutorBloc,
-            listener: (context, state) {
-              if (state is! RecommendedTutorSuccess) return;
-              final apiToggle = _parseMatchValue(
-                state.recommendedTutorModel.matchValue,
-              );
-              if (apiToggle == null) return;
-              if (apiToggle == _tutorSpeakMyPrimaryLanguage) return;
-              setState(() => _tutorSpeakMyPrimaryLanguage = apiToggle);
-            },
-          ),
+    return Scaffold(
+      backgroundColor: ConstColor.background,
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => _recommendedTutorBloc),
+          BlocProvider(create: (context) => _getStudentProfileBloc),
         ],
-        child: ValueListenableBuilder<AppLanguage>(
-          valueListenable: AppLanguageState.current,
-          builder: (context, language, _) {
-            final studentPrimaryLanguage = language == AppLanguage.korean
-                ? 'Korean'
-                : 'English';
-            final defaultTargetLanguage = studentPrimaryLanguage == 'Korean'
-                ? 'English'
-                : 'Korean';
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<GetStudentProfileBloc, GetStudentProfileState>(
+              listener: (context, state) async {
+                if (state is GetStudentProfileSuccess) {
+                  zegoAppID = state.model.zegoAppID ?? 1896143529;
+                  await PrefUtils.setname(state.model.data?.displayName ?? '');
+                  await PrefUtils.setimagepath(
+                    state.model.data?.imagepath ?? '',
+                  );
+                  await PrefUtils.settimezone(state.model.data?.timezone ?? '');
+                  await PrefUtils.setprimarylanguage(
+                    state.model.data?.primaryLanguage ?? '',
+                  );
+                  await PrefUtils.settargetlanguage(
+                    state.model.data?.targetLanguage ?? '',
+                  );
+                  await PrefUtils.setbio(state.model.data?.bio ?? '');
+                  await PrefUtils.setintrested(
+                    state.model.data?.interests
+                            ?.map((e) => e.toString())
+                            .toList() ??
+                        [],
+                  );
+                  if (!mounted) return;
+                  setState(() {});
+                }
+                // if (state is! GetStudentProfileSuccess) return;
+                // final data = state.model.data;
+                // if (data == null) return;
 
-            _selectedTargetLanguage ??= defaultTargetLanguage;
+                // final name = (data.displayName ?? '').trim();
+                // if (name.isNotEmpty) await PrefUtils.setname(name);
 
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  ConstSize.grid * 2,
-                  ConstSize.grid * 2,
-                  ConstSize.grid * 2,
-                  ConstSize.grid * 2,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
+                // final timezone = (data.timezone ?? '').trim();
+                // if (timezone.isNotEmpty) await PrefUtils.settimezone(timezone);
+
+                // final primary = (data.primaryLanguage ?? '').trim();
+                // if (primary.isNotEmpty) await PrefUtils.setprimarylanguage(primary);
+
+                // final target = (data.targetLanguage ?? '').trim();
+                // if (target.isNotEmpty) await PrefUtils.settargetlanguage(target);
+
+                // final bio = (data.bio ?? '').trim();
+                // if (bio.isNotEmpty) await PrefUtils.setbio(bio);
+
+                // final interests = data.interests ?? const <String>[];
+                // if (interests.isNotEmpty) await PrefUtils.setintrested(interests);
+
+                // if (!mounted) return;
+                // setState(() {});
+              },
+            ),
+            BlocListener<RecommendedTutorBloc, RecommendedTutorState>(
+              bloc: _recommendedTutorBloc,
+              listener: (context, state) {
+                if (state is! RecommendedTutorSuccess) return;
+                final apiToggle = _parseMatchValue(
+                  state.recommendedTutorModel.matchValue,
+                );
+                if (apiToggle == null) return;
+                if (apiToggle == _tutorSpeakMyPrimaryLanguage) return;
+                setState(() => _tutorSpeakMyPrimaryLanguage = apiToggle);
+              },
+            ),
+          ],
+          child: ValueListenableBuilder<AppLanguage>(
+            valueListenable: AppLanguageState.current,
+            builder: (context, language, _) {
+              final studentPrimaryLanguage = language == AppLanguage.korean
+                  ? 'Korean'
+                  : 'English';
+              final defaultTargetLanguage = studentPrimaryLanguage == 'Korean'
+                  ? 'English'
+                  : 'Korean';
+
+              _selectedTargetLanguage ??= defaultTargetLanguage;
+
+              return SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    ConstSize.grid * 2,
+                    ConstSize.grid * 1.5,
+                    ConstSize.grid * 2,
+                    ConstSize.grid * 3,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
+                              style: const TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.w700,
+                                height: 1.12,
+                                letterSpacing: -0.45,
+                                color: ConstColor.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                        const AppVersionHeaderBadge(),
-                      ],
-                    ),
-                    const SizedBox(height: ConstSize.grid * 2),
-                    _YesNoToggle(
-                      label: ConstString.text(
-                        language,
-                        'tutorSpeakPrimaryLanguage',
+                          const AppVersionHeaderBadge(),
+                        ],
                       ),
-                      left: ConstString.text(language, 'yes'),
-                      right: ConstString.text(language, 'no'),
-                      value: _tutorSpeakMyPrimaryLanguage,
-                      onChanged: (v) {
-                        setState(() => _tutorSpeakMyPrimaryLanguage = v);
-                        // _fetchTutorsForSearch();
-                      },
-                    ),
+                      const SizedBox(height: ConstSize.grid * 2),
+                      _YesNoToggle(
+                        label: ConstString.text(
+                          language,
+                          'tutorSpeakPrimaryLanguage',
+                        ),
+                        left: ConstString.text(language, 'yes'),
+                        right: ConstString.text(language, 'no'),
+                        value: _tutorSpeakMyPrimaryLanguage,
+                        onChanged: (v) {
+                          setState(() => _tutorSpeakMyPrimaryLanguage = v);
+                          // _fetchTutorsForSearch();
+                        },
+                      ),
 
-                    const SizedBox(height: ConstSize.grid * 2),
+                      const SizedBox(height: ConstSize.grid * 2),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: ConstString.text(
-                                language,
-                                'searchTutors',
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.search,
-                                color: ConstColor.textSecondary,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  ConstSize.radiusM,
-                                ),
-                                borderSide: const BorderSide(
-                                  color: ConstColor.border,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: ConstSize.grid * 1.5,
-                                vertical: 14,
-                              ),
+                      TextField(
+                        controller: _searchController,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          color: ConstColor.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          hintText: ConstString.text(language, 'searchTutors'),
+                          hintStyle: TextStyle(
+                            color: ConstColor.textSecondary.withValues(
+                              alpha: 0.75,
                             ),
-                            onChanged: (_) {
-                              _searchDebounce?.cancel();
-                              _searchDebounce = Timer(
-                                const Duration(milliseconds: 350),
-                                _fetchTutorsForSearch,
-                              );
-                            },
+                            fontSize: 15,
                           ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: ConstColor.primaryBlue.withValues(
+                              alpha: 0.85,
+                            ),
+                            size: 24,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: ConstColor.border.withValues(alpha: 0.85),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: ConstColor.border.withValues(alpha: 0.85),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: ConstColor.primaryBlue,
+                              width: 1.5,
+                            ),
+                          ),
+                          isDense: true,
                         ),
-                        // const SizedBox(width: ConstSize.grid),
-                        // IconButton(
-                        //   icon: const Icon(Icons.filter_list_outlined),
-                        //   color: ConstColor.primaryBlue,
-                        //   onPressed: () async {
-                        //     final result = await showDialog<_FilterResult>(
-                        //       context: context,
-                        //       builder: (_) => _FilterDialog(
-                        //         initialTargetLanguage: _selectedTargetLanguage!,
-                        //         initialAvailabilitySlot:
-                        //             _selectedAvailabilitySlot,
-                        //         targetLanguages: _targetLanguageOptions,
-                        //         availabilitySlots: _availabilitySlots,
-                        //       ),
-                        //     );
-                        //     if (result == null) return;
-
-                        //     setState(() {
-                        //       _selectedTargetLanguage = result.targetLanguage;
-                        //       _selectedAvailabilitySlot =
-                        //           result.availabilitySlot;
-                        //     });
-                        //     _fetchTutorsForSearch();
-                        //   },
-                        // ),
-                      ],
-                    ),
-
-                    const SizedBox(height: ConstSize.grid * 2),
-
-                    Text(
-                      ConstString.text(language, 'recommendedTutors'),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: ConstSize.grid * 2),
-                    BlocBuilder<RecommendedTutorBloc, RecommendedTutorState>(
-                      bloc: _recommendedTutorBloc,
-                      builder: (context, tutorState) {
-                        if (tutorState is RecommendedTutorInitial) {
-                          return SizedBox.shrink();
-                        }
-                        if (tutorState is RecommendedTutorLoading) {
-                          return SizedBox(
-                            height: MediaQuery.of(context).size.height / 2,
-                            child: Center(child: CircularProgressIndicator()),
+                        onChanged: (_) {
+                          _searchDebounce?.cancel();
+                          _searchDebounce = Timer(
+                            const Duration(milliseconds: 350),
+                            _fetchTutorsForSearch,
                           );
-                        }
-                        if (tutorState is RecommendedTutorError) {
-                          return Center(child: Text(tutorState.message));
-                        }
-                        if (tutorState is RecommendedTutorSuccess) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            itemCount:
-                                tutorState
-                                    .recommendedTutorModel
-                                    .data
-                                    ?.tutors
-                                    ?.length ??
-                                0,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _TutorCard(
-                                  imagepath:
-                                      tutorState
-                                          .recommendedTutorModel
-                                          .data
-                                          ?.tutors?[index]
-                                          .imagepath ??
-                                      "",
-                                  flagimage:
-                                      tutorState
-                                              .recommendedTutorModel
-                                              .data
-                                              ?.tutors?[index]
-                                              .country ==
-                                          "US"
-                                      ? ConstImage.usFlag
-                                      : tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .country ==
-                                            "KR"
-                                      ? ConstImage.krFlag
-                                      : ConstImage.spFlag,
-                                  country:
-                                      tutorState
-                                              .recommendedTutorModel
-                                              .data
-                                              ?.tutors?[index]
-                                              .country ==
-                                          "US"
-                                      ? "United States"
-                                      : tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .country ==
-                                            "KR"
-                                      ? "South Korea"
-                                      : tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .country ==
-                                            "SP"
-                                      ? "Spain"
-                                      : "-",
-                                  rating:
-                                      tutorState
-                                          .recommendedTutorModel
-                                          .data
-                                          ?.tutors?[index]
-                                          .avaragerating ??
-                                      "0",
-                                  name:
-                                      tutorState
-                                          .recommendedTutorModel
-                                          .data
-                                          ?.tutors?[index]
-                                          .displayName ??
-                                      "",
-                                  primaryLanguage:
-                                      tutorState
-                                          .recommendedTutorModel
-                                          .data
-                                          ?.tutors?[index]
-                                          .teachesLanguages ??
-                                      "",
+                        },
+                      ),
 
-                                  onBook: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BookingScreen(
-                                        tutorName:
-                                            tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .displayName ??
-                                            "",
-                                        tutorId:
-                                            tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .id ??
-                                            "",
-                                        tutorBio:
-                                            tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .bio ??
-                                            "",
-                                        tutorLanguagesTaught:
-                                            tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .teachesLanguages ??
-                                            "",
-                                      ),
-                                    ),
+                      const SizedBox(height: ConstSize.grid * 2.25),
+
+                      Text(
+                        ConstString.text(language, 'recommendedTutors'),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.25,
+                          color: ConstColor.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BlocBuilder<RecommendedTutorBloc, RecommendedTutorState>(
+                        bloc: _recommendedTutorBloc,
+                        builder: (context, tutorState) {
+                          if (tutorState is RecommendedTutorInitial) {
+                            return SizedBox.shrink();
+                          }
+                          if (tutorState is RecommendedTutorLoading) {
+                            return SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.35,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: ConstColor.primaryBlue,
+                                ),
+                              ),
+                            );
+                          }
+                          if (tutorState is RecommendedTutorError) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Text(
+                                  tutorState.message,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: ConstColor.textSecondary,
+                                    fontSize: 14,
+                                    height: 1.35,
                                   ),
-                                  onCheckAvailability: () {
-                                    Navigator.push(
+                                ),
+                              ),
+                            );
+                          }
+                          if (tutorState is RecommendedTutorSuccess) {
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              itemCount:
+                                  tutorState
+                                      .recommendedTutorModel
+                                      .data
+                                      ?.tutors
+                                      ?.length ??
+                                  0,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _TutorCard(
+                                    imagepath:
+                                        tutorState
+                                            .recommendedTutorModel
+                                            .data
+                                            ?.tutors?[index]
+                                            .imagepath ??
+                                        "",
+                                    flagimage:
+                                        tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .country ==
+                                            "US"
+                                        ? ConstImage.usFlag
+                                        : tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .country ==
+                                              "KR"
+                                        ? ConstImage.krFlag
+                                        : ConstImage.spFlag,
+                                    country:
+                                        tutorState
+                                                .recommendedTutorModel
+                                                .data
+                                                ?.tutors?[index]
+                                                .country ==
+                                            "US"
+                                        ? "United States"
+                                        : tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .country ==
+                                              "KR"
+                                        ? "South Korea"
+                                        : tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .country ==
+                                              "SP"
+                                        ? "Spain"
+                                        : "-",
+                                    rating:
+                                        tutorState
+                                            .recommendedTutorModel
+                                            .data
+                                            ?.tutors?[index]
+                                            .avaragerating ??
+                                        "0",
+                                    name:
+                                        tutorState
+                                            .recommendedTutorModel
+                                            .data
+                                            ?.tutors?[index]
+                                            .displayName ??
+                                        "",
+                                    primaryLanguage:
+                                        tutorState
+                                            .recommendedTutorModel
+                                            .data
+                                            ?.tutors?[index]
+                                            .teachesLanguages ??
+                                        "",
+
+                                    onBook: () => Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            TutorAvailabilityCalendarScreen(
-                                              tutorName:
-                                                  tutorState
-                                                      .recommendedTutorModel
-                                                      .data
-                                                      ?.tutors?[index]
-                                                      .displayName ??
-                                                  "",
-                                              tutorId:
-                                                  tutorState
-                                                      .recommendedTutorModel
-                                                      .data
-                                                      ?.tutors?[index]
-                                                      .id ??
-                                                  "",
-                                            ),
+                                        builder: (_) => BookingScreen(
+                                          tutorName:
+                                              tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .displayName ??
+                                              "",
+                                          tutorId:
+                                              tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .id ??
+                                              "",
+                                          tutorBio:
+                                              tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .bio ??
+                                              "",
+                                          tutorLanguagesTaught:
+                                              tutorState
+                                                  .recommendedTutorModel
+                                                  .data
+                                                  ?.tutors?[index]
+                                                  .teachesLanguages ??
+                                              "",
+                                          tutorImageUrl: tutorState
+                                              .recommendedTutorModel
+                                              .data
+                                              ?.tutors?[index]
+                                              .imagepath,
+                                        ),
                                       ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          );
-                        }
-                        return SizedBox.shrink();
-                      },
-                    ),
-                  ],
+                                    ),
+                                    onCheckAvailability: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              TutorAvailabilityCalendarScreen(
+                                                tutorName:
+                                                    tutorState
+                                                        .recommendedTutorModel
+                                                        .data
+                                                        ?.tutors?[index]
+                                                        .displayName ??
+                                                    "",
+                                                tutorId:
+                                                    tutorState
+                                                        .recommendedTutorModel
+                                                        .data
+                                                        ?.tutors?[index]
+                                                        .id ??
+                                                    "",
+                                                tutorImageUrl: tutorState
+                                                    .recommendedTutorModel
+                                                    .data
+                                                    ?.tutors?[index]
+                                                    .imagepath,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                          return SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -621,152 +652,258 @@ class _TutorCard extends StatelessWidget {
     return ValueListenableBuilder<AppLanguage>(
       valueListenable: AppLanguageState.current,
       builder: (context, language, _) {
+        final hasPhoto =
+            imagepath != null && (imagepath ?? '').trim().isNotEmpty;
+        final url = (imagepath ?? '').trim();
+        const avatarSize = 52.0;
+
+        final placeholder = Container(
+          width: avatarSize,
+          height: avatarSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+          ),
+          child: const Icon(
+            Icons.person_rounded,
+            size: 26,
+            color: ConstColor.primaryBlue,
+          ),
+        );
+
+        final Widget avatar = hasPhoto
+            ? ClipOval(
+                child: SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => placeholder,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        width: avatarSize,
+                        height: avatarSize,
+                        alignment: Alignment.center,
+                        color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+                        child: const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: ConstColor.primaryBlue,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            : placeholder;
+
         return Container(
-          padding: const EdgeInsets.all(ConstSize.grid * 2),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(ConstSize.radiusL),
-            border: Border.all(color: ConstColor.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: ConstColor.primaryBlue),
-                      color: ConstColor.primaryBlue.withValues(alpha: 0.16),
-                      shape: BoxShape.circle,
-                      image: imagepath != null && imagepath != '' ? DecorationImage(
-                        image: NetworkImage(imagepath ?? ""),
-                        fit: BoxFit.cover,
-                      ) : null,
-                    ),
-                    child: imagepath != null && imagepath != '' ? null : const Icon(Icons.person, color: ConstColor.primaryBlue),
-                  ),
-                  // CircleAvatar(
-                  //   radius: 24,
-                  //   backgroundColor: ConstColor.primaryBlue.withValues(
-                  //     alpha: 0.16,
-                  //   ),
-                  //   child: imagepath != null && imagepath != ''
-                  //       ? Image.network(imagepath ?? "")
-                  //       : const Icon(
-                  //           Icons.person,
-                  //           color: ConstColor.primaryBlue,
-                  //         ),
-                  // ),
-                  const SizedBox(width: ConstSize.grid * 1.5),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              country ?? "-",
-                              style: const TextStyle(
-                                color: ConstColor.primaryBlue,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Image.asset(
-                              flagimage ?? "-",
-                              fit: BoxFit.contain,
-                              width: 25,
-                              height: 25,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    rating != null && rating != '0' && rating != 'null'
-                        ? rating ?? "0"
-                        : '0',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Icon(
-                    rating != null && rating != '0' && rating != 'null'
-                        ? Icons.star
-                        : Icons.star_border,
-                    color: ConstColor.primaryBlue,
-                  ),
-                ],
-              ),
-              const SizedBox(height: ConstSize.grid * 1.5),
-              Text(
-                '${ConstString.text(language, 'language')}: $primaryLanguage',
-                style: const TextStyle(color: ConstColor.textSecondary),
-              ),
-              const SizedBox(height: ConstSize.grid * 2),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 45,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          backgroundColor: Colors.white,
-                          foregroundColor: ConstColor.primaryBlue,
-                          side: const BorderSide(color: ConstColor.primaryBlue),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              ConstSize.radiusM,
-                            ),
-                          ),
-                        ),
-                        onPressed: onCheckAvailability,
-                        child: Text(
-                          ConstString.text(language, 'checkAvailability'),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: SizedBox(
-                      height: 45,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          backgroundColor: ConstColor.primaryBlue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              ConstSize.radiusM,
-                            ),
-                          ),
-                        ),
-                        onPressed: onBook,
-                        child: const AppText('book'),
-                      ),
-                    ),
-                  ),
-                ],
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: ConstColor.border.withValues(alpha: 0.65),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 4,
+                    color: ConstColor.primaryBlue.withValues(alpha: 0.85),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              avatar,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.25,
+                                        color: ConstColor.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            country ?? '-',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: ConstColor.textSecondary
+                                                  .withValues(alpha: 0.95),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if (flagimage != null &&
+                                            (flagimage ?? '').isNotEmpty &&
+                                            (flagimage ?? '-') != '-')
+                                          Image.asset(
+                                            flagimage!,
+                                            fit: BoxFit.contain,
+                                            width: 22,
+                                            height: 22,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: ConstColor.primaryBlue.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      rating != null &&
+                                              rating != 'null' &&
+                                              (rating ?? '').isNotEmpty
+                                          ? (rating ?? '0')
+                                          : '0',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: ConstColor.primaryBlue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      rating != null &&
+                                              rating != '0' &&
+                                              rating != 'null'
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      size: 18,
+                                      color: ConstColor.primaryBlue,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '${ConstString.text(language, 'language')}: $primaryLanguage',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: ConstColor.textSecondary,
+                              fontSize: 13,
+                              height: 1.3,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 46,
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: ConstColor.primaryBlue,
+                                      side: BorderSide(
+                                        color: ConstColor.primaryBlue
+                                            .withValues(alpha: 0.85),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    onPressed: onCheckAvailability,
+                                    child: Text(
+                                      ConstString.text(
+                                        language,
+                                        'checkAvailability',
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 46,
+                                  child: FilledButton(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: ConstColor.primaryBlue,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    onPressed: onBook,
+                                    child: const AppText(
+                                      'book',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -796,41 +933,94 @@ class _YesNoToggle extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.15,
+            color: ConstColor.textPrimary,
+          ),
         ),
-        const SizedBox(height: ConstSize.grid),
-        ToggleButtons(
-          isSelected: [value, !value],
-          onPressed: (index) => onChanged(index == 0),
-          borderRadius: BorderRadius.circular(ConstSize.radiusM),
-          constraints: const BoxConstraints(minHeight: 30, minWidth: 50),
-          selectedColor: Colors.white,
-          fillColor: ConstColor.primaryBlue,
-          color: ConstColor.textSecondary,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                left,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: ConstColor.border.withValues(alpha: 0.65),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: ConstColor.primaryBlue.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _YesNoPill(
+                  label: left,
+                  selected: value,
+                  onTap: () => onChanged(true),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                right,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 4),
+              Expanded(
+                child: _YesNoPill(
+                  label: right,
+                  selected: !value,
+                  onTap: () => onChanged(false),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _YesNoPill extends StatelessWidget {
+  const _YesNoPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? ConstColor.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+                color: selected ? Colors.white : ConstColor.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
