@@ -132,6 +132,69 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
+  /// Shown under the profile photo picker for both student and tutor flows.
+  Widget _profilePhotoGuidelines() {
+    final lines = <String>[
+      t('profilePhotoGuidelineFacingForward'),
+      t('profilePhotoGuidelineHeadShoulders'),
+      t('profilePhotoGuidelineCenteredUpright'),
+      t('profilePhotoGuidelineFaceVisible'),
+      t('profilePhotoGuidelineOnlyPerson'),
+      t('profilePhotoGuidelineColorHighRes'),
+      t('profilePhotoGuidelineNoLogos'),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(ConstSize.grid * 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(ConstSize.radiusM),
+        border: Border.all(color: ConstColor.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t('profilePhotoGuidelinesTitle'),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: ConstColor.textPrimary,
+            ),
+          ),
+          const SizedBox(height: ConstSize.grid * 1.5),
+          ...lines.map(
+            (line) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '• ',
+                    style: TextStyle(
+                      color: ConstColor.textSecondary,
+                      height: 1,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: ConstColor.textSecondary,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _addTopicField() {
     setState(() {
       _topicControllers.add(TextEditingController());
@@ -241,7 +304,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       color: ConstColor.colorBlack,
                                       width: 2,
                                     ),
-                                    color: ConstColor.primaryBlue,
+                                    color: Colors.grey.shade400,
                                     shape: BoxShape.circle,
                                   ),
                                   child: _imagefile == null || imagepath == ''
@@ -285,6 +348,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _profilePhotoGuidelines(),
                           const SizedBox(height: ConstSize.grid * 2),
                           _fieldHeader(t('displayName')),
                           AuthTextField(
@@ -533,7 +598,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 await PrefUtils.setname(
                                   _displayNameController.text.trim(),
                                 );
-                                
+
                                 await PrefUtils.settimezone(_timezone ?? '');
                                 await PrefUtils.setprimarylanguage(
                                   _primaryLanguage ?? '',
@@ -646,8 +711,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                           context,
                                           t('selectProfilePictureError'),
                                         );
-                                      } 
-                                      else if (_displayNameController.text
+                                      } else if (_displayNameController.text
                                           .trim()
                                           .isEmpty) {
                                         commonAlertDialog(

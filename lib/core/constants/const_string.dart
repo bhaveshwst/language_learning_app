@@ -57,6 +57,19 @@ class ConstString {
     'birthYear': 'Birth Year',
     'continue': 'Continue',
     'profileTitle': 'Complete Profile',
+    'profilePhotoGuidelinesTitle': 'What your photo needs',
+    'profilePhotoGuidelineFacingForward': 'You should be facing forward',
+    'profilePhotoGuidelineHeadShoulders': 'Frame your head and shoulders',
+    'profilePhotoGuidelineCenteredUpright':
+        'You should be centered and upright',
+    'profilePhotoGuidelineFaceVisible':
+        'Your face and eyes should be visible',
+    'profilePhotoGuidelineOnlyPerson':
+        'You should be the only person in the photo',
+    'profilePhotoGuidelineColorHighRes':
+        'Use a color photo with high resolution and no filters',
+    'profilePhotoGuidelineNoLogos':
+        'Avoid logos or contact information',
     'profileIncomplete':
         'Your Profile is incomplete. Please complete your profile.',
     'displayName': 'Display Name',
@@ -298,6 +311,19 @@ class ConstString {
     'birthYear': '출생 연도',
     'continue': '계속하기',
     'profileTitle': '프로필 완성',
+    'profilePhotoGuidelinesTitle': '프로필 사진 요구사항',
+    'profilePhotoGuidelineFacingForward': '정면을 바라보아야 합니다',
+    'profilePhotoGuidelineHeadShoulders':
+        '머리와 어깨가 화면에 들어가도록 맞춰 주세요',
+    'profilePhotoGuidelineCenteredUpright':
+        '화면 중앙에 서 있고 바른 자세로 촬영해 주세요',
+    'profilePhotoGuidelineFaceVisible':
+        '(종교적 사유가 아니라면) 얼굴과 눈이 잘 보이도록 해 주세요',
+    'profilePhotoGuidelineOnlyPerson': '사진에는 본인만 나와야 합니다',
+    'profilePhotoGuidelineColorHighRes':
+        '컬러, 고해상도, 필터를 쓰지 않은 사진을 사용해 주세요',
+    'profilePhotoGuidelineNoLogos':
+        '로고나 연락처 정보가 보이지 않게 해 주세요',
     'displayName': '표시 이름',
     'timezone': '시간대',
     'timezoneLockedProfileHint': '시간대는 처음 가입할 때 저장되었으며 여기서는 변경할 수 없습니다.',
@@ -533,6 +559,19 @@ class ConstString {
     'birthYear': 'Año de Nacimiento',
     'continue': 'Continuar',
     'profileTitle': 'Completar Perfil',
+    'profilePhotoGuidelinesTitle': 'Qué debe tener tu foto',
+    'profilePhotoGuidelineFacingForward': 'Debes mirar de frente',
+    'profilePhotoGuidelineHeadShoulders': 'Encuadra cabeza y hombros',
+    'profilePhotoGuidelineCenteredUpright':
+        'Debes ir centrado y erguido',
+    'profilePhotoGuidelineFaceVisible':
+        'Tu cara y ojos deben verse',
+    'profilePhotoGuidelineOnlyPerson':
+        'Solo debes aparecer tú en la foto',
+    'profilePhotoGuidelineColorHighRes':
+        'Usa una foto a color, de alta resolución y sin filtros',
+    'profilePhotoGuidelineNoLogos':
+        'Evita logotipos o datos de contacto',
     'profileIncomplete':
         'Tu perfil está incompleto. Por favor completa tu perfil.',
     'displayName': 'Nombre de Pantalla',
