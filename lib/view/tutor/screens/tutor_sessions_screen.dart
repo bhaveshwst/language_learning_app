@@ -135,6 +135,17 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     );
   }
 
+  Future<void> _refreshTutorSessions() async {
+    final tutorId = PrefUtils.gettutorid().trim();
+    if (tutorId.isEmpty) return;
+    _tutorSessionsBloc.add(
+      FetchTutorSessions(tutorId: tutorId, silentRefresh: true),
+    );
+    await _tutorSessionsBloc.stream.firstWhere(
+      (s) => s is TutorSessionsSuccess || s is TutorSessionsError,
+    );
+  }
+
   @override
   void dispose() {
     _tutorSessionsBloc.close();
@@ -377,134 +388,196 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                         ),
                         const SizedBox(height: ConstSize.grid * 2),
                         Expanded(
-                          child:
-                              BlocBuilder<
-                                TutorSessionsBloc,
-                                TutorSessionsState
-                              >(
-                                builder: (context, state) {
-                                  if (state is TutorSessionsInitial) {
-                                    final tutorId = PrefUtils.gettutorid()
-                                        .trim();
-                                    if (tutorId.isNotEmpty) {
-                                      _tutorSessionsBloc.add(
-                                        FetchTutorSessions(tutorId: tutorId),
-                                      );
-                                    }
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
+                          child: RefreshIndicator(
+                            color: ConstColor.primaryBlue,
+                            onRefresh: _refreshTutorSessions,
+                            child: BlocBuilder<
+                              TutorSessionsBloc,
+                              TutorSessionsState
+                            >(
+                              builder: (context, state) {
+                                if (state is TutorSessionsInitial) {
+                                  final tutorId = PrefUtils.gettutorid()
+                                      .trim();
+                                  if (tutorId.isNotEmpty) {
+                                    _tutorSessionsBloc.add(
+                                      FetchTutorSessions(tutorId: tutorId),
                                     );
                                   }
-                                  if (state is TutorSessionsLoading) {
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  }
-                                  if (state is TutorSessionsError) {
-                                    return Center(
-                                      child: Text(
-                                        state.message,
-                                        style: const TextStyle(
-                                          color: ConstColor.textSecondary,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  final rows = state is TutorSessionsSuccess
-                                      ? (state.model.data ??
-                                            const <tutor_sessions.Data>[])
-                                      : const <tutor_sessions.Data>[];
-                                  final groups = _groupsForTab(rows, _tab);
-                                  if (groups.isEmpty) {
-                                    return Center(
-                                      child: Text(
-                                        t('noData'),
-                                        style: const TextStyle(
-                                          color: ConstColor.textSecondary,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return ListView.separated(
-                                    itemCount: groups.length,
-                                    separatorBuilder: (context, index) =>
-                                        const SizedBox(
-                                          height: ConstSize.grid * 2,
-                                        ),
-                                    itemBuilder: (_, i) => _SlotSessionCard(
-                                      group: groups[i],
-                                      onJoin: (row) {
-                                        final tutorId = (row.tutorId ?? '')
-                                            .trim();
-                                        final slotId = (row.slotId ?? '')
-                                            .trim();
-                                        final date = (row.date ?? '').trim();
-                                        final startTime = (row.startTime ?? '')
-                                            .trim();
-                                        final endTime = (row.endTime ?? '')
-                                            .trim();
-                                        if (tutorId.isEmpty ||
-                                            slotId.isEmpty ||
-                                            date.isEmpty ||
-                                            startTime.isEmpty ||
-                                            endTime.isEmpty) {
-                                          commonAlertDialog(
-                                            context,
-                                            t('pleaseTryAgain'),
-                                          );
-                                          return;
-                                        }
-                                        setState(() => _joiningSlotId = slotId);
-                                        _fetchLocationForJoin()
-                                            .then((location) {
-                                              _liveSessionJoinBloc.add(
-                                                LiveSessionJoinRequested(
-                                                  actorType: 'tutor',
-                                                  actorId: tutorId,
-                                                  tutorId: tutorId,
-                                                  slotId: slotId,
-                                                  date: date,
-                                                  startTime: startTime,
-                                                  endTime: endTime,
-                                                  latitude: location.latitude,
-                                                  longitude: location.longitude,
-                                                  address: location.address,
-                                                  waitForHost: false,
-                                                ),
-                                              );
-                                            })
-                                            .catchError((_) {
-                                              if (!mounted) return;
-                                              setState(
-                                                () => _joiningSlotId = '',
-                                              );
-                                            });
-                                      },
-                                      joiningSlotId: _joiningSlotId,
-                                      onAnalytics: (row) {
-                                        final tutorId = (row.tutorId ?? '')
-                                            .trim();
-                                        final slotId = (row.slotId ?? '')
-                                            .trim();
-                                        if (tutorId.isEmpty || slotId.isEmpty) {
-                                          commonAlertDialog(
-                                            context,
-                                            t('pleaseTryAgain'),
-                                          );
-                                          return;
-                                        }
-                                        _liveSessionAnalyticsBloc.add(
-                                          FetchLiveSessionAnalyticsRequested(
-                                            actorId: tutorId,
-                                            tutorId: tutorId,
-                                            slotId: slotId,
+                                  return LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
                                           ),
-                                        );
-                                      },
-                                    ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   );
-                                },
-                              ),
+                                }
+                                if (state is TutorSessionsLoading) {
+                                  return LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                                if (state is TutorSessionsError) {
+                                  return LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
+                                          ),
+                                          child: Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                ConstSize.grid * 2,
+                                              ),
+                                              child: Text(
+                                                state.message,
+                                                style: const TextStyle(
+                                                  color: ConstColor.textSecondary,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                                final rows = state is TutorSessionsSuccess
+                                    ? (state.model.data ??
+                                          const <tutor_sessions.Data>[])
+                                    : const <tutor_sessions.Data>[];
+                                final groups = _groupsForTab(rows, _tab);
+                                if (groups.isEmpty) {
+                                  return LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              t('noData'),
+                                              style: const TextStyle(
+                                                color: ConstColor.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                                return ListView.separated(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  itemCount: groups.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(
+                                        height: ConstSize.grid * 2,
+                                      ),
+                                  itemBuilder: (_, i) => _SlotSessionCard(
+                                    group: groups[i],
+                                    onJoin: (row) {
+                                      final tutorId = (row.tutorId ?? '')
+                                          .trim();
+                                      final slotId = (row.slotId ?? '')
+                                          .trim();
+                                      final date = (row.date ?? '').trim();
+                                      final startTime = (row.startTime ?? '')
+                                          .trim();
+                                      final endTime = (row.endTime ?? '')
+                                          .trim();
+                                      if (tutorId.isEmpty ||
+                                          slotId.isEmpty ||
+                                          date.isEmpty ||
+                                          startTime.isEmpty ||
+                                          endTime.isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('pleaseTryAgain'),
+                                        );
+                                        return;
+                                      }
+                                      setState(() => _joiningSlotId = slotId);
+                                      _fetchLocationForJoin()
+                                          .then((location) {
+                                            _liveSessionJoinBloc.add(
+                                              LiveSessionJoinRequested(
+                                                actorType: 'tutor',
+                                                actorId: tutorId,
+                                                tutorId: tutorId,
+                                                slotId: slotId,
+                                                date: date,
+                                                startTime: startTime,
+                                                endTime: endTime,
+                                                latitude: location.latitude,
+                                                longitude: location.longitude,
+                                                address: location.address,
+                                                waitForHost: false,
+                                              ),
+                                            );
+                                          })
+                                          .catchError((_) {
+                                            if (!mounted) return;
+                                            setState(
+                                              () => _joiningSlotId = '',
+                                            );
+                                          });
+                                    },
+                                    joiningSlotId: _joiningSlotId,
+                                    onAnalytics: (row) {
+                                      final tutorId = (row.tutorId ?? '')
+                                          .trim();
+                                      final slotId = (row.slotId ?? '')
+                                          .trim();
+                                      if (tutorId.isEmpty || slotId.isEmpty) {
+                                        commonAlertDialog(
+                                          context,
+                                          t('pleaseTryAgain'),
+                                        );
+                                        return;
+                                      }
+                                      _liveSessionAnalyticsBloc.add(
+                                        FetchLiveSessionAnalyticsRequested(
+                                          actorId: tutorId,
+                                          tutorId: tutorId,
+                                          slotId: slotId,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),

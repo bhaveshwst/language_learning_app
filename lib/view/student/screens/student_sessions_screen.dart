@@ -137,6 +137,18 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     );
   }
 
+  Future<void> _refreshStudentSessions() async {
+    final studentId = PrefUtils.getstudentid().trim();
+    if (studentId.isEmpty) return;
+    _listStudentBookingsBloc.add(
+      FetchStudentBookings(studentId: studentId, silentRefresh: true),
+    );
+    await _listStudentBookingsBloc.stream.firstWhere(
+      (s) =>
+          s is ListStudentBookingsSuccess || s is ListStudentBookingsError,
+    );
+  }
+
   void _openReportSessionDialog(
     BuildContext dialogParentContext,
     AppLanguage language,
@@ -261,67 +273,123 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                     ),
                     const SizedBox(height: ConstSize.grid * 2),
                     Expanded(
-                      child:
-                          BlocBuilder<
-                            ListStudentBookingsBloc,
-                            ListStudentBookingsState
-                          >(
-                            builder: (context, state) {
-                              if (state is ListStudentBookingsInitial) {
-                                final studentId = PrefUtils.getstudentid()
-                                    .trim();
-                                if (studentId.isNotEmpty) {
-                                  _listStudentBookingsBloc.add(
-                                    FetchStudentBookings(studentId: studentId),
-                                  );
-                                }
-                                return const Center(
-                                  child: CircularProgressIndicator(),
+                      child: RefreshIndicator(
+                        color: ConstColor.primaryBlue,
+                        onRefresh: _refreshStudentSessions,
+                        child: BlocBuilder<
+                          ListStudentBookingsBloc,
+                          ListStudentBookingsState
+                        >(
+                          builder: (context, state) {
+                            if (state is ListStudentBookingsInitial) {
+                              final studentId = PrefUtils.getstudentid()
+                                  .trim();
+                              if (studentId.isNotEmpty) {
+                                _listStudentBookingsBloc.add(
+                                  FetchStudentBookings(studentId: studentId),
                                 );
                               }
-                              if (state is ListStudentBookingsLoading) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
-                              if (state is ListStudentBookingsError) {
-                                return Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      ConstSize.grid * 2,
-                                    ),
-                                    child: Text(
-                                      state.message,
-                                      style: const TextStyle(
-                                        color: ConstColor.textSecondary,
+                              return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
                                       ),
                                     ),
-                                  ),
-                                );
-                              }
-
-                              final rows = state is ListStudentBookingsSuccess
-                                  ? (state.model.data ??
-                                        const <bookings.Data>[])
-                                  : const <bookings.Data>[];
-                              final groups = _groupsForTab(rows, _tab);
-
-                              if (groups.isEmpty) {
-                                return Center(
-                                  child: Text(
-                                    t('noData'),
-                                    style: const TextStyle(
-                                      color: ConstColor.textSecondary,
+                                  );
+                                },
+                              );
+                            }
+                            if (state is ListStudentBookingsLoading) {
+                              return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }
+                                  );
+                                },
+                              );
+                            }
+                            if (state is ListStudentBookingsError) {
+                              return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(
+                                            ConstSize.grid * 2,
+                                          ),
+                                          child: Text(
+                                            state.message,
+                                            style: const TextStyle(
+                                              color: ConstColor.textSecondary,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }
 
-                              return ListView.separated(
-                                itemCount: groups.length,
-                                separatorBuilder: (context, index) =>
-                                    SizedBox(height: ConstSize.grid * 2),
-                                itemBuilder: (_, index) => _TutorSessionCard(
+                            final rows = state is ListStudentBookingsSuccess
+                                ? (state.model.data ??
+                                      const <bookings.Data>[])
+                                : const <bookings.Data>[];
+                            final groups = _groupsForTab(rows, _tab);
+
+                            if (groups.isEmpty) {
+                              return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          t('noData'),
+                                          style: const TextStyle(
+                                            color: ConstColor.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }
+
+                            return ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: groups.length,
+                              separatorBuilder: (context, index) =>
+                                  SizedBox(height: ConstSize.grid * 2),
+                              itemBuilder: (_, index) => _TutorSessionCard(
                                   tutorprofile: (groups[index].tutorprofile).trim(),
                                   group: groups[index],
                                   onReport: (row) => _openReportSessionDialog(
@@ -435,8 +503,9 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                   },
                                 ),
                               );
-                            },
-                          ),
+                          },
+                        ),
+                      ),
                     ),
                   ],
                 ),

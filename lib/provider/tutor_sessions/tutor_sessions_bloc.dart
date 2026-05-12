@@ -12,7 +12,11 @@ part 'tutor_sessions_state.dart';
 class TutorSessionsBloc extends Bloc<TutorSessionsEvent, TutorSessionsState> {
   TutorSessionsBloc() : super(TutorSessionsInitial()) {
     on<FetchTutorSessions>((event, emit) async {
-      emit(TutorSessionsLoading());
+      final keepListVisible =
+          event.silentRefresh && state is TutorSessionsSuccess;
+      if (!keepListVisible) {
+        emit(TutorSessionsLoading());
+      }
       try {
         final response = await AppHttpClient.post(
           ConstApiUrl.tutorBookedSlotsUrl,

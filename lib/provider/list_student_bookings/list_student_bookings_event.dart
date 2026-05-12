@@ -10,9 +10,16 @@ sealed class ListStudentBookingsEvent extends Equatable {
 final class FetchStudentBookings extends ListStudentBookingsEvent {
   final String studentId;
 
-  const FetchStudentBookings({required this.studentId});
+  /// When true and the current state is already success, the list stays
+  /// visible while the API runs (for pull-to-refresh).
+  final bool silentRefresh;
+
+  const FetchStudentBookings({
+    required this.studentId,
+    this.silentRefresh = false,
+  });
 
   @override
-  List<Object?> get props => [studentId];
+  List<Object?> get props => [studentId, silentRefresh];
 }
 

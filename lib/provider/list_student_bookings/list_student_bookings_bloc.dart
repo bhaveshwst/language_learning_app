@@ -13,7 +13,11 @@ class ListStudentBookingsBloc
     extends Bloc<ListStudentBookingsEvent, ListStudentBookingsState> {
   ListStudentBookingsBloc() : super(ListStudentBookingsInitial()) {
     on<FetchStudentBookings>((event, emit) async {
-      emit(ListStudentBookingsLoading());
+      final keepListVisible =
+          event.silentRefresh && state is ListStudentBookingsSuccess;
+      if (!keepListVisible) {
+        emit(ListStudentBookingsLoading());
+      }
       try {
         final response = await AppHttpClient.post(
           ConstApiUrl.profileBookingsListUrl,
