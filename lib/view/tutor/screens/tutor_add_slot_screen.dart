@@ -324,6 +324,62 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     return topic.toString();
   }
 
+  InputDecoration _slotFieldDecoration(
+    AppLanguage language, {
+    required String labelKey,
+    String? hintText,
+    IconData? suffixIcon,
+  }) {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      labelText: ConstString.text(language, labelKey),
+      hintText: hintText,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      labelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+        color: ConstColor.textSecondary,
+      ),
+      hintStyle: TextStyle(
+        color: ConstColor.textSecondary.withValues(alpha: 0.65),
+        fontSize: 14,
+      ),
+      suffixIcon: suffixIcon == null
+          ? null
+          : Icon(
+              suffixIcon,
+              size: 21,
+              color: ConstColor.primaryBlue.withValues(alpha: 0.88),
+            ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: ConstColor.border.withValues(alpha: 0.85),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: ConstColor.border.withValues(alpha: 0.85),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ConstColor.primaryBlue, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ConstColor.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ConstColor.error, width: 1.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -332,12 +388,22 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
         BlocProvider(create: (context) => _tutorAddSlotBloc),
       ],
       child: Scaffold(
+        backgroundColor: ConstColor.background,
         appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: ConstColor.background,
+          foregroundColor: ConstColor.textPrimary,
+          surfaceTintColor: Colors.transparent,
           title: const AppText(
             'addSlot',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: ConstColor.textPrimary,
+            ),
           ),
-          backgroundColor: Colors.white,
           actions: const [AppVersionAppBarAction()],
         ),
         body: BlocBuilder<TutorTopicsBloc, TutorTopicsState>(
@@ -346,243 +412,316 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
               return const SizedBox.shrink();
             }
             if (state is TutorTopicsLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const ColoredBox(
+                color: ConstColor.background,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: ConstColor.primaryBlue,
+                  ),
+                ),
+              );
             }
             if (state is TutorTopicsError) {
-              return Center(child: AppText(state.message));
+              return ColoredBox(
+                color: ConstColor.background,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(ConstSize.grid * 2),
+                    child: AppText(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: ConstColor.textSecondary,
+                        fontSize: 15,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ),
+              );
             }
             if (state is TutorTopicsSuccess) {
               final topics = (state.tutorTopicsModel.topics ?? [])
                   .where((e) => _topicLabel(e).trim().isNotEmpty)
                   .toList();
-              return SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(ConstSize.grid * 2),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AppText(
-                        'addSlotDetails',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: ConstSize.grid * 2),
-                      ValueListenableBuilder<AppLanguage>(
-                        valueListenable: AppLanguageState.current,
-                        builder: (context, language, _) {
-                          return Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  controller: _dateController,
-                                  readOnly: true,
-                                  onTap: _pickDate,
-                                  decoration: InputDecoration(
-                                    labelText: ConstString.text(
-                                      language,
-                                      'date',
-                                    ),
-                                    hintText: 'YYYY-MM-DD',
-                                    suffixIcon: const Icon(
-                                      Icons.calendar_today,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return ConstString.text(
-                                        language,
-                                        'selectDateError',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: ConstSize.grid * 2),
-                                TextFormField(
-                                  controller: _startTimeController,
-                                  readOnly: true,
-                                  onTap: _pickStartTime,
-                                  decoration: InputDecoration(
-                                    labelText: ConstString.text(
-                                      language,
-                                      'startTime',
-                                    ),
-                                    hintText: 'HH:MM',
-                                    suffixIcon: const Icon(
-                                      Icons.access_time,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return ConstString.text(
-                                        language,
-                                        'selectStartTimeError',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: ConstSize.grid * 2),
-                                TextFormField(
-                                  controller: _endTimeController,
-                                  readOnly: true,
-                                  onTap: _pickEndTime,
-                                  decoration: InputDecoration(
-                                    labelText: ConstString.text(
-                                      language,
-                                      'endTime',
-                                    ),
-                                    hintText: 'HH:MM',
-                                    suffixIcon: const Icon(
-                                      Icons.access_time,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return ConstString.text(
-                                        language,
-                                        'selectEndTimeError',
-                                      );
-                                    }
-                                    if (_selectedStartTime != null &&
-                                        _selectedEndTime != null &&
-                                        _minutesFromTime(_selectedEndTime!) <=
-                                            _minutesFromTime(
-                                              _selectedStartTime!,
-                                            )) {
-                                      return ConstString.text(
-                                        language,
-                                        'invalidTimeRangeError',
-                                      );
-                                    }
-                                    if (_selectedStartTime != null &&
-                                        _selectedEndTime != null) {
-                                      final diffMinutes =
-                                          _minutesFromTime(_selectedEndTime!) -
-                                          _minutesFromTime(_selectedStartTime!);
-                                      if (diffMinutes < 5 ||
-                                          diffMinutes % 5 != 0) {
-                                        return ConstString.text(
-                                          language,
-                                          'timeIntervalFiveError',
-                                        );
-                                      }
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: ConstSize.grid * 2),
-                                AppDropdownButton2<dynamic>(
-                                  hintText: ConstString.text(
-                                    language,
-                                    'topics',
-                                  ),
-                                  value: _selectedTopic,
-                                  items: topics,
-                                  itemLabelBuilder: (t) => _topicLabel(t),
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _selectedTopic = val;
-                                      _topicErrorKey = null;
-                                    });
-                                  },
-                                ),
-                                if (_topicErrorKey != null) ...[
-                                  const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      ConstString.text(
-                                        language,
-                                        _topicErrorKey!,
-                                      ),
-                                      style: const TextStyle(
-                                        color: ConstColor.error,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: ConstSize.grid * 2),
-                                TextFormField(
-                                  controller: _shortDescriptionController,
-                                  decoration: InputDecoration(
-                                    labelText: ConstString.text(
-                                      language,
-                                      'shortDescription',
-                                    ),
-                                    hintText: ConstString.text(
-                                      language,
-                                      'shortDescriptionHint',
-                                    ),
-                                  ),
-                                  maxLines: 4,
-                                  validator: (value) {
-                                    if ((value ?? '').trim().isEmpty) {
-                                      return ConstString.text(
-                                        language,
-                                        'enterShortDescriptionError',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ],
+              return ColoredBox(
+                color: ConstColor.background,
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      ConstSize.grid * 2,
+                      ConstSize.grid * 1.5,
+                      ConstSize.grid * 2,
+                      ConstSize.grid * 3,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                          child: AppText(
+                            'addSlotDetails',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.25,
+                              color: ConstColor.textPrimary,
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: ConstSize.grid * 3),
-                      BlocListener<TutorAddSlotBloc, TutorAddSlotState>(
-                        listener: (context, state) {
-                          if (state is TutorAddSlotInitial) {
-                          } else if (state is TutorAddSlotLoading) {
-                            showDialog(
-                              barrierDismissible: false,
-                              context: context,
-                              builder: (context) {
-                                return Center(
-                                  child: const CircularProgressIndicator(),
-                                );
-                              },
-                            );
-                          } else if (state is TutorAddSlotError) {
-                            Navigator.pop(context);
-                            commonAlertDialog(context, state.message);
-                          } else if (state is TutorAddSlotSuccess) {
-                            Navigator.pop(context);
-                            Navigator.pop(context, true);
-                          }
-                        },
-                        child: SizedBox(
-                          height: 45,
+                          ),
+                        ),
+                        Container(
                           width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: ConstColor.primaryBlue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  ConstSize.radiusM,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: ConstColor.border.withValues(alpha: 0.65),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ConstColor.primaryBlue.withValues(
+                                  alpha: 0.06,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ValueListenableBuilder<AppLanguage>(
+                            valueListenable: AppLanguageState.current,
+                            builder: (context, language, _) {
+                              return Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    TextFormField(
+                                      controller: _dateController,
+                                      readOnly: true,
+                                      onTap: _pickDate,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        color: ConstColor.textPrimary,
+                                      ),
+                                      decoration: _slotFieldDecoration(
+                                        language,
+                                        labelKey: 'date',
+                                        hintText: 'YYYY-MM-DD',
+                                        suffixIcon: Icons.calendar_today_rounded,
+                                      ),
+                                      validator: (value) {
+                                        if ((value ?? '').trim().isEmpty) {
+                                          return ConstString.text(
+                                            language,
+                                            'selectDateError',
+                                          );
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 14),
+                                    TextFormField(
+                                      controller: _startTimeController,
+                                      readOnly: true,
+                                      onTap: _pickStartTime,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        color: ConstColor.textPrimary,
+                                      ),
+                                      decoration: _slotFieldDecoration(
+                                        language,
+                                        labelKey: 'startTime',
+                                        hintText: 'HH:MM',
+                                        suffixIcon: Icons.schedule_rounded,
+                                      ),
+                                      validator: (value) {
+                                        if ((value ?? '').trim().isEmpty) {
+                                          return ConstString.text(
+                                            language,
+                                            'selectStartTimeError',
+                                          );
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 14),
+                                    TextFormField(
+                                      controller: _endTimeController,
+                                      readOnly: true,
+                                      onTap: _pickEndTime,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        color: ConstColor.textPrimary,
+                                      ),
+                                      decoration: _slotFieldDecoration(
+                                        language,
+                                        labelKey: 'endTime',
+                                        hintText: 'HH:MM',
+                                        suffixIcon: Icons.schedule_rounded,
+                                      ),
+                                      validator: (value) {
+                                        if ((value ?? '').trim().isEmpty) {
+                                          return ConstString.text(
+                                            language,
+                                            'selectEndTimeError',
+                                          );
+                                        }
+                                        if (_selectedStartTime != null &&
+                                            _selectedEndTime != null &&
+                                            _minutesFromTime(_selectedEndTime!) <=
+                                                _minutesFromTime(
+                                                  _selectedStartTime!,
+                                                )) {
+                                          return ConstString.text(
+                                            language,
+                                            'invalidTimeRangeError',
+                                          );
+                                        }
+                                        if (_selectedStartTime != null &&
+                                            _selectedEndTime != null) {
+                                          final diffMinutes =
+                                              _minutesFromTime(
+                                                _selectedEndTime!,
+                                              ) -
+                                              _minutesFromTime(
+                                                _selectedStartTime!,
+                                              );
+                                          if (diffMinutes < 5 ||
+                                              diffMinutes % 5 != 0) {
+                                            return ConstString.text(
+                                              language,
+                                              'timeIntervalFiveError',
+                                            );
+                                          }
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 14),
+                                    AppDropdownButton2<dynamic>(
+                                      theme: AppDropdownTheme.theme2,
+                                      hintText: ConstString.text(
+                                        language,
+                                        'topics',
+                                      ),
+                                      value: _selectedTopic,
+                                      items: topics,
+                                      itemLabelBuilder: (t) => _topicLabel(t),
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _selectedTopic = val;
+                                          _topicErrorKey = null;
+                                        });
+                                      },
+                                    ),
+                                    if (_topicErrorKey != null) ...[
+                                      const SizedBox(height: 8),
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          ConstString.text(
+                                            language,
+                                            _topicErrorKey!,
+                                          ),
+                                          style: const TextStyle(
+                                            color: ConstColor.error,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 14),
+                                    TextFormField(
+                                      controller: _shortDescriptionController,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15,
+                                        height: 1.35,
+                                        color: ConstColor.textPrimary,
+                                      ),
+                                      decoration: _slotFieldDecoration(
+                                        language,
+                                        labelKey: 'shortDescription',
+                                        hintText: ConstString.text(
+                                          language,
+                                          'shortDescriptionHint',
+                                        ),
+                                      ),
+                                      maxLines: 4,
+                                      validator: (value) {
+                                        if ((value ?? '').trim().isEmpty) {
+                                          return ConstString.text(
+                                            language,
+                                            'enterShortDescriptionError',
+                                          );
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        BlocListener<TutorAddSlotBloc, TutorAddSlotState>(
+                          listener: (context, state) {
+                            if (state is TutorAddSlotInitial) {
+                            } else if (state is TutorAddSlotLoading) {
+                              showDialog(
+                                barrierDismissible: false,
+                                context: context,
+                                builder: (context) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                              );
+                            } else if (state is TutorAddSlotError) {
+                              Navigator.pop(context);
+                              commonAlertDialog(context, state.message);
+                            } else if (state is TutorAddSlotSuccess) {
+                              Navigator.pop(context);
+                              Navigator.pop(context, true);
+                            }
+                          },
+                          child: SizedBox(
+                            height: 52,
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: () {
+                                final language =
+                                    AppLanguageState.currentLanguage;
+                                _onSubmit(language);
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ConstColor.primaryBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const AppText(
+                                'submit',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  letterSpacing: 0.2,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                            onPressed: () {
-                              final language = AppLanguageState.currentLanguage;
-                              _onSubmit(language);
-                            },
-                            child: const AppText('submit'),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

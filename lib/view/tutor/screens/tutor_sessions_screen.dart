@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
@@ -22,6 +23,14 @@ import 'package:language_learning_app/provider/tutor_sessions/tutor_sessions_blo
 import 'package:language_learning_app/view/student/screens/live_session_screen.dart';
 
 enum TutorSessionTab { upcoming, current, past }
+
+String _formatSessionCardDate(String raw, Locale locale) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty || trimmed == '-') return raw;
+  final parsed = DateTime.tryParse(trimmed.split(' ').first);
+  if (parsed == null) return raw;
+  return DateFormat.yMMMEd(locale.toString()).format(parsed);
+}
 
 class TutorSessionsScreen extends StatefulWidget {
   const TutorSessionsScreen({super.key});
@@ -360,226 +369,237 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                     },
                   ),
                 ],
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(ConstSize.grid * 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: AppText(
-                                'tutorSessions',
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w700,
+                child: ColoredBox(
+                  color: ConstColor.background,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        ConstSize.grid * 2,
+                        ConstSize.grid * 1.5,
+                        ConstSize.grid * 2,
+                        ConstSize.grid * 1,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Expanded(
+                                child: AppText(
+                                  'tutorSessions',
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.1,
+                                    letterSpacing: -0.5,
+                                    color: ConstColor.textPrimary,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const AppVersionHeaderBadge(),
-                          ],
-                        ),
-                        const SizedBox(height: ConstSize.grid * 2),
-                        _TutorTabToggle(
-                          selected: _tab,
-                          onChanged: (value) => setState(() => _tab = value),
-                        ),
-                        const SizedBox(height: ConstSize.grid * 2),
-                        Expanded(
-                          child: RefreshIndicator(
-                            color: ConstColor.primaryBlue,
-                            onRefresh: _refreshTutorSessions,
-                            child: BlocBuilder<
-                              TutorSessionsBloc,
-                              TutorSessionsState
-                            >(
-                              builder: (context, state) {
-                                if (state is TutorSessionsInitial) {
-                                  final tutorId = PrefUtils.gettutorid()
-                                      .trim();
-                                  if (tutorId.isNotEmpty) {
-                                    _tutorSessionsBloc.add(
-                                      FetchTutorSessions(tutorId: tutorId),
+                              const AppVersionHeaderBadge(),
+                            ],
+                          ),
+                          const SizedBox(height: ConstSize.grid * 2),
+                          _TutorTabToggle(
+                            selected: _tab,
+                            onChanged: (value) => setState(() => _tab = value),
+                          ),
+                          const SizedBox(height: ConstSize.grid * 1.75),
+                          Expanded(
+                            child: RefreshIndicator(
+                              color: ConstColor.primaryBlue,
+                              onRefresh: _refreshTutorSessions,
+                              child: BlocBuilder<TutorSessionsBloc, TutorSessionsState>(
+                                builder: (context, state) {
+                                  if (state is TutorSessionsInitial) {
+                                    final tutorId = PrefUtils.gettutorid()
+                                        .trim();
+                                    if (tutorId.isNotEmpty) {
+                                      _tutorSessionsBloc.add(
+                                        FetchTutorSessions(tutorId: tutorId),
+                                      );
+                                    }
+                                    return LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minHeight: constraints.maxHeight,
+                                            ),
+                                            child: const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     );
                                   }
-                                  return LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return SingleChildScrollView(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minHeight: constraints.maxHeight,
+                                  if (state is TutorSessionsLoading) {
+                                    return LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minHeight: constraints.maxHeight,
+                                            ),
+                                            child: const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
                                           ),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                                if (state is TutorSessionsLoading) {
-                                  return LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return SingleChildScrollView(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minHeight: constraints.maxHeight,
-                                          ),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                                if (state is TutorSessionsError) {
-                                  return LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return SingleChildScrollView(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minHeight: constraints.maxHeight,
-                                          ),
-                                          child: Center(
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(
-                                                ConstSize.grid * 2,
-                                              ),
-                                              child: Text(
-                                                state.message,
-                                                style: const TextStyle(
-                                                  color: ConstColor.textSecondary,
+                                        );
+                                      },
+                                    );
+                                  }
+                                  if (state is TutorSessionsError) {
+                                    return LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minHeight: constraints.maxHeight,
+                                            ),
+                                            child: Center(
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(
+                                                  ConstSize.grid * 2,
                                                 ),
-                                                textAlign: TextAlign.center,
+                                                child: Text(
+                                                  state.message,
+                                                  style: const TextStyle(
+                                                    color: ConstColor
+                                                        .textSecondary,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                                final rows = state is TutorSessionsSuccess
-                                    ? (state.model.data ??
-                                          const <tutor_sessions.Data>[])
-                                    : const <tutor_sessions.Data>[];
-                                final groups = _groupsForTab(rows, _tab);
-                                if (groups.isEmpty) {
-                                  return LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return SingleChildScrollView(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minHeight: constraints.maxHeight,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              t('noData'),
-                                              style: const TextStyle(
-                                                color: ConstColor.textSecondary,
+                                        );
+                                      },
+                                    );
+                                  }
+                                  final rows = state is TutorSessionsSuccess
+                                      ? (state.model.data ??
+                                            const <tutor_sessions.Data>[])
+                                      : const <tutor_sessions.Data>[];
+                                  final groups = _groupsForTab(rows, _tab);
+                                  if (groups.isEmpty) {
+                                    return LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minHeight: constraints.maxHeight,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                t('noData'),
+                                                style: const TextStyle(
+                                                  color:
+                                                      ConstColor.textSecondary,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        );
+                                      },
+                                    );
+                                  }
+                                  return ListView.separated(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    itemCount: groups.length,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (_, i) => _SlotSessionCard(
+                                      group: groups[i],
+                                      onJoin: (row) {
+                                        final tutorId = (row.tutorId ?? '')
+                                            .trim();
+                                        final slotId = (row.slotId ?? '')
+                                            .trim();
+                                        final date = (row.date ?? '').trim();
+                                        final startTime = (row.startTime ?? '')
+                                            .trim();
+                                        final endTime = (row.endTime ?? '')
+                                            .trim();
+                                        if (tutorId.isEmpty ||
+                                            slotId.isEmpty ||
+                                            date.isEmpty ||
+                                            startTime.isEmpty ||
+                                            endTime.isEmpty) {
+                                          commonAlertDialog(
+                                            context,
+                                            t('pleaseTryAgain'),
+                                          );
+                                          return;
+                                        }
+                                        setState(() => _joiningSlotId = slotId);
+                                        _fetchLocationForJoin()
+                                            .then((location) {
+                                              _liveSessionJoinBloc.add(
+                                                LiveSessionJoinRequested(
+                                                  actorType: 'tutor',
+                                                  actorId: tutorId,
+                                                  tutorId: tutorId,
+                                                  slotId: slotId,
+                                                  date: date,
+                                                  startTime: startTime,
+                                                  endTime: endTime,
+                                                  latitude: location.latitude,
+                                                  longitude: location.longitude,
+                                                  address: location.address,
+                                                  waitForHost: false,
+                                                ),
+                                              );
+                                            })
+                                            .catchError((_) {
+                                              if (!mounted) return;
+                                              setState(
+                                                () => _joiningSlotId = '',
+                                              );
+                                            });
+                                      },
+                                      joiningSlotId: _joiningSlotId,
+                                      onAnalytics: (row) {
+                                        final tutorId = (row.tutorId ?? '')
+                                            .trim();
+                                        final slotId = (row.slotId ?? '')
+                                            .trim();
+                                        if (tutorId.isEmpty || slotId.isEmpty) {
+                                          commonAlertDialog(
+                                            context,
+                                            t('pleaseTryAgain'),
+                                          );
+                                          return;
+                                        }
+                                        _liveSessionAnalyticsBloc.add(
+                                          FetchLiveSessionAnalyticsRequested(
+                                            actorId: tutorId,
+                                            tutorId: tutorId,
+                                            slotId: slotId,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   );
-                                }
-                                return ListView.separated(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  itemCount: groups.length,
-                                  separatorBuilder: (context, index) =>
-                                      const SizedBox(
-                                        height: ConstSize.grid * 2,
-                                      ),
-                                  itemBuilder: (_, i) => _SlotSessionCard(
-                                    group: groups[i],
-                                    onJoin: (row) {
-                                      final tutorId = (row.tutorId ?? '')
-                                          .trim();
-                                      final slotId = (row.slotId ?? '')
-                                          .trim();
-                                      final date = (row.date ?? '').trim();
-                                      final startTime = (row.startTime ?? '')
-                                          .trim();
-                                      final endTime = (row.endTime ?? '')
-                                          .trim();
-                                      if (tutorId.isEmpty ||
-                                          slotId.isEmpty ||
-                                          date.isEmpty ||
-                                          startTime.isEmpty ||
-                                          endTime.isEmpty) {
-                                        commonAlertDialog(
-                                          context,
-                                          t('pleaseTryAgain'),
-                                        );
-                                        return;
-                                      }
-                                      setState(() => _joiningSlotId = slotId);
-                                      _fetchLocationForJoin()
-                                          .then((location) {
-                                            _liveSessionJoinBloc.add(
-                                              LiveSessionJoinRequested(
-                                                actorType: 'tutor',
-                                                actorId: tutorId,
-                                                tutorId: tutorId,
-                                                slotId: slotId,
-                                                date: date,
-                                                startTime: startTime,
-                                                endTime: endTime,
-                                                latitude: location.latitude,
-                                                longitude: location.longitude,
-                                                address: location.address,
-                                                waitForHost: false,
-                                              ),
-                                            );
-                                          })
-                                          .catchError((_) {
-                                            if (!mounted) return;
-                                            setState(
-                                              () => _joiningSlotId = '',
-                                            );
-                                          });
-                                    },
-                                    joiningSlotId: _joiningSlotId,
-                                    onAnalytics: (row) {
-                                      final tutorId = (row.tutorId ?? '')
-                                          .trim();
-                                      final slotId = (row.slotId ?? '')
-                                          .trim();
-                                      if (tutorId.isEmpty || slotId.isEmpty) {
-                                        commonAlertDialog(
-                                          context,
-                                          t('pleaseTryAgain'),
-                                        );
-                                        return;
-                                      }
-                                      _liveSessionAnalyticsBloc.add(
-                                        FetchLiveSessionAnalyticsRequested(
-                                          actorId: tutorId,
-                                          tutorId: tutorId,
-                                          slotId: slotId,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -600,33 +620,84 @@ class _TutorTabToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      TutorSessionTab.upcoming,
-      TutorSessionTab.current,
-      TutorSessionTab.past,
+    final tabs = <(TutorSessionTab, String)>[
+      (TutorSessionTab.upcoming, 'upcoming'),
+      (TutorSessionTab.current, 'current'),
+      (TutorSessionTab.past, 'past'),
     ];
-    return ToggleButtons(
-      isSelected: items.map((e) => e == selected).toList(),
-      onPressed: (index) => onChanged(items[index]),
-      borderRadius: BorderRadius.circular(ConstSize.radiusM),
-      constraints: const BoxConstraints(minHeight: 40, minWidth: 96),
-      selectedColor: Colors.white,
-      fillColor: ConstColor.primaryBlue,
-      color: ConstColor.textSecondary,
-      children: const [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('upcoming'),
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < tabs.length; i++) ...[
+            if (i > 0) const SizedBox(width: 4),
+            Expanded(
+              child: _SessionTabPill(
+                labelKey: tabs[i].$2,
+                selected: selected == tabs[i].$1,
+                onTap: () => onChanged(tabs[i].$1),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionTabPill extends StatelessWidget {
+  const _SessionTabPill({
+    required this.labelKey,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String labelKey;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? ConstColor.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: AppText(
+              labelKey,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
+                color: selected ? Colors.white : ConstColor.textSecondary,
+              ),
+            ),
+          ),
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('current'),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: AppText('past'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -659,6 +730,17 @@ class _SlotSessionCard extends StatelessWidget {
   final String joiningSlotId;
   final ValueChanged<tutor_sessions.Data> onAnalytics;
 
+  Color _accentForStatus(String status) {
+    switch (status) {
+      case 'upcoming':
+        return ConstColor.accentTeal;
+      case 'current':
+        return ConstColor.primaryBlue;
+      default:
+        return ConstColor.textSecondary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
@@ -668,170 +750,286 @@ class _SlotSessionCard extends StatelessWidget {
       (firstRow.endTime ?? '').trim(),
       locale,
     );
+    final formattedDate = _formatSessionCardDate(group.dateLabel, locale);
     final showJoin = group.status == 'current' || group.status == 'upcoming';
     final canJoin = group.status == 'current';
     final showAnalytics = group.status == 'past';
+    final accent = _accentForStatus(group.status);
+
     return Container(
-      padding: const EdgeInsets.all(ConstSize.grid * 2),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(ConstSize.radiusL),
-        border: Border.all(color: ConstColor.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            group.dateLabel,
-            style: const TextStyle(
-              color: ConstColor.primaryBlue,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: ConstSize.grid),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(ConstSize.grid),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFF),
-              borderRadius: BorderRadius.circular(ConstSize.radiusM),
-              border: Border.all(color: ConstColor.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            timeDisplay,
-                            style: const TextStyle(
-                              color: ConstColor.primaryBlue,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (group.timezoneLabel.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              group.timezoneLabel,
-                              style: const TextStyle(
-                                color: ConstColor.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (showJoin)
-                      BlocBuilder<LiveSessionJoinBloc, LiveSessionJoinState>(
-                        builder: (context, joinState) {
-                          final currentSlotId = (group.rows.first.slotId ?? '')
-                              .trim();
-                          final isJoiningThis =
-                              joinState is LiveSessionJoinLoading &&
-                              joiningSlotId.isNotEmpty &&
-                              joiningSlotId == currentSlotId;
-                          return ElevatedButton(
-                            onPressed: canJoin && !isJoiningThis
-                                ? () => onJoin(group.rows.first)
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: canJoin
-                                  ? ConstColor.primaryBlue
-                                  : ConstColor.grey,
-                              disabledBackgroundColor: ConstColor.grey,
-                              foregroundColor: Colors.white,
-                              disabledForegroundColor: Colors.white70,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  ConstSize.radiusM,
-                                ),
-                              ),
-                            ),
-                            child: isJoiningThis
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const AppText('join'),
-                          );
-                        },
-                      ),
-                    if (showAnalytics)
-                      IconButton(
-                        onPressed: () => onAnalytics(group.rows.first),
-                        icon: const Icon(
-                          Icons.bar_chart_rounded,
-                          color: ConstColor.primaryBlue,
-                        ),
-                        tooltip: 'Analytics',
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                const SizedBox(height: 8),
-                ...group.rows.map((row) {
-                  final name = (row.studentName ?? '').trim().isNotEmpty
-                      ? (row.studentName ?? '').trim()
-                      : '-';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: ConstColor.primaryBlue.withValues(
-                              alpha: 0.16,
-                            ),
-                            shape: BoxShape.circle,
-                            image:
-                                row.studentprofile != null &&
-                                    row.studentprofile!.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(
-                                      (row.studentprofile ?? '').trim(),
-                                    ),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        if(row.studentprofile == null ||
-                                    row.studentprofile!.isEmpty)...[const Icon(
-                          Icons.person_outline,
-                          size: 20,
-                          color: ConstColor.textSecondary,
-                        ),
-                        ],
-                        
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 3, color: accent),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 10, 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_rounded,
+                                      size: 14,
+                                      color: ConstColor.textSecondary
+                                          .withValues(alpha: 0.85),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        formattedDate,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: ConstColor.textSecondary,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  timeDisplay,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.15,
+                                    color: ConstColor.textPrimary,
+                                    letterSpacing: -0.35,
+                                  ),
+                                ),
+                                if (group.timezoneLabel.isNotEmpty) ...[
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.public_rounded,
+                                        size: 13,
+                                        color: ConstColor.textSecondary
+                                            .withValues(alpha: 0.75),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          group.timezoneLabel,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            height: 1.2,
+                                            fontWeight: FontWeight.w500,
+                                            color: ConstColor.textSecondary
+                                                .withValues(alpha: 0.95),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (showJoin)
+                            BlocBuilder<
+                              LiveSessionJoinBloc,
+                              LiveSessionJoinState
+                            >(
+                              builder: (context, joinState) {
+                                final currentSlotId =
+                                    (group.rows.first.slotId ?? '').trim();
+                                final isJoiningThis =
+                                    joinState is LiveSessionJoinLoading &&
+                                    joiningSlotId.isNotEmpty &&
+                                    joiningSlotId == currentSlotId;
+                                return FilledButton(
+                                  onPressed: canJoin && !isJoiningThis
+                                      ? () => onJoin(group.rows.first)
+                                      : null,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: canJoin
+                                        ? ConstColor.primaryBlue
+                                        : ConstColor.grey,
+                                    disabledBackgroundColor: ConstColor.grey
+                                        .withValues(alpha: 0.65),
+                                    foregroundColor: Colors.white,
+                                    disabledForegroundColor: Colors.white70,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    minimumSize: const Size(72, 36),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: isJoiningThis
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const AppText(
+                                          'join',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                );
+                              },
+                            ),
+                          if (showAnalytics)
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => onAnalytics(group.rows.first),
+                              icon: const Icon(
+                                Icons.insights_rounded,
+                                color: ConstColor.primaryBlue,
+                              ),
+                              tooltip: 'Analytics',
+                            ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 12,
+                      endIndent: 12,
+                      color: ConstColor.border.withValues(alpha: 0.8),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < group.rows.length; i++)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: i < group.rows.length - 1 ? 6 : 0,
+                              ),
+                              child: _SessionStudentRow(row: group.rows[i]),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionStudentRow extends StatelessWidget {
+  const _SessionStudentRow({required this.row});
+
+  final tutor_sessions.Data row;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (row.studentName ?? '').trim().isNotEmpty
+        ? (row.studentName ?? '').trim()
+        : '-';
+    final url = (row.studentprofile ?? '').trim();
+    const size = 32.0;
+
+    final placeholder = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+      ),
+      child: const Icon(
+        Icons.person_rounded,
+        size: 17,
+        color: ConstColor.primaryBlue,
+      ),
+    );
+
+    final Widget avatar = url.isEmpty
+        ? placeholder
+        : ClipOval(
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => placeholder,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    width: size,
+                    height: size,
+                    alignment: Alignment.center,
+                    color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+                    child: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: ConstColor.primaryBlue,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+
+    return Row(
+      children: [
+        avatar,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: ConstColor.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

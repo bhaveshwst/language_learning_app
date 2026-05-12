@@ -187,6 +187,13 @@ class _SignupScreenState extends State<SignupScreen> {
                         role: widget.role,
                         authFlow: AuthFlow.signup,
                         email: _emailController.text.trim(),
+                        signupResend: SignupOtpResendInfo(
+                          country: _countryToApiCode(_country),
+                          birthYear: _selectedYear?.toString() ?? '',
+                          userRole: widget.role == UserRole.findTutor
+                              ? 'student'
+                              : 'tutor',
+                        ),
                       ),
                     ),
                   );

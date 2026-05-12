@@ -36,7 +36,7 @@ class _TutorDashboardShellState extends State<TutorDashboardShell> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ConstColor.background,
       body: pages[_tab],
       // floatingActionButton: _tab == 0
       //     ? FloatingActionButton.extended(
@@ -184,7 +184,12 @@ class _TutorSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(ConstSize.grid * 2),
+        padding: const EdgeInsets.fromLTRB(
+          ConstSize.grid * 2,
+          ConstSize.grid * 1.5,
+          ConstSize.grid * 2,
+          ConstSize.grid * 3,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -194,18 +199,24 @@ class _TutorSettingsScreen extends StatelessWidget {
                 const Expanded(
                   child: AppText(
                     'tutorSettings',
-                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                      color: ConstColor.textPrimary,
+                    ),
                   ),
                 ),
                 const AppVersionHeaderBadge(),
               ],
             ),
-            const SizedBox(height: ConstSize.grid * 2),
+            const SizedBox(height: ConstSize.grid * 1),
             _SectionCard(
               child: Column(
                 children: [
                   _SettingsTile(
-                    icon: Icons.person_outline,
+                    icon: Icons.person_rounded,
                     titleKey: 'profile',
                     onTap: () {
                       final language = AppLanguageState.currentLanguage;
@@ -220,58 +231,47 @@ class _TutorSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const Divider(height: 1, color: ConstColor.border),
+                  _SettingsDivider(),
                   _SettingsTile(
                     icon: Icons.description_outlined,
                     titleKey: 'termsAndConditions',
                     onTap: () {
                       launchUrl(
-                        Uri.parse("https://konnected.wisdomsquare.net/terms"),
+                        Uri.parse('https://konnected.wisdomsquare.net/terms'),
                       );
                     },
                   ),
-                  const Divider(height: 1, color: ConstColor.border),
+                  _SettingsDivider(),
                   _SettingsTile(
-                    icon: Icons.lock_outline,
+                    icon: Icons.lock_outline_rounded,
                     titleKey: 'privacyPolicy',
                     onTap: () {
                       launchUrl(
-                        Uri.parse("https://konnected.wisdomsquare.net/privacy"),
+                        Uri.parse('https://konnected.wisdomsquare.net/privacy'),
                       );
                     },
                   ),
-                  // const Divider(height: 1, color: ConstColor.border),
-                  // _SettingsTile(
-                  //   icon: Icons.rate_review_outlined,
-                  //   titleKey: 'review',
-                  //   onTap: () {
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (_) => const _TutorReviewsPage(),
-                  //       ),
-                  //     );
-                  //   },
-                  // ),
                 ],
               ),
             ),
-            const SizedBox(height: ConstSize.grid * 2),
-            const AppText(
-              'language',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            const SizedBox(height: ConstSize.grid * 2.5),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: AppText(
+                'language',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  color: ConstColor.textSecondary,
+                ),
+              ),
             ),
-            const SizedBox(height: ConstSize.grid),
             ValueListenableBuilder<AppLanguage>(
               valueListenable: AppLanguageState.current,
               builder: (context, language, _) {
-                return Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: ConstColor.border),
-                  ),
+                return _SectionCard(
+                  padding: const EdgeInsets.all(5),
                   child: Row(
                     children: [
                       Expanded(
@@ -285,6 +285,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                               AppLanguageState.setLanguage(AppLanguage.english),
                         ),
                       ),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: _LangButton(
                           label: ConstString.text(AppLanguage.korean, 'korean'),
@@ -293,6 +294,7 @@ class _TutorSettingsScreen extends StatelessWidget {
                               AppLanguageState.setLanguage(AppLanguage.korean),
                         ),
                       ),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: _LangButton(
                           label: ConstString.text(
@@ -311,28 +313,54 @@ class _TutorSettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: ConstSize.grid * 3),
             SizedBox(
-              height: 42,
               width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ConstColor.error,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(ConstSize.radiusM),
-                  ),
-                ),
+              height: 45,
+              child: FilledButton(
                 onPressed: () async {
                   await _handleLogout(context);
                 },
-                child: const AppText(
-                  'logout',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ConstColor.error,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.logout_rounded, size: 22),
+                    const SizedBox(width: 10),
+                    AppText(
+                      'logout',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: 0.6,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 58,
+      endIndent: 12,
+      color: ConstColor.border.withValues(alpha: 0.75),
     );
   }
 }
@@ -350,33 +378,74 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: ConstColor.primaryBlue),
-      title: AppText(
-        titleKey,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 37,
+                height: 37,
+                decoration: BoxDecoration(
+                  color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: ConstColor.primaryBlue, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: AppText(
+                  titleKey,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: ConstColor.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: ConstColor.textSecondary.withValues(alpha: 0.55),
+                size: 26,
+              ),
+            ],
+          ),
+        ),
       ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child});
+  const _SectionCard({
+    required this.child,
+    this.padding = const EdgeInsets.symmetric(vertical: 4),
+  });
 
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(ConstSize.grid),
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(ConstSize.radiusL),
-        border: Border.all(color: ConstColor.border),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -396,20 +465,31 @@ class _LangButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? ConstColor.primaryBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? Colors.white : ConstColor.textPrimary,
-              fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: active ? ConstColor.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: active ? Colors.white : ConstColor.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                letterSpacing: active ? 0.2 : 0,
+              ),
             ),
           ),
         ),

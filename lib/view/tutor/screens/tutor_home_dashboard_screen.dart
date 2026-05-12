@@ -212,17 +212,13 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     return n;
   }
 
-  String _bookingScheduleLine(tutor_sessions.Data row, Locale locale) {
+  String _bookingDateOnlyLine(tutor_sessions.Data row, Locale locale) {
     final dt = _sessionStartDateTime(row);
     if (dt == null) {
       final d = (row.date ?? '').trim();
-      final st = (row.startTime ?? '').trim();
-      if (d.isEmpty && st.isEmpty) return '-';
-      return [d, st].where((e) => e.isNotEmpty).join(', ');
+      return d.isEmpty ? '-' : d;
     }
-    final datePart = DateFormat.yMMMd(locale.toString()).format(dt);
-    final timePart = DateFormat.jm(locale.toString()).format(dt);
-    return '$datePart · $timePart';
+    return DateFormat.yMMMd(locale.toString()).format(dt);
   }
 
   String _bookingTimeRangeLine(tutor_sessions.Data row, Locale locale) {
@@ -465,11 +461,13 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                         const AppText(
                           'upcomingBookings',
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            color: ConstColor.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: ConstSize.grid * 1.5),
+                        const SizedBox(height: 10),
                         if (!loading && preview.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(
@@ -479,6 +477,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                               t('noData'),
                               style: const TextStyle(
                                 color: ConstColor.textSecondary,
+                                fontSize: 13,
                               ),
                             ),
                           )
@@ -488,17 +487,20 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                             final row = entry.value;
                             return [
                               _BookingTile(
-                                studentprofile: (row.studentprofile ?? '').trim(),
+                                studentprofile:
+                                    (row.studentprofile ?? '').trim(),
                                 student:
                                     (row.studentName ?? '').trim().isNotEmpty
                                     ? (row.studentName ?? '').trim()
                                     : '-',
-                                time: _bookingScheduleLine(row, locale),
-                                focus: _bookingTimeRangeLine(row, locale),
-                                timezone: (row.studentTimezone ?? '').trim(),
+                                dateLine: _bookingDateOnlyLine(row, locale),
+                                timeRangeLine:
+                                    _bookingTimeRangeLine(row, locale),
+                                timezone:
+                                    (row.studentTimezone ?? '').trim(),
                               ),
                               if (i < preview.length - 1)
-                                const SizedBox(height: ConstSize.grid),
+                                const SizedBox(height: 10),
                             ];
                           }),
                         const SizedBox(height: ConstSize.grid * 2),
@@ -559,77 +561,219 @@ class _TutorMetricCard extends StatelessWidget {
 class _BookingTile extends StatelessWidget {
   const _BookingTile({
     required this.student,
-    required this.time,
-    required this.focus,
+    required this.dateLine,
+    required this.timeRangeLine,
     required this.timezone,
     required this.studentprofile,
   });
 
   final String student;
-  final String time;
-  final String focus;
+  final String dateLine;
+  final String timeRangeLine;
   final String timezone;
   final String studentprofile;
 
+  static const double _avatarSize = 40;
+
   @override
   Widget build(BuildContext context) {
+    final metaStyle = TextStyle(
+      fontSize: 12.5,
+      height: 1.25,
+      fontWeight: FontWeight.w500,
+      color: ConstColor.textSecondary.withValues(alpha: 0.92),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(ConstSize.grid * 1.5),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(ConstSize.radiusM),
-        border: Border.all(color: ConstColor.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: ConstColor.primaryBlue.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
-              image:  studentprofile.isNotEmpty ? DecorationImage(
-                image: NetworkImage(studentprofile),
-                fit: BoxFit.cover,
-              ) : null,
-            ),
-          ),
-          if(studentprofile.isEmpty)...[
-            const CircleAvatar(
-              backgroundColor: Color(0x1A0F6CBD),
-              child: Icon(Icons.person, color: ConstColor.primaryBlue),
-            ),
-          ],
-          const SizedBox(width: ConstSize.grid),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  time,
-                  style: const TextStyle(color: ConstColor.textSecondary),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  focus,
-                  style: const TextStyle(color: ConstColor.textSecondary),
-                ),
-                if (timezone.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    timezone,
-                    style: const TextStyle(color: ConstColor.textSecondary),
-                  ),
-                ],
-              ],
-            ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: ConstColor.border.withValues(alpha: 0.65),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 3,
+                color: ConstColor.primaryBlue.withValues(alpha: 0.75),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _StudentAvatar(
+                        imageUrl: studentprofile,
+                        size: _avatarSize,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              student,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
+                                color: ConstColor.textPrimary,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(
+                                    Icons.event_rounded,
+                                    size: 13,
+                                    color: ConstColor.textSecondary
+                                        .withValues(alpha: 0.85),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    dateLine,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: metaStyle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: ConstColor.textSecondary
+                                        .withValues(alpha: 0.85),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    timeRangeLine,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: metaStyle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (timezone.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.public_rounded,
+                                    size: 13,
+                                    color: ConstColor.textSecondary
+                                        .withValues(alpha: 0.75),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      timezone,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: metaStyle.copyWith(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentAvatar extends StatelessWidget {
+  const _StudentAvatar({required this.imageUrl, required this.size});
+
+  final String imageUrl;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+      ),
+      child: Icon(
+        Icons.person_rounded,
+        size: size * 0.45,
+        color: ConstColor.primaryBlue,
+      ),
+    );
+
+    if (imageUrl.isEmpty) {
+      return placeholder;
+    }
+
+    return ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => placeholder,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+              child: SizedBox(
+                width: size * 0.35,
+                height: size * 0.35,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ConstColor.primaryBlue,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
