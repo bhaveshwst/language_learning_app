@@ -9,6 +9,7 @@ import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/provider/sign_up_provider/signup_bloc.dart';
 import 'package:language_learning_app/view/auth/otp_verification_screen.dart';
+import 'package:language_learning_app/view/auth/widgets/auth_form_card.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_screen_shell.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_text_field.dart';
@@ -93,6 +94,8 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  static const double _signupDropdownHeight = 48;
+
   @override
   Widget build(BuildContext context) {
     final countryRule = _countryRuleText(_country);
@@ -102,67 +105,78 @@ class _SignupScreenState extends State<SignupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              t('createAccount'),
-              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
+            AuthScreenHeading(
+              title: t('createAccount'),
+              subtitle: t('emailOtpOnly'),
             ),
-
-            const SizedBox(height: ConstSize.grid * 3),
+            const AuthHeadingSpacer(),
             _fieldHeader(t('selectCountry')),
-            AppDropdownButton2<String>(
-              hintText: t('country'),
-              value: _country,
-              items: const ['us', 'kr', 'es'],
-              itemLabelBuilder: (v) {
-                if (v == 'us') return t('unitedStates');
-                if (v == 'kr') return t('southKorea');
-                return t('spain');
-              },
-              onChanged: (v) => setState(() => _country = v),
+            AuthInputShell(
+              child: AppDropdownButton2<String>(
+                hintText: t('country'),
+                value: _country,
+                fieldHeight: _signupDropdownHeight,
+                items: const ['us', 'kr', 'es'],
+                itemLabelBuilder: (v) {
+                  if (v == 'us') return t('unitedStates');
+                  if (v == 'kr') return t('southKorea');
+                  return t('spain');
+                },
+                onChanged: (v) => setState(() => _country = v),
+              ),
             ),
-            const SizedBox(height: ConstSize.grid * 1),
             if (countryRule != null) ...[
-              Text(
-                countryRule,
-                style: const TextStyle(
-                  color: ConstColor.textSecondary,
-                  fontSize: 12,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  countryRule,
+                  style: TextStyle(
+                    color: ConstColor.textSecondary.withValues(alpha: 0.95),
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
                 ),
               ),
             ],
-            const SizedBox(height: ConstSize.grid * 2),
+            const SizedBox(height: 18),
             _fieldHeader(t('enterEmail')),
-            AuthTextField(
-              hint: t('schoolEmail'),
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _showErrors && !_isEmailValid
-                  ? t('invalidEmail')
-                  : null,
-            ),
-            // const SizedBox(height: ConstSize.grid),
-            // Text(
-            //   t('ageTitle'),
-            //   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            // ),
-            const SizedBox(height: 20),
-            _fieldHeader(t('selectBirthYear')),
-            AppDropdownButton2<int>(
-              hintText: t('birthYear'),
-              value: _selectedYear,
-              items: _birthYearItems,
-              itemLabelBuilder: (year) => '$year',
-              onChanged: (year) => setState(() => _selectedYear = year),
-            ),
-            const SizedBox(height: ConstSize.grid * 1),
-            Text(
-              widget.role == UserRole.becomeTutor ? "" : t('ageRule'),
-              style: const TextStyle(
-                color: ConstColor.textSecondary,
-                fontSize: 12,
+            AuthInputShell(
+              child: AuthTextField(
+                hint: t('schoolEmail'),
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                dense: true,
+                errorText: _showErrors && !_isEmailValid
+                    ? t('invalidEmail')
+                    : null,
               ),
             ),
-            const SizedBox(height: ConstSize.grid * 2),
+            const SizedBox(height: 18),
+            _fieldHeader(t('selectBirthYear')),
+            AuthInputShell(
+              child: AppDropdownButton2<int>(
+                hintText: t('birthYear'),
+                value: _selectedYear,
+                fieldHeight: _signupDropdownHeight,
+                items: _birthYearItems,
+                itemLabelBuilder: (year) => '$year',
+                onChanged: (year) => setState(() => _selectedYear = year),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                widget.role == UserRole.becomeTutor ? '' : t('ageRule'),
+                style: TextStyle(
+                  color: ConstColor.textSecondary.withValues(alpha: 0.95),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            const SizedBox(height: 26),
             BlocListener<SignupBloc, SignupState>(
               listener: (context, state) {
                 if (state is SignupInitial) {
@@ -239,9 +253,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Text(
                         '$prefix ',
-                        style: const TextStyle(
-                          color: ConstColor.textSecondary,
-                          fontWeight: FontWeight.w600,
+                        style: TextStyle(
+                          color: ConstColor.textSecondary.withValues(
+                            alpha: 0.95,
+                          ),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          height: 1.3,
                         ),
                       ),
                       GestureDetector(
@@ -252,7 +270,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           cta.isNotEmpty ? cta : 'Login',
                           style: const TextStyle(
                             color: ConstColor.primaryBlue,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            height: 1.3,
                           ),
                         ),
                       ),
@@ -269,10 +289,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _fieldHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: ConstSize.grid),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+          color: ConstColor.textPrimary,
+        ),
       ),
     );
   }

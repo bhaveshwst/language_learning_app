@@ -9,6 +9,7 @@ import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/provider/login_provider/login_provider_bloc.dart';
 import 'package:language_learning_app/view/auth/otp_verification_screen.dart';
 import 'package:language_learning_app/view/auth/signup_screen.dart';
+import 'package:language_learning_app/view/auth/widgets/auth_form_card.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_screen_shell.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_text_field.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
@@ -56,21 +57,23 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              t('welcomeBack'),
-              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
+            AuthScreenHeading(
+              title: t('welcomeBack'),
+              subtitle: t('emailOtpOnly'),
             ),
-
-            const SizedBox(height: ConstSize.grid * 2),
-            AuthTextField(
-              hint: t('email'),
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _showErrors && !_isEmailValid
-                  ? t('invalidEmail')
-                  : null,
+            const AuthHeadingSpacer(),
+            AuthInputShell(
+              child: AuthTextField(
+                hint: t('email'),
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                dense: true,
+                errorText: _showErrors && !_isEmailValid
+                    ? t('invalidEmail')
+                    : null,
+              ),
             ),
-            const SizedBox(height: ConstSize.grid * 3),
+            const SizedBox(height: 24),
             BlocListener<LoginProviderBloc, LoginProviderState>(
               listener: (context, state) {
                 if (state is LoginProviderInitial) {
@@ -111,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
             ),
-            const SizedBox(height: ConstSize.grid * 4),
+            const SizedBox(height: ConstSize.grid * 3),
             Center(
               child: Builder(
                 builder: (context) {
@@ -123,9 +126,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         '$prefix ',
-                        style: const TextStyle(
-                          color: ConstColor.textSecondary,
-                          fontWeight: FontWeight.w600,
+                        style: TextStyle(
+                          color: ConstColor.textSecondary.withValues(
+                            alpha: 0.95,
+                          ),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          height: 1.3,
                         ),
                       ),
                       GestureDetector(
@@ -144,7 +151,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           cta.isNotEmpty ? cta : 'Sign Up',
                           style: const TextStyle(
                             color: ConstColor.primaryBlue,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            height: 1.3,
                           ),
                         ),
                       ),

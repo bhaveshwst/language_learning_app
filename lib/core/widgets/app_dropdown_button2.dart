@@ -17,6 +17,8 @@ class AppDropdownButton2<T> extends StatefulWidget {
     this.value,
     this.theme = AppDropdownTheme.theme1,
     this.enabled = true,
+    /// When set, replaces [ConstSize.buttonHeight] for a shorter field (e.g. signup).
+    this.fieldHeight,
   });
 
   final String hintText;
@@ -26,6 +28,7 @@ class AppDropdownButton2<T> extends StatefulWidget {
   final T? value;
   final AppDropdownTheme theme;
   final bool enabled;
+  final double? fieldHeight;
 
   @override
   State<AppDropdownButton2<T>> createState() => _AppDropdownButton2State<T>();
@@ -59,10 +62,11 @@ class _AppDropdownButton2State<T> extends State<AppDropdownButton2<T>> {
   @override
   Widget build(BuildContext context) {
     final isTheme2 = widget.theme == AppDropdownTheme.theme2;
+    final height = widget.fieldHeight ?? ConstSize.buttonHeight;
     return DropdownButtonHideUnderline(
       child: SizedBox(
         width: double.infinity,
-        height: ConstSize.buttonHeight,
+        height: height,
         child: DropdownButton2<T>(
           isExpanded: true,
           hint: Text(
@@ -94,7 +98,7 @@ class _AppDropdownButton2State<T> extends State<AppDropdownButton2<T>> {
                 }
               : null,
           buttonStyleData: ButtonStyleData(
-            height: ConstSize.buttonHeight,
+            height: height,
             padding: const EdgeInsets.symmetric(horizontal: 0),
             decoration: BoxDecoration(
               color: isTheme2 ? const Color(0xFFF4F8FF) : Colors.white,
