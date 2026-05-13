@@ -45,7 +45,7 @@ class _TutorAvailabilityCalendarScreenState
     _firstDay = DateTime.utc(1500, 1, 1);
     _lastDay = DateTime.utc(3500, 12, 31);
     _focusedDay = DateTime.now();
-    _selectedDay = _normalizeDate(_focusedDay);
+    _selectedDay = _calendarDayKey(_focusedDay);
 
     final tutorId = widget.tutorId.trim();
     if (tutorId.isNotEmpty) {
@@ -59,12 +59,38 @@ class _TutorAvailabilityCalendarScreenState
     super.dispose();
   }
 
-  DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
+  /// Calendar map keys must match [table_calendar]'s [normalizeDate] (UTC date-only),
+  /// because [eventLoader] receives UTC day values from the grid.
+  DateTime _calendarDayKey(DateTime date) => normalizeDate(date);
 
   List<Map<String, dynamic>> _eventsForDay(DateTime day) {
-    return _availabilityByDate[_normalizeDate(day)] ?? const [];
+    return _availabilityByDate[_calendarDayKey(day)] ?? const [];
+  }
+
+  /// Parses API `date` into a calendar day without timezone shifting `YYYY-MM-DD`.
+  DateTime? _parseAvailabilityCalendarDate(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return null;
+    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(s);
+    if (m != null) {
+      final y = int.tryParse(m.group(1)!);
+      final mo = int.tryParse(m.group(2)!);
+      final d = int.tryParse(m.group(3)!);
+      if (y != null &&
+          mo != null &&
+          d != null &&
+          mo >= 1 &&
+          mo <= 12 &&
+          d >= 1 &&
+          d <= 31) {
+        return DateTime.utc(y, mo, d);
+      }
+    }
+    try {
+      return normalizeDate(DateTime.parse(s));
+    } catch (_) {
+      return null;
+    }
   }
 
   Map<DateTime, List<Map<String, dynamic>>> _groupAvailabilityByDateFromApi(
@@ -74,16 +100,10 @@ class _TutorAvailabilityCalendarScreenState
 
     for (final row in rows) {
       final dateStr = (row.date ?? '').trim();
-      if (dateStr.isEmpty) continue;
+      final calendarDay = _parseAvailabilityCalendarDate(dateStr);
+      if (calendarDay == null) continue;
 
-      DateTime parsedDate;
-      try {
-        parsedDate = DateTime.parse(dateStr);
-      } catch (_) {
-        continue;
-      }
-
-      final normalized = _normalizeDate(parsedDate);
+      final normalized = normalizeDate(calendarDay);
 
       final startTime = (row.startTime ?? '').trim();
       final endTime = (row.endTime ?? '').trim();
@@ -245,12 +265,46 @@ class _TutorAvailabilityCalendarScreenState
                                 CalendarFormat.month: t('month'),
                               },
                               calendarFormat: CalendarFormat.month,
+                              calendarBuilders: CalendarBuilders(
+                                singleMarkerBuilder: (context, day, event) {
+                                  final selected =
+                                      isSameDay(_selectedDay, day);
+                                  return Container(
+                                    width: 6,
+                                    height: 6,
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 0.3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? Colors.white
+                                          : ConstColor.primaryBlue,
+                                      shape: BoxShape.circle,
+                                      border: selected
+                                          ? Border.all(
+                                              color: ConstColor.primaryBlue,
+                                              width: 1,
+                                            )
+                                          : null,
+                                      boxShadow: selected
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.12),
+                                                blurRadius: 2,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  );
+                                },
+                              ),
                               selectedDayPredicate: (day) =>
                                   isSameDay(_selectedDay, day),
                               eventLoader: _eventsForDay,
                               onDaySelected: (selectedDay, focusedDay) {
                                 setState(() {
-                                  _selectedDay = _normalizeDate(selectedDay);
+                                  _selectedDay = _calendarDayKey(selectedDay);
                                   _focusedDay = focusedDay;
                                 });
                               },
@@ -400,7 +454,7 @@ class _TutorAvailabilityCalendarScreenState
                           )
                         else
                           ...selectedDateData.map((slotData) {
-                            final normalizedDate = _normalizeDate(
+                            final normalizedDate = _calendarDayKey(
                               (slotData['date'] as DateTime?) ?? _focusedDay,
                             );
                             final dateStr =
