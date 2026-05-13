@@ -20,6 +20,7 @@ import 'package:language_learning_app/view/student/student_dashboard_shell.dart'
 import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
 import 'package:language_learning_app/view/force_update_screen.dart';
 import 'package:language_learning_app/core/widgets/connectivity_overlay.dart';
+import 'package:language_learning_app/core/navigation/app_navigator.dart';
 
 import 'firebase_options.dart';
 
@@ -272,6 +273,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: appRootNavigatorKey,
       theme: AppTheme.lightTheme,
       builder: (context, child) =>
           _buildWithFixedTextScale(context, child ?? const SizedBox.shrink()),

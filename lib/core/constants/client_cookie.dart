@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:http/http.dart' as http;
 import 'package:language_learning_app/core/constants/utils.dart';
+import 'package:language_learning_app/core/services/session_expired_handler.dart';
 
 class AppHttpClient {
   static final CookieJar _cookieJar = CookieJar();
@@ -37,6 +38,7 @@ class AppHttpClient {
       print('✅ COOKIE SAVED: ${cookie.name}=${cookie.value}');
     }
 
+    await SessionExpiredHandler.handleIfUnauthorized(response.statusCode);
     return response;
   }
 
@@ -76,6 +78,7 @@ class AppHttpClient {
       print('✅ COOKIE SAVED: ${cookie.name}=${cookie.value}');
     }
 
+    await SessionExpiredHandler.handleIfUnauthorized(response.statusCode);
     return response;
   }
 
@@ -111,6 +114,7 @@ class AppHttpClient {
       print('✅ COOKIE SAVED: ${cookie.name}=${cookie.value}');
     }
 
+    await SessionExpiredHandler.handleIfUnauthorized(response.statusCode);
     return response;
   }
 }
