@@ -144,6 +144,22 @@ class ConstString {
     'review': 'Review',
     'language': 'Language',
     'logout': 'LOGOUT',
+    'deleteAccount': 'Delete Account',
+    'deleteAccountTitle': 'Delete Account',
+    'deleteAccountSubtitle':
+        'Tell us why you are leaving. Your account and data will be permanently removed.',
+    'deleteAccountReasonLabel': 'Reason for leaving',
+    'deleteAccountReasonHint': 'Please share why you want to delete your account...',
+    'enterDeleteReasonError': 'Please enter a reason before continuing',
+    'enterDeleteReasonErrorLength': 'Reason must be at least 10 characters',
+    'deleteAccountWarning':
+        'This action is permanent. Your profile, bookings, and session history etc... will be removed.',
+    'deleteAccountConfirmTitle': 'Delete account?',
+    'deleteAccountConfirmMessage':
+        'Your account and all associated data will be permanently deleted. This cannot be undone.',
+    'deleteAccountSuccessTitle': 'Account deleted',
+    'deleteAccountSuccessMessage':
+        'Your account has been permanently deleted.',
 
     'editProfile': 'Edit your profile',
     'bio': 'Bio',
@@ -307,6 +323,7 @@ class ConstString {
     'verify': '인증하기',
     'sendOtp': 'OTP 보내기',
     'otpSentTo': 'OTP 전송 대상',
+    'enterDeleteReasonErrorLength': '탈퇴 사유는 최소 10자 이상이어야 합니다',
     'otpResentSuccess': '새 인증 코드가 이메일로 전송되었습니다.',
     'ageTitle': '나이 인증',
     'ageRule': '14~17세 사용자만 계속할 수 있습니다',
@@ -393,6 +410,19 @@ class ConstString {
     'review': '후기',
     'language': '언어',
     'logout': '로그아웃',
+    'deleteAccount': '계정 삭제',
+    'deleteAccountTitle': '계정 삭제',
+    'deleteAccountSubtitle': '탈퇴 사유를 입력해 주세요. 계정과 데이터가 영구 삭제됩니다.',
+    'deleteAccountReasonLabel': '탈퇴 사유',
+    'deleteAccountReasonHint': '계정을 삭제하려는 이유를 입력해 주세요...',
+    'enterDeleteReasonError': '계속하려면 사유를 입력해 주세요',
+    'deleteAccountWarning':
+        '이 작업은 되돌릴 수 없습니다. 프로필, 예약, 세션 기록이 모두 삭제됩니다.',
+    'deleteAccountConfirmTitle': '계정을 삭제하시겠습니까?',
+    'deleteAccountConfirmMessage':
+        '계정과 모든 관련 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.',
+    'deleteAccountSuccessTitle': '계정이 삭제되었습니다',
+    'deleteAccountSuccessMessage': '계정이 영구적으로 삭제되었습니다.',
     'enterHeadlineError': '헤드라인을 입력해 주세요',
 
     'editProfile': '프로필 수정',
@@ -636,6 +666,7 @@ class ConstString {
     'selectProfilePictureError': 'Por favor selecciona una imagen de perfil',
     'checkAvailability': 'Ver Disponibilidad',
     'bookSession': 'Reservar Sesión',
+    'enterDeleteReasonErrorLength': 'El motivo debe tener al menos 10 caracteres',
 
     'sessions': 'Sesiones',
     'upcoming': 'Próximas',
@@ -654,6 +685,21 @@ class ConstString {
     'review': 'Reseña',
     'language': 'Idioma',
     'logout': 'CERRAR SESIÓN',
+    'deleteAccount': 'Eliminar cuenta',
+    'deleteAccountTitle': 'Eliminar cuenta',
+    'deleteAccountSubtitle':
+        'Cuéntanos por qué te vas. Tu cuenta y datos se eliminarán permanentemente.',
+    'deleteAccountReasonLabel': 'Motivo de baja',
+    'deleteAccountReasonHint':
+        'Comparte por qué deseas eliminar tu cuenta...',
+    'enterDeleteReasonError': 'Introduce un motivo antes de continuar',
+    'deleteAccountWarning':
+        'Esta acción es permanente. Tu perfil, reservas e historial de sesiones se eliminarán.',
+    'deleteAccountConfirmTitle': '¿Eliminar cuenta?',
+    'deleteAccountConfirmMessage':
+        'Tu cuenta y todos los datos asociados se eliminarán permanentemente. No se puede deshacer.',
+    'deleteAccountSuccessTitle': 'Cuenta eliminada',
+    'deleteAccountSuccessMessage': 'Tu cuenta ha sido eliminada permanentemente.',
 
     'editProfile': 'Editar tu perfil',
     'bio': 'Biografía',

@@ -6,6 +6,7 @@ import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/services/logout_service.dart';
+import 'package:language_learning_app/view/settings/delete_account_screen.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
@@ -137,6 +138,20 @@ class StudentSettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const _SettingsDivider(),
+                    _SettingsTile(
+                      icon: Icons.person_remove_outlined,
+                      titleKey: 'deleteAccount',
+                      destructive: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DeleteAccountScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -265,14 +280,17 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.titleKey,
     required this.onTap,
+    this.destructive = false,
   });
 
   final IconData icon;
   final String titleKey;
   final VoidCallback onTap;
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
+    final accent = destructive ? ConstColor.error : ConstColor.primaryBlue;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -286,19 +304,21 @@ class _SettingsTile extends StatelessWidget {
                 width: 33,
                 height: 33,
                 decoration: BoxDecoration(
-                  color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+                  color: accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: ConstColor.primaryBlue, size: 22),
+                child: Icon(icon, color: accent, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: AppText(
                   titleKey,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: ConstColor.textPrimary,
+                    color: destructive
+                        ? ConstColor.error
+                        : ConstColor.textPrimary,
                     letterSpacing: -0.2,
                   ),
                 ),

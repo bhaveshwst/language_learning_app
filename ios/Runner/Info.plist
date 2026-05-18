@@ -39,14 +39,11 @@
 		<key>NSCameraUsageDescription</key>
 		<string>Camera access is needed for live tutoring sessions.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>This app uses your location to recommend nearby places of interest during your
-			Konnected.</string>
+		<string>KonnectED requires your location for safety purposes during tutoring sessions. Your location is used only to verify your presence during a session and is never stored or shared.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
-		<string>This app uses your location to recommend nearby places of interest during your
-			Konnected.</string>
+		<string>KonnectED requires your location for safety purposes during tutoring sessions. Your location is used only to verify your presence during a session and is never stored or shared.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>This app uses your location to recommend nearby places of interest during your
-			Konnected.</string>
+		<string>KonnectED requires your location for safety purposes during tutoring sessions. Your location is used only to verify your presence during a session and is never stored or shared.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Microphone access is needed for live tutoring sessions.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
@@ -55,7 +52,6 @@
 		<true />
 		<key>UIBackgroundModes</key>
 		<array>
-			<string>location</string>
 			<string>remote-notification</string>
 		</array>
 		<key>UILaunchStoryboardName</key>
