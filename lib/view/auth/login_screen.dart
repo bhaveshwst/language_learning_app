@@ -13,6 +13,7 @@ import 'package:language_learning_app/view/auth/widgets/auth_form_card.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_screen_shell.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_text_field.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
+import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.language, required this.role});
@@ -51,18 +52,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final showSkipLogin = widget.role == UserRole.findTutor;
+
     return BlocProvider(
       create: (context) => _loginProviderBloc,
-      child: AuthScreenShell(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AuthScreenHeading(
-              title: t('welcomeBack'),
-              subtitle: t('emailOtpOnly'),
-            ),
-            const AuthHeadingSpacer(),
-            AuthInputShell(
+      child: Stack(
+        children: [
+          AuthScreenShell(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AuthScreenHeading(
+                  title: t('welcomeBack'),
+                  subtitle: t('emailOtpOnly'),
+                ),
+                const AuthHeadingSpacer(),
+                AuthInputShell(
               child: AuthTextField(
                 hint: t('email'),
                 controller: _emailController,
@@ -164,6 +169,33 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
+      ),
+          if (showSkipLogin)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 4,
+              right: 8,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const StudentDashboardShell(
+                        isGuest: true,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(
+                  t('skipLogin'),
+                  style: const TextStyle(
+                    color: ConstColor.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

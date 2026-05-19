@@ -15,13 +15,18 @@ class RecommendedTutorBloc
     on<FetchRecommendedTutorWithSearch>((event, emit) async {
       emit(RecommendedTutorLoading());
       try {
+        final studentId = event.studentId.trim();
+        final body = <String, dynamic>{
+          'search': event.search,
+          'match_language': event.matchLanguage,
+        };
+        if (studentId.isNotEmpty) {
+          body['student_id'] = studentId;
+        }
+
         final response = await AppHttpClient.post(
           ConstApiUrl.recommendedTutorUrl,
-          body: {
-            'student_id': event.studentId,
-            'search': event.search,
-            'match_language': event.matchLanguage,
-          },
+          body: body,
         );
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);

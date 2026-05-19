@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:language_learning_app/core/auth/pending_booking_intent.dart';
+import 'package:language_learning_app/core/auth/student_auth_gate.dart'
+    show BookingAuthSource, StudentAuthGate;
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
@@ -727,7 +730,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               ),
                               onPressed: isLoading
                                   ? null
-                                  : () {
+                                  : () async {
                                       final slot = _selectedSlot;
                                       if (slot == null) {
                                         commonAlertDialog(
@@ -736,11 +739,9 @@ class _BookingScreenState extends State<BookingScreen> {
                                         );
                                         return;
                                       }
-                                      String topic = "";
 
                                       final tutorId = widget.tutorId.trim();
-                                      topic = slot.topic ?? '';
-
+                                      final topic = slot.topic ?? '';
                                       final slotDate = (slot.date ?? '').trim();
                                       final startTime = (slot.startTime ?? '')
                                           .trim();
@@ -761,6 +762,36 @@ class _BookingScreenState extends State<BookingScreen> {
                                           context,
                                           t('selectTimezoneError'),
                                         );
+                                        return;
+                                      }
+
+                                      final allowed =
+                                          await StudentAuthGate
+                                              .ensureLoggedInForBooking(
+                                        context,
+                                        source:
+                                            widget.prefillSlotDate != null &&
+                                                    widget
+                                                        .prefillSlotDate!
+                                                        .trim()
+                                                        .isNotEmpty
+                                                ? BookingAuthSource
+                                                    .availabilityCalendar
+                                                : BookingAuthSource.tutorList,
+                                        resumeAfterLogin: PendingBookingIntent(
+                                          tutorId: tutorId,
+                                          tutorName: widget.tutorName,
+                                          tutorBio: widget.tutorBio,
+                                          tutorLanguagesTaught:
+                                              widget.tutorLanguagesTaught,
+                                          tutorImageUrl: widget.tutorImageUrl,
+                                          prefillSlotDate: slotDate,
+                                          prefillSlotStartTime: startTime,
+                                          prefillSlotEndTime:
+                                              slot.endTime ?? '',
+                                        ),
+                                      );
+                                      if (!allowed || !context.mounted) {
                                         return;
                                       }
 

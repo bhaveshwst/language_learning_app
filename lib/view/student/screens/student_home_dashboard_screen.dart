@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:language_learning_app/core/auth/student_auth_gate.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_image.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
@@ -13,14 +14,15 @@ import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/main.dart';
 import 'package:language_learning_app/provider/get_student_profile/get_student_profile_bloc.dart';
 import 'package:language_learning_app/provider/recommended_tutor/recommended_tutor_bloc.dart';
-import 'package:language_learning_app/view/student/screens/booking_screen.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class StudentHomeDashboardScreen extends StatefulWidget {
-  const StudentHomeDashboardScreen({super.key});
+  const StudentHomeDashboardScreen({super.key, this.isGuest = false});
+
+  final bool isGuest;
 
   @override
   State<StudentHomeDashboardScreen> createState() =>
@@ -82,9 +84,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   void initState() {
     super.initState();
     _getLocation();
-    final studentId = PrefUtils.getstudentid().trim();
-    if (studentId.isNotEmpty) {
-      _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId));
+    if (!widget.isGuest) {
+      final studentId = PrefUtils.getstudentid().trim();
+      if (studentId.isNotEmpty) {
+        _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId));
+      }
     }
     _recommendedTutorBloc.add(
       FetchRecommendedTutorWithSearch(
@@ -93,7 +97,9 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
         matchLanguage: _matchLanguageValue,
       ),
     );
-    unawaited(_printFcmTokenAfterLogin());
+    if (!widget.isGuest) {
+      unawaited(_printFcmTokenAfterLogin());
+    }
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -221,9 +227,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ConstColor.background,
-      body: MultiBlocProvider(
+    final body = MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => _recommendedTutorBloc),
           BlocProvider(create: (context) => _getStudentProfileBloc),
@@ -307,10 +311,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
               _selectedTargetLanguage ??= defaultTargetLanguage;
 
               return SafeArea(
+                top: !widget.isGuest,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     ConstSize.grid * 2,
-                    ConstSize.grid * 1.5,
+                    widget.isGuest ? ConstSize.grid : ConstSize.grid * 1.5,
                     ConstSize.grid * 2,
                     ConstSize.grid * 3,
                   ),
@@ -322,7 +327,9 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                         children: [
                           Expanded(
                             child: Text(
-                              '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
+                              widget.isGuest
+                                  ? '${ConstString.text(language, 'hi')}, ${ConstString.text(language, 'guestVisitor')} 👋'
+                                  : '${ConstString.text(language, 'hi')}, ${PrefUtils.getname()} 👋',
                               style: const TextStyle(
                                 fontSize: 25,
                                 fontWeight: FontWeight.w700,
@@ -537,46 +544,22 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                                             .teachesLanguages ??
                                         "",
 
-                                    onBook: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => BookingScreen(
-                                          tutorName:
-                                              tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .displayName ??
-                                              "",
-                                          tutorId:
-                                              tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .id ??
-                                              "",
-                                          tutorBio:
-                                              tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .bio ??
-                                              "",
-                                          tutorLanguagesTaught:
-                                              tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .teachesLanguages ??
-                                              "",
-                                          tutorImageUrl: tutorState
-                                              .recommendedTutorModel
-                                              .data
-                                              ?.tutors?[index]
-                                              .imagepath,
-                                        ),
-                                      ),
-                                    ),
+                                    onBook: () {
+                                      final tutor = tutorState
+                                          .recommendedTutorModel
+                                          .data
+                                          ?.tutors?[index];
+                                      StudentAuthGate.openBookingScreenIfAllowed(
+                                        context,
+                                        tutorName: tutor?.displayName ?? '',
+                                        tutorId: tutor?.id ?? '',
+                                        tutorBio: tutor?.bio ?? '',
+                                        tutorLanguagesTaught:
+                                            tutor?.teachesLanguages ?? '',
+                                        tutorImageUrl: tutor?.imagepath,
+                                        source: BookingAuthSource.tutorList,
+                                      );
+                                    },
                                     onCheckAvailability: () {
                                       Navigator.push(
                                         context,
@@ -621,7 +604,15 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             },
           ),
         ),
-      ),
+    );
+
+    if (widget.isGuest) {
+      return body;
+    }
+
+    return Scaffold(
+      backgroundColor: ConstColor.background,
+      body: body,
     );
   }
 }

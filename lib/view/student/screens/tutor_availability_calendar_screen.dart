@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:language_learning_app/core/auth/student_auth_gate.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
@@ -8,7 +9,6 @@ import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/tutor_avaibility_model.dart';
 import 'package:language_learning_app/provider/tutor_availability/tutor_availability_bloc.dart';
-import 'package:language_learning_app/view/student/screens/booking_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class TutorAvailabilityCalendarScreen extends StatefulWidget {
@@ -480,18 +480,16 @@ class _TutorAvailabilityCalendarScreenState
                               timezone: timezone,
                               bookLabel: t('book'),
                               onBook: () {
-                                Navigator.push(
+                                StudentAuthGate.openBookingScreenIfAllowed(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) => BookingScreen(
-                                      tutorName: widget.tutorName,
-                                      tutorId: widget.tutorId,
-                                      tutorImageUrl: widget.tutorImageUrl,
-                                      prefillSlotDate: dateStr,
-                                      prefillSlotStartTime: startTime,
-                                      prefillSlotEndTime: endTime,
-                                    ),
-                                  ),
+                                  tutorName: widget.tutorName,
+                                  tutorId: widget.tutorId,
+                                  tutorImageUrl: widget.tutorImageUrl,
+                                  prefillSlotDate: dateStr,
+                                  prefillSlotStartTime: startTime,
+                                  prefillSlotEndTime: endTime,
+                                  source: BookingAuthSource
+                                      .availabilityCalendar,
                                 );
                               },
                             );

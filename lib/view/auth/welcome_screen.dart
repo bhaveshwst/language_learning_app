@@ -41,8 +41,10 @@ class WelcomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      LoginScreen(language: language, role: UserRole.findTutor),
+                  builder: (_) => LoginScreen(
+                    language: language,
+                    role: UserRole.findTutor,
+                  ),
                 ),
               );
             },

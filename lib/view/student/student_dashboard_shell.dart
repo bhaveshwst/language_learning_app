@@ -1,23 +1,29 @@
 import 'dart:developer';
 
-
 import 'package:check_vpn_connection/check_vpn_connection.dart';
 import 'package:flutter/material.dart';
+import 'package:language_learning_app/core/auth/student_auth_gate.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
+import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/view/student/screens/student_home_dashboard_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_sessions_screen.dart';
 import 'package:language_learning_app/view/student/screens/student_settings_screen.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 
 class StudentDashboardShell extends StatefulWidget {
-  const StudentDashboardShell({super.key});
+  const StudentDashboardShell({super.key, this.isGuest = false});
+
+  /// When true, user browses tutors without an account; booking requires login.
+  final bool isGuest;
 
   @override
   State<StudentDashboardShell> createState() => _StudentDashboardShellState();
 }
 
-class _StudentDashboardShellState extends State<StudentDashboardShell> with WidgetsBindingObserver {
+class _StudentDashboardShellState extends State<StudentDashboardShell>
+    with WidgetsBindingObserver {
   int _selectedTab = 0;
 
   @override
@@ -26,7 +32,7 @@ class _StudentDashboardShellState extends State<StudentDashboardShell> with Widg
     _checkVPNStatus();
   }
 
-    AppLifecycleState? _appLifecycleState;
+  AppLifecycleState? _appLifecycleState;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -57,33 +63,60 @@ class _StudentDashboardShellState extends State<StudentDashboardShell> with Widg
 
   Future<void> _checkVPNStatus() async {
     bool isVpnActive = await CheckVpnConnection.isVpnActive();
-    if ( isVpnActive == true && isAppInBackground() == false) {
-        showDialog(
-          barrierDismissible: false,
-          context: context,
-          builder: (context) {
-            return WillPopScope(
-              onWillPop: () async {
-                return false;
-              },
-              child: const AlertDialog(
-                title: Text(
-                  "Alert!",
-                  style: TextStyle(color: Colors.red),
-                ),
-                content: Text(
-                  "VPN connections are not permitted within this network environment to ensure the security and integrity of our systems. Please close APP and dissconnect VPN.",
-                ),
+    if (isVpnActive == true && isAppInBackground() == false) {
+      showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) {
+          return WillPopScope(
+            onWillPop: () async {
+              return false;
+            },
+            child: const AlertDialog(
+              title: Text("Alert!", style: TextStyle(color: Colors.red)),
+              content: Text(
+                "VPN connections are not permitted within this network environment to ensure the security and integrity of our systems. Please close APP and dissconnect VPN.",
               ),
-            );
-          },
-        );
-      
+            ),
+          );
+        },
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isGuest = widget.isGuest || !StudentAuthGate.isLoggedIn;
+
+    if (isGuest) {
+      final language = AppLanguageState.currentLanguage;
+
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          automaticallyImplyLeading: false,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                ConstString.text(language, 'login'),
+                style: const TextStyle(
+                  color: ConstColor.primaryBlue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: const StudentHomeDashboardScreen(isGuest: true),
+      );
+    }
+
     final pages = [
       const StudentHomeDashboardScreen(),
       const StudentSessionsScreen(),

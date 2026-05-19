@@ -21,6 +21,7 @@ class ConstString {
     'confirmPassword': 'Confirm Password',
     'forgotPassword': 'Forgot Password?',
     'login': 'Login',
+    'skipLogin': 'Skip',
     'enterShortBioError': 'Please enter short bio',
     'enterTopicError': 'Please enter at least one topic',
     'signup': 'Sign Up',
@@ -102,6 +103,10 @@ class ConstString {
 
     // Shared UI (student/tutor dashboards)
     'hi': 'Hi',
+    'guestVisitor': 'there',
+    'signInRequiredTitle': 'Sign in required',
+    'signInRequiredMessage':
+        'Log in or create an account to book a session with this tutor.',
     'tutorSpeakPrimaryLanguage': 'Tutor speak my Primary language',
     'yes': 'YES',
     'no': 'NO',
@@ -293,6 +298,7 @@ class ConstString {
     'confirmPassword': '비밀번호 확인',
     'forgotPassword': '비밀번호를 잊으셨나요?',
     'login': '로그인',
+    'skipLogin': '건너뛰기',
     'selectProfilePictureError': '프로필 사진을 선택해 주세요',
     'signup': '회원가입',
     'dontHaveAccount': '계정이 없으신가요? 회원가입',
@@ -366,6 +372,9 @@ class ConstString {
 
     // Shared UI (student/tutor dashboards)
     'hi': '안녕하세요',
+    'guestVisitor': '방문자',
+    'signInRequiredTitle': '로그인이 필요합니다',
+    'signInRequiredMessage': '이 튜터와 수업을 예약하려면 로그인하거나 계정을 만드세요.',
     'tutorSpeakPrimaryLanguage': '튜터가 제 기본 언어로 말하기',
     'no': '아니오',
     'searchTutors': '튜터 검색...',
@@ -556,6 +565,7 @@ class ConstString {
     'confirmPassword': 'Confirmar Contraseña',
     'forgotPassword': '¿Olvidaste tu contraseña?',
     'login': 'Iniciar Sesión',
+    'skipLogin': 'Omitir',
     'enterShortBioError': 'Por favor ingresa una breve biografía',
     'enterTopicError': 'Por favor ingresa al menos un tema',
     'signup': 'Registrarse',
@@ -640,6 +650,10 @@ class ConstString {
 
     // Shared UI (student/tutor dashboards)
     'hi': 'Hola',
+    'guestVisitor': 'visitante',
+    'signInRequiredTitle': 'Inicio de sesión requerido',
+    'signInRequiredMessage':
+        'Inicia sesión o crea una cuenta para reservar una sesión con este tutor.',
     'tutorSpeakPrimaryLanguage': 'El tutor habla mi idioma principal',
     'yes': 'SÍ',
     'no': 'NO',

@@ -16,6 +16,8 @@ import 'package:language_learning_app/view/auth/complete_profile_screen.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_primary_button.dart';
 import 'package:language_learning_app/view/auth/widgets/auth_screen_shell.dart';
 import 'package:pinput/pinput.dart';
+import 'package:language_learning_app/core/auth/pending_booking_intent.dart';
+import 'package:language_learning_app/view/student/screens/student_resume_booking_host.dart';
 import 'package:language_learning_app/view/student/student_dashboard_shell.dart';
 import 'package:language_learning_app/view/tutor/tutor_dashboard_shell.dart';
 
@@ -166,7 +168,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       final Widget targetDashboard = widget.role == UserRole.becomeTutor
           ? const TutorDashboardShell()
-          : const StudentDashboardShell();
+          : (PendingBookingIntent.hasPending
+                ? const StudentResumeBookingHost()
+                : const StudentDashboardShell());
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => targetDashboard),

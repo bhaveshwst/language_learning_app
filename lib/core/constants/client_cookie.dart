@@ -10,6 +10,14 @@ class AppHttpClient {
   static final CookieJar _cookieJar = CookieJar();
   static final http.Client _client = http.Client();
 
+  static Map<String, String> _jsonHeaders() {
+    final token = PrefUtils.getToken().trim();
+    return {
+      'Content-Type': 'application/json',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   static Future<http.Response> get(String url) async {
     final uri = Uri.parse(url);
 
@@ -22,9 +30,8 @@ class AppHttpClient {
     final response = await _client.get(
       uri,
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${PrefUtils.getToken()}",
-        if (cookieHeader.isNotEmpty) "Cookie": cookieHeader,
+        ..._jsonHeaders(),
+        if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
       },
     );
 
@@ -59,9 +66,8 @@ class AppHttpClient {
     final response = await _client.post(
       uri,
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${PrefUtils.getToken()}",
-        if (cookieHeader.isNotEmpty) "Cookie": cookieHeader,
+        ..._jsonHeaders(),
+        if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
       },
       body: jsonEncode(body),
     );
@@ -98,9 +104,8 @@ class AppHttpClient {
     final response = await _client.delete(
       uri,
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${PrefUtils.getToken()}",
-        if (cookieHeader.isNotEmpty) "Cookie": cookieHeader,
+        ..._jsonHeaders(),
+        if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
       },
       body: body == null ? null : jsonEncode(body),
     );
