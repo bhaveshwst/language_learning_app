@@ -28,3 +28,4 @@ final class RecommendedTutorError extends RecommendedTutorState {
   @override
   List<Object?> get props => [message];
 }
+

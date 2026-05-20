@@ -68,6 +68,7 @@ class Tutors {
   String? avaragerating;
   String? country;
   String? imagepath;
+  int? likeDislike;
 
   Tutors({
     this.id,
@@ -80,7 +81,21 @@ class Tutors {
     this.targetlanguage,
     this.avaragerating,
     this.imagepath,
+    this.likeDislike,
   });
+
+  bool get isLiked => likeDislike == 1;
+
+  static int? parseLikeDislike(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value == 1 ? 1 : 0;
+    if (value is bool) return value ? 1 : 0;
+    final normalized = value.toString().trim().toLowerCase();
+    if (normalized == '1' || normalized == 'true' || normalized == 'yes') {
+      return 1;
+    }
+    return 0;
+  }
 
   Tutors.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -93,6 +108,25 @@ class Tutors {
     avaragerating = json['average_rating'].toString();
     country = json['country'];
     imagepath = json['upload_image'];
+    likeDislike = parseLikeDislike(
+      json['like_dislike'] ?? json['likedislike'] ?? json['likeDislike'],
+    );
+  }
+
+  Tutors copyWith({int? likeDislike}) {
+    return Tutors(
+      id: id,
+      displayName: displayName,
+      teachesLanguages: teachesLanguages,
+      country: country,
+      topics: topics,
+      nextSlot: nextSlot,
+      bio: bio,
+      targetlanguage: targetlanguage,
+      avaragerating: avaragerating,
+      imagepath: imagepath,
+      likeDislike: likeDislike ?? this.likeDislike,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -107,6 +141,7 @@ class Tutors {
     data['average_rating'] = avaragerating;
     data['country'] = country;
     data['upload_image'] = imagepath;
+    data['like_dislike'] = likeDislike;
     return data;
   }
 }

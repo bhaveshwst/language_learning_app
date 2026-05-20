@@ -52,6 +52,7 @@ static const String baseURL =
   static String get studentcreateprofile => '$baseURL/profile';
   static String get tutorcreateprofile => '$baseURL/tutor/profile';
   static String get recommendedTutorUrl => '$baseURL/tutor/recommended';
+  static String get likeDislikeUrl => '$baseURL/likedislike';
   static String get tutorTopicsUrl => '$baseURL/tutor/get-topics';
   static String get tutoaddslotURL => '$baseURL/tutor/availability';
   static String get listtutorSlotURL => '$baseURL/tutor/list-availability';

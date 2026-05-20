@@ -13,6 +13,7 @@ import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/main.dart';
 import 'package:language_learning_app/provider/get_student_profile/get_student_profile_bloc.dart';
+import 'package:language_learning_app/model/recommended_tutor_model/recommended_tutor_model.dart';
 import 'package:language_learning_app/provider/recommended_tutor/recommended_tutor_bloc.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
@@ -37,6 +38,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   Timer? _searchDebounce;
 
   bool _tutorSpeakMyPrimaryLanguage = true;
+  bool _showFavoriteTutorsOnly = false;
   String? _selectedTargetLanguage;
 
   String _address = "";
@@ -78,6 +80,30 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     } catch (e) {
       debugPrint('FCM Token print failed: $e');
     }
+  }
+
+  List<Tutors> _visibleTutors(List<Tutors>? tutors) {
+    final list = tutors ?? [];
+    if (!_showFavoriteTutorsOnly) return list;
+    return list.where((t) => t.isLiked).toList();
+  }
+
+  Future<void> _toggleFavoriteTutor(BuildContext context, Tutors tutor) async {
+    if (widget.isGuest || !StudentAuthGate.isLoggedIn) {
+      await StudentAuthGate.ensureLoggedInForBooking(context);
+      return;
+    }
+    final studentId = PrefUtils.getstudentid().trim();
+    final tutorId = (tutor.id ?? '').trim();
+    if (studentId.isEmpty || tutorId.isEmpty) return;
+
+    _recommendedTutorBloc.add(
+      ToggleTutorLikeDislike(
+        studentId: studentId,
+        tutorId: tutorId,
+        likeDislike: tutor.isLiked ? 0 : 1,
+      ),
+    );
   }
 
   @override
@@ -429,6 +455,18 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                         ),
                       ),
                       const SizedBox(height: 12),
+                      _TutorListFilterToggle(
+                        showFavoritesOnly: _showFavoriteTutorsOnly,
+                        allLabel: ConstString.text(language, 'allTutors'),
+                        favoritesLabel:
+                            ConstString.text(language, 'favoriteTutors'),
+                        onChanged: (showFavorites) {
+                          setState(
+                            () => _showFavoriteTutorsOnly = showFavorites,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
                       BlocBuilder<RecommendedTutorBloc, RecommendedTutorState>(
                         bloc: _recommendedTutorBloc,
                         builder: (context, tutorState) {
@@ -462,101 +500,72 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                             );
                           }
                           if (tutorState is RecommendedTutorSuccess) {
+                            final tutors = _visibleTutors(
+                              tutorState.recommendedTutorModel.data?.tutors,
+                            );
+                            if (tutors.isEmpty) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: Text(
+                                    _showFavoriteTutorsOnly
+                                        ? ConstString.text(
+                                            language,
+                                            'noFavoriteTutors',
+                                          )
+                                        : ConstString.text(
+                                            language,
+                                            'noTutorsMatch',
+                                          ),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: ConstColor.textSecondary,
+                                      fontSize: 14,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
                             return ListView.builder(
                               shrinkWrap: true,
-                              itemCount:
-                                  tutorState
-                                      .recommendedTutorModel
-                                      .data
-                                      ?.tutors
-                                      ?.length ??
-                                  0,
+                              itemCount: tutors.length,
                               physics: const NeverScrollableScrollPhysics(),
                               itemBuilder: (context, index) {
+                                final tutor = tutors[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: _TutorCard(
-                                    imagepath:
-                                        tutorState
-                                            .recommendedTutorModel
-                                            .data
-                                            ?.tutors?[index]
-                                            .imagepath ??
-                                        "",
-                                    flagimage:
-                                        tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .country ==
-                                            "US"
+                                    imagepath: tutor.imagepath ?? "",
+                                    flagimage: tutor.country == "US"
                                         ? ConstImage.usFlag
-                                        : tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .country ==
-                                              "KR"
+                                        : tutor.country == "KR"
                                         ? ConstImage.krFlag
                                         : ConstImage.spFlag,
-                                    country:
-                                        tutorState
-                                                .recommendedTutorModel
-                                                .data
-                                                ?.tutors?[index]
-                                                .country ==
-                                            "US"
+                                    country: tutor.country == "US"
                                         ? "United States"
-                                        : tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .country ==
-                                              "KR"
+                                        : tutor.country == "KR"
                                         ? "South Korea"
-                                        : tutorState
-                                                  .recommendedTutorModel
-                                                  .data
-                                                  ?.tutors?[index]
-                                                  .country ==
-                                              "SP"
+                                        : tutor.country == "SP"
                                         ? "Spain"
                                         : "-",
-                                    rating:
-                                        tutorState
-                                            .recommendedTutorModel
-                                            .data
-                                            ?.tutors?[index]
-                                            .avaragerating ??
-                                        "0",
-                                    name:
-                                        tutorState
-                                            .recommendedTutorModel
-                                            .data
-                                            ?.tutors?[index]
-                                            .displayName ??
-                                        "",
+                                    rating: tutor.avaragerating ?? "0",
+                                    name: tutor.displayName ?? "",
                                     primaryLanguage:
-                                        tutorState
-                                            .recommendedTutorModel
-                                            .data
-                                            ?.tutors?[index]
-                                            .teachesLanguages ??
-                                        "",
-
+                                        tutor.teachesLanguages ?? "",
+                                    isFavorite: tutor.isLiked,
+                                    onFavoriteToggle: () =>
+                                        _toggleFavoriteTutor(context, tutor),
                                     onBook: () {
-                                      final tutor = tutorState
-                                          .recommendedTutorModel
-                                          .data
-                                          ?.tutors?[index];
                                       StudentAuthGate.openBookingScreenIfAllowed(
                                         context,
-                                        tutorName: tutor?.displayName ?? '',
-                                        tutorId: tutor?.id ?? '',
-                                        tutorBio: tutor?.bio ?? '',
+                                        tutorName: tutor.displayName ?? '',
+                                        tutorId: tutor.id ?? '',
+                                        tutorBio: tutor.bio ?? '',
                                         tutorLanguagesTaught:
-                                            tutor?.teachesLanguages ?? '',
-                                        tutorImageUrl: tutor?.imagepath,
+                                            tutor.teachesLanguages ?? '',
+                                        tutorImageUrl: tutor.imagepath,
                                         source: BookingAuthSource.tutorList,
                                       );
                                     },
@@ -567,24 +576,9 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                                           builder: (_) =>
                                               TutorAvailabilityCalendarScreen(
                                                 tutorName:
-                                                    tutorState
-                                                        .recommendedTutorModel
-                                                        .data
-                                                        ?.tutors?[index]
-                                                        .displayName ??
-                                                    "",
-                                                tutorId:
-                                                    tutorState
-                                                        .recommendedTutorModel
-                                                        .data
-                                                        ?.tutors?[index]
-                                                        .id ??
-                                                    "",
-                                                tutorImageUrl: tutorState
-                                                    .recommendedTutorModel
-                                                    .data
-                                                    ?.tutors?[index]
-                                                    .imagepath,
+                                                    tutor.displayName ?? "",
+                                                tutorId: tutor.id ?? "",
+                                                tutorImageUrl: tutor.imagepath,
                                               ),
                                         ),
                                       );
@@ -624,6 +618,8 @@ class _TutorCard extends StatelessWidget {
     required this.rating,
     required this.country,
     required this.flagimage,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
     required this.onBook,
     required this.onCheckAvailability,
     required this.imagepath,
@@ -634,6 +630,8 @@ class _TutorCard extends StatelessWidget {
   final String? rating;
   final String? country;
   final String? flagimage;
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
   final VoidCallback onBook;
   final VoidCallback onCheckAvailability;
   final String? imagepath;
@@ -775,44 +773,70 @@ class _TutorCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ConstColor.primaryBlue.withValues(
-                                    alpha: 0.1,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: ConstColor.primaryBlue.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          rating != null &&
+                                                  rating != 'null' &&
+                                                  (rating ?? '').isNotEmpty
+                                              ? (rating ?? '0')
+                                              : '0',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: ConstColor.primaryBlue,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          rating != null &&
+                                                  rating != '0' &&
+                                                  rating != 'null'
+                                              ? Icons.star_rounded
+                                              : Icons.star_outline_rounded,
+                                          size: 18,
+                                          color: ConstColor.primaryBlue,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      rating != null &&
-                                              rating != 'null' &&
-                                              (rating ?? '').isNotEmpty
-                                          ? (rating ?? '0')
-                                          : '0',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: ConstColor.primaryBlue,
+                                  const SizedBox(width: 4),
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: onFavoriteToggle,
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          isFavorite
+                                              ? Icons.favorite_rounded
+                                              : Icons.favorite_border_rounded,
+                                          size: 22,
+                                          color: isFavorite
+                                              ? const Color(0xFFE53935)
+                                              : ConstColor.textSecondary
+                                                  .withValues(alpha: 0.75),
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 2),
-                                    Icon(
-                                      rating != null &&
-                                              rating != '0' &&
-                                              rating != 'null'
-                                          ? Icons.star_rounded
-                                          : Icons.star_outline_rounded,
-                                      size: 18,
-                                      color: ConstColor.primaryBlue,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -898,6 +922,60 @@ class _TutorCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TutorListFilterToggle extends StatelessWidget {
+  const _TutorListFilterToggle({
+    required this.showFavoritesOnly,
+    required this.allLabel,
+    required this.favoritesLabel,
+    required this.onChanged,
+  });
+
+  final bool showFavoritesOnly;
+  final String allLabel;
+  final String favoritesLabel;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ConstColor.border.withValues(alpha: 0.65),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _YesNoPill(
+              label: allLabel,
+              selected: !showFavoritesOnly,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _YesNoPill(
+              label: favoritesLabel,
+              selected: showFavoritesOnly,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

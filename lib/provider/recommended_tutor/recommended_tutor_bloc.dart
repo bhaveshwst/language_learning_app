@@ -12,6 +12,7 @@ part 'recommended_tutor_state.dart';
 class RecommendedTutorBloc
     extends Bloc<RecommendedTutorEvent, RecommendedTutorState> {
   RecommendedTutorBloc() : super(RecommendedTutorInitial()) {
+    on<ToggleTutorLikeDislike>(_onToggleTutorLikeDislike);
     on<FetchRecommendedTutorWithSearch>((event, emit) async {
       emit(RecommendedTutorLoading());
       try {
@@ -39,5 +40,65 @@ class RecommendedTutorBloc
         emit(RecommendedTutorError(e.toString()));
       }
     });
+  }
+
+  Future<void> _onToggleTutorLikeDislike(
+    ToggleTutorLikeDislike event,
+    Emitter<RecommendedTutorState> emit,
+  ) async {
+    final current = state;
+    if (current is! RecommendedTutorSuccess) return;
+
+    final previousModel = current.recommendedTutorModel;
+    final optimisticModel = _withTutorLikeDislike(
+      previousModel,
+      event.tutorId,
+      event.likeDislike,
+    );
+    emit(RecommendedTutorSuccess(optimisticModel));
+
+    try {
+      final response = await AppHttpClient.post(
+        ConstApiUrl.likeDislikeUrl,
+        body: {
+          'student_id': event.studentId.trim(),
+          'tutor_id': event.tutorId.trim(),
+          'like_dislike': event.likeDislike,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      }
+      emit(RecommendedTutorSuccess(previousModel));
+    } catch (_) {
+      emit(RecommendedTutorSuccess(previousModel));
+    }
+  }
+
+  RecommendedTutorModel _withTutorLikeDislike(
+    RecommendedTutorModel model,
+    String tutorId,
+    int likeDislike,
+  ) {
+    final tutors = model.data?.tutors;
+    if (tutors == null) return model;
+
+    final normalizedId = tutorId.trim();
+    final updatedTutors = tutors
+        .map(
+          (tutor) => (tutor.id ?? '').trim() == normalizedId
+              ? tutor.copyWith(likeDislike: likeDislike)
+              : tutor,
+        )
+        .toList();
+
+    return RecommendedTutorModel(
+      responseCode: model.responseCode,
+      matchLanguage: model.matchLanguage,
+      matchValue: model.matchValue,
+      detail: model.detail,
+      data: Data(tutors: updatedTutors),
+    );
   }
 }
