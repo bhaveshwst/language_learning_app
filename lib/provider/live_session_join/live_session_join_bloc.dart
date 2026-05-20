@@ -14,16 +14,34 @@ class LiveSessionJoinBloc
     extends Bloc<LiveSessionJoinEvent, LiveSessionJoinState> {
   LiveSessionJoinBloc() : super(LiveSessionJoinInitial()) {
     on<LiveSessionJoinRequested>(_onRequested);
-    on<LiveSessionJoinReset>((event, emit) => emit(LiveSessionJoinInitial()));
+    on<LiveSessionJoinReset>(_onReset);
+  }
+
+  /// Bumped when the bloc closes, resets, or a new join starts — stops in-flight polling.
+  int _pollGeneration = 0;
+
+  void _cancelPolling() => _pollGeneration++;
+
+  @override
+  Future<void> close() {
+    _cancelPolling();
+    return super.close();
+  }
+
+  void _onReset(LiveSessionJoinReset event, Emitter<LiveSessionJoinState> emit) {
+    _cancelPolling();
+    emit(LiveSessionJoinInitial());
   }
 
   Future<void> _onRequested(
     LiveSessionJoinRequested event,
     Emitter<LiveSessionJoinState> emit,
   ) async {
+    final pollId = ++_pollGeneration;
     emit(LiveSessionJoinLoading());
     try {
       final model = await _requestJoin(event);
+      if (emit.isDone || pollId != _pollGeneration) return;
       if (!model.canEnterRoom) {
         emit(
           LiveSessionJoinWaiting(
@@ -31,7 +49,8 @@ class LiveSessionJoinBloc
           ),
         );
         if (!event.waitForHost) return;
-        final canEnter = await _pollUntilHostJoined(event);
+        final canEnter = await _pollUntilHostJoined(event, pollId: pollId);
+        if (emit.isDone || pollId != _pollGeneration) return;
         if (!canEnter) {
           emit(
             LiveSessionJoinError(
@@ -55,11 +74,13 @@ class LiveSessionJoinBloc
             waitForHost: false,
           ),
         );
+        if (emit.isDone || pollId != _pollGeneration) return;
         emit(LiveSessionJoinSuccess(refreshed));
         return;
       }
       emit(LiveSessionJoinSuccess(model));
     } catch (e) {
+      if (emit.isDone || pollId != _pollGeneration) return;
       emit(LiveSessionJoinError(e.toString()));
     }
   }
@@ -100,10 +121,15 @@ class LiveSessionJoinBloc
     return LiveSessionJoinModel.fromJson(patched);
   }
 
-  Future<bool> _pollUntilHostJoined(LiveSessionJoinRequested event) async {
+  Future<bool> _pollUntilHostJoined(
+    LiveSessionJoinRequested event, {
+    required int pollId,
+  }) async {
     const maxAttempts = 24;
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (isClosed || pollId != _pollGeneration) return false;
       await Future.delayed(const Duration(seconds: 5));
+      if (isClosed || pollId != _pollGeneration) return false;
       final response = await AppHttpClient.post(
         ConstApiUrl.liveSessionStatusUrl,
         body: {
@@ -113,6 +139,7 @@ class LiveSessionJoinBloc
           'slot_id': event.slotId,
         },
       );
+      if (isClosed || pollId != _pollGeneration) return false;
       final decoded = jsonDecode(response.body);
       if (response.statusCode != 200) continue;
       final data = decoded is Map<String, dynamic>
