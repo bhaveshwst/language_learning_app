@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:check_vpn_connection/check_vpn_connection.dart';
+
 import 'package:flutter/material.dart';
 import 'package:language_learning_app/core/auth/student_auth_gate.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -29,7 +29,6 @@ class _StudentDashboardShellState extends State<StudentDashboardShell>
   @override
   void initState() {
     super.initState();
-    _checkVPNStatus();
   }
 
   AppLifecycleState? _appLifecycleState;
@@ -61,28 +60,6 @@ class _StudentDashboardShellState extends State<StudentDashboardShell>
         _appLifecycleState == AppLifecycleState.paused;
   }
 
-  Future<void> _checkVPNStatus() async {
-    bool isVpnActive = await CheckVpnConnection.isVpnActive();
-    if (isVpnActive == true && isAppInBackground() == false) {
-      showDialog(
-        barrierDismissible: false,
-        context: context,
-        builder: (context) {
-          return WillPopScope(
-            onWillPop: () async {
-              return false;
-            },
-            child: const AlertDialog(
-              title: Text("Alert!", style: TextStyle(color: Colors.red)),
-              content: Text(
-                "VPN connections are not permitted within this network environment to ensure the security and integrity of our systems. Please close APP and dissconnect VPN.",
-              ),
-            ),
-          );
-        },
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
