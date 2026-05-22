@@ -75,4 +75,5 @@ static const String baseURL =
   static String get liveSessionEndUrl => '$baseURL/live-session/end';
   static String get liveSessionAnalyticsUrl =>
       '$baseURL/live-session/analytics';
+  static String get notificationListingUrl => '$baseURL/notification_listing';
 }

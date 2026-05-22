@@ -6,6 +6,7 @@ import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/services/logout_service.dart';
 import 'package:language_learning_app/view/settings/delete_account_screen.dart';
+import 'package:language_learning_app/view/settings/notifications_list_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/availability_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_home_dashboard_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_profile_complete_page.dart';
@@ -251,6 +252,17 @@ class _TutorSettingsScreen extends StatelessWidget {
                         Uri.parse('https://konnected.wisdomsquare.net/privacy'),
                       );
                     },
+                  ),
+                  _SettingsDivider(),
+                  _SettingsTile(
+                    icon: Icons.notifications_outlined,
+                    titleKey: 'notifications',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsListScreen(),
+                      ),
+                    ),
                   ),
                   _SettingsDivider(),
                   _SettingsTile(

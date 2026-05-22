@@ -7,6 +7,7 @@ import 'package:language_learning_app/core/constants/user_role.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/services/logout_service.dart';
 import 'package:language_learning_app/view/settings/delete_account_screen.dart';
+import 'package:language_learning_app/view/settings/notifications_list_screen.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
@@ -126,6 +127,17 @@ class StudentSettingsScreen extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
+                    const _SettingsDivider(),
+                    _SettingsTile(
+                      icon: Icons.notifications_outlined,
+                      titleKey: 'notifications',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsListScreen(),
+                        ),
+                      ),
                     ),
                     const _SettingsDivider(),
                     _SettingsTile(
