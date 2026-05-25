@@ -49,6 +49,9 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
   String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
 
+  bool get _canUsePrimaryLanguageFilter =>
+      !widget.isGuest && StudentAuthGate.isLoggedIn;
+
   bool? _parseMatchValue(dynamic v) {
     if (v == null) return null;
     if (v is bool) return v;
@@ -314,6 +317,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             BlocListener<RecommendedTutorBloc, RecommendedTutorState>(
               bloc: _recommendedTutorBloc,
               listener: (context, state) {
+                if (!_canUsePrimaryLanguageFilter) return;
                 if (state is! RecommendedTutorSuccess) return;
                 final apiToggle = _parseMatchValue(
                   state.recommendedTutorModel.matchValue,
@@ -377,6 +381,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                         left: ConstString.text(language, 'yes'),
                         right: ConstString.text(language, 'no'),
                         value: _tutorSpeakMyPrimaryLanguage,
+                        enabled: _canUsePrimaryLanguageFilter,
                         onChanged: (v) {
                           setState(() => _tutorSpeakMyPrimaryLanguage = v);
                           // _fetchTutorsForSearch();
@@ -987,6 +992,7 @@ class _YesNoToggle extends StatelessWidget {
     required this.right,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String label;
@@ -994,59 +1000,67 @@ class _YesNoToggle extends StatelessWidget {
   final String right;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.15,
-            color: ConstColor.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ConstColor.border.withValues(alpha: 0.65),
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.15,
+              color: enabled
+                  ? ConstColor.textPrimary
+                  : ConstColor.textSecondary,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: ConstColor.primaryBlue.withValues(alpha: 0.05),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _YesNoPill(
-                  label: left,
-                  selected: value,
-                  onTap: () => onChanged(true),
-                ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: ConstColor.border.withValues(alpha: 0.65),
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _YesNoPill(
-                  label: right,
-                  selected: !value,
-                  onTap: () => onChanged(false),
+              boxShadow: [
+                BoxShadow(
+                  color: ConstColor.primaryBlue.withValues(alpha: 0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _YesNoPill(
+                    label: left,
+                    selected: value,
+                    enabled: enabled,
+                    onTap: enabled ? () => onChanged(true) : null,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _YesNoPill(
+                    label: right,
+                    selected: !value,
+                    enabled: enabled,
+                    onTap: enabled ? () => onChanged(false) : null,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1056,18 +1070,20 @@ class _YesNoPill extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
