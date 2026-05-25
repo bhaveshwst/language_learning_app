@@ -52,7 +52,7 @@ class AppVersionWithLogo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'assets/images/icon.png',
+          'assets/images/icon.webp',
           width: logoSize,
           height: logoSize,
         ),
