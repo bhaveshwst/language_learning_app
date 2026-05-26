@@ -11,6 +11,8 @@ import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
+import 'package:language_learning_app/model/list_tutor_slot_model.dart'
+    as tutor_slots;
 import 'package:language_learning_app/provider/delete_tutor_slot/delete_tutor_slot_bloc.dart';
 import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_bloc.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_add_slot_screen.dart';
@@ -313,49 +315,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           valueListenable: AppLanguageState.current,
                           builder: (context, language, _) {
                             final locale = Localizations.localeOf(context);
+                            final dateGroups = _groupSlotsByDate(slots);
                             return ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: slots.length,
+                              itemCount: dateGroups.length,
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: ConstSize.grid * 1.25),
                               itemBuilder: (context, index) {
-                                final slot = slots[index];
-                                final timeLine =
-                                    TimeDisplayFormat.formatApiClockRangeForDisplay(
-                                      (slot.startTime ?? '').trim(),
-                                      (slot.endTime ?? '').trim(),
-                                      locale,
-                                    );
-                                final formattedDate = _formatSlotDateForDisplay(
-                                  slot.date,
-                                  locale,
-                                );
-                                final topicText =
-                                    slot.topics?.trim().isNotEmpty == true
-                                    ? slot.topics!.trim()
-                                    : '—';
-                                final statusLower =
-                                    slot.status?.toLowerCase() ?? '';
-                                final canDelete = statusLower == 'open';
-                                return _AvailabilitySlotCard(
-                                  formattedDate: formattedDate,
-                                  timeLine: timeLine,
-                                  topic: topicText,
-                                  statusLabel: _slotStatusLabel(
-                                    slot.status,
-                                    language,
-                                  ),
-                                  accentColor: _slotAccentColor(statusLower),
+                                return _AvailabilityDateCard(
+                                  group: dateGroups[index],
+                                  locale: locale,
+                                  language: language,
                                   cardRadius: _cardRadius,
-                                  onDelete: canDelete
-                                      ? () {
-                                          final slotId = (slot.slotid ?? '')
-                                              .trim();
-                                          if (slotId.isEmpty) return;
-                                          _confirmAndDelete(slotId);
-                                        }
-                                      : null,
+                                  onDeleteSlot: _confirmAndDelete,
                                 );
                               },
                             );
@@ -377,9 +350,84 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
 String _formatSlotDateForDisplay(String? raw, Locale locale) {
   if (raw == null || raw.isEmpty) return '—';
-  final parsed = DateTime.tryParse(raw);
+  final parsed = DateTime.tryParse(raw.split(' ').first);
   if (parsed == null) return raw;
   return DateFormat.yMMMEd(locale.toString()).format(parsed);
+}
+
+String _slotDateKey(tutor_slots.Data slot) {
+  return (slot.date ?? '').trim().split(' ').first;
+}
+
+DateTime? _slotStartDateTime(tutor_slots.Data slot) {
+  final dateStr = _slotDateKey(slot);
+  final timeStr = (slot.startTime ?? '').trim();
+  if (dateStr.isEmpty) return null;
+  try {
+    final dateOnly = DateTime.parse(dateStr);
+    if (timeStr.isEmpty) return dateOnly;
+    final parts = timeStr.split(':');
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return DateTime(dateOnly.year, dateOnly.month, dateOnly.day, h, m);
+  } catch (_) {
+    return null;
+  }
+}
+
+class _AvailabilityDateGroup {
+  const _AvailabilityDateGroup({
+    required this.dateRaw,
+    required this.slots,
+    required this.sortKey,
+    required this.timezone,
+  });
+
+  final String dateRaw;
+  final List<tutor_slots.Data> slots;
+  final DateTime? sortKey;
+  final String timezone;
+}
+
+List<_AvailabilityDateGroup> _groupSlotsByDate(List<tutor_slots.Data> slots) {
+  final byDate = <String, List<tutor_slots.Data>>{};
+  for (final slot in slots) {
+    final key = _slotDateKey(slot);
+    if (key.isEmpty) continue;
+    byDate.putIfAbsent(key, () => []).add(slot);
+  }
+
+  final groups = byDate.entries.map((entry) {
+    final sorted = [...entry.value]
+      ..sort((a, b) {
+        final da = _slotStartDateTime(a);
+        final db = _slotStartDateTime(b);
+        if (da != null && db != null) return da.compareTo(db);
+        if (da != null) return -1;
+        if (db != null) return 1;
+        return (a.startTime ?? '').compareTo(b.startTime ?? '');
+      });
+    final timezone = sorted
+        .map((s) => (s.timezone ?? '').trim())
+        .firstWhere((tz) => tz.isNotEmpty, orElse: () => '');
+    return _AvailabilityDateGroup(
+      dateRaw: entry.key,
+      slots: sorted,
+      sortKey: sorted.isEmpty ? null : _slotStartDateTime(sorted.first),
+      timezone: timezone,
+    );
+  }).toList();
+
+  groups.sort((a, b) {
+    final da = a.sortKey;
+    final db = b.sortKey;
+    if (da != null && db != null) return da.compareTo(db);
+    if (da != null) return -1;
+    if (db != null) return 1;
+    return a.dateRaw.compareTo(b.dateRaw);
+  });
+
+  return groups;
 }
 
 Color _slotAccentColor(String statusLower) {
@@ -528,207 +576,350 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
-class _AvailabilitySlotCard extends StatelessWidget {
-  const _AvailabilitySlotCard({
-    required this.formattedDate,
-    required this.timeLine,
-    required this.topic,
-    required this.statusLabel,
-    required this.accentColor,
+class _AvailabilityDateCard extends StatelessWidget {
+  const _AvailabilityDateCard({
+    required this.group,
+    required this.locale,
+    required this.language,
     required this.cardRadius,
-    this.onDelete,
+    required this.onDeleteSlot,
   });
 
-  final String formattedDate;
-  final String timeLine;
-  final String topic;
-  final String statusLabel;
-  final Color accentColor;
+  final _AvailabilityDateGroup group;
+  final Locale locale;
+  final AppLanguage language;
   final double cardRadius;
-  final VoidCallback? onDelete;
+  final Future<void> Function(String slotId) onDeleteSlot;
 
   @override
   Widget build(BuildContext context) {
-    final chipBg = accentColor.withValues(alpha: 0.12);
-    final chipBorder = accentColor.withValues(alpha: 0.35);
+    final formattedDate = _formatSlotDateForDisplay(group.dateRaw, locale);
 
-    return Material(
-      color: Colors.transparent,
-      elevation: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(cardRadius),
-          boxShadow: [
-            BoxShadow(
-              color: ConstColor.primaryBlue.withValues(alpha: 0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(cardRadius),
+        boxShadow: [
+          BoxShadow(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.45)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(cardRadius),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 5,
+                color: ConstColor.primaryBlue,
+              ),
             ),
-          ],
-          border: Border.all(color: ConstColor.border.withValues(alpha: 0.45)),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(cardRadius),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(width: 5, color: accentColor),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.event_rounded,
-                                        size: 16,
-                                        color: ConstColor.textSecondary
-                                            .withValues(alpha: 0.9),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          formattedDate,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: ConstColor.textSecondary,
-                                            letterSpacing: 0.1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: ConstColor.primaryBlue
-                                              .withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.schedule_rounded,
-                                          size: 14,
-                                          color: ConstColor.primaryBlue,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          timeLine,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.2,
-                                            color: ConstColor.textPrimary,
-                                            letterSpacing: -0.3,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 1),
-                                        child: Icon(
-                                          Icons.menu_book_rounded,
-                                          size: 17,
-                                          color: ConstColor.textSecondary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          topic,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            height: 1.35,
-                                            fontWeight: FontWeight.w500,
-                                            color: ConstColor.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+            Padding(
+              padding: const EdgeInsets.only(left: 5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            ConstColor.primaryBlue.withValues(alpha: 0.08),
+                            ConstColor.accentTeal.withValues(alpha: 0.04),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_rounded,
+                                size: 16,
+                                color: ConstColor.textSecondary.withValues(
+                                  alpha: 0.9,
+                                ),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: ConstColor.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                              if (group.slots.length > 1)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
+                                    horizontal: 8,
+                                    vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: chipBg,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: chipBorder,
-                                      width: 1,
+                                    color: ConstColor.primaryBlue.withValues(
+                                      alpha: 0.1,
                                     ),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    statusLabel,
-                                    style: TextStyle(
+                                    '${group.slots.length}',
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: accentColor,
-                                      letterSpacing: 0.2,
+                                      fontWeight: FontWeight.w800,
+                                      color: ConstColor.primaryBlue,
                                     ),
                                   ),
                                 ),
-                                if (onDelete != null) ...[
-                                  const SizedBox(height: 4),
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    tooltip: MaterialLocalizations.of(
-                                      context,
-                                    ).deleteButtonTooltip,
-                                    onPressed: onDelete,
-                                    icon: const Icon(
-                                      Icons.delete_outline_rounded,
-                                      color: ConstColor.error,
-                                      size: 24,
+                            ],
+                          ),
+                          if (group.timezone.isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.public_rounded,
+                                  size: 13,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    group.timezone,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: ConstColor.textSecondary
+                                          .withValues(alpha: 0.95),
                                     ),
                                   ),
-                                ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < group.slots.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 8),
+                            _AvailabilitySlotSection(
+                              slot: group.slots[i],
+                              locale: locale,
+                              language: language,
+                              onDelete: () async {
+                                final slotId =
+                                    (group.slots[i].slotid ?? '').trim();
+                                if (slotId.isEmpty) return;
+                                await onDeleteSlot(slotId);
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvailabilitySlotSection extends StatelessWidget {
+  const _AvailabilitySlotSection({
+    required this.slot,
+    required this.locale,
+    required this.language,
+    required this.onDelete,
+  });
+
+  final tutor_slots.Data slot;
+  final Locale locale;
+  final AppLanguage language;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final timeLine = TimeDisplayFormat.formatApiClockRangeForDisplay(
+      (slot.startTime ?? '').trim(),
+      (slot.endTime ?? '').trim(),
+      locale,
+    );
+    final topicText = slot.topics?.trim().isNotEmpty == true
+        ? slot.topics!.trim()
+        : '—';
+    final statusLower = slot.status?.toLowerCase() ?? '';
+    final statusLabel = _slotStatusLabel(slot.status, language);
+    final accentColor = _slotAccentColor(statusLower);
+    final canDelete = statusLower == 'open';
+    final chipBg = accentColor.withValues(alpha: 0.12);
+    final chipBorder = accentColor.withValues(alpha: 0.35);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.55)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(width: 3, color: accentColor),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(13, 10, 8, 10),
+              child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.schedule_rounded,
+                                  size: 16,
+                                  color: ConstColor.primaryBlue.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    timeLine,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.15,
+                                      color: ConstColor.textPrimary,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 16,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        ConstString.text(language, 'topic'),
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          height: 1.2,
+                                          fontWeight: FontWeight.w700,
+                                          color: ConstColor.textSecondary,
+                                          letterSpacing: 0.15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        topicText,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          height: 1.35,
+                                          fontWeight: FontWeight.w500,
+                                          color: ConstColor.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: chipBg,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: chipBorder),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                          if (canDelete)
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 36,
+                              ),
+                              tooltip: MaterialLocalizations.of(
+                                context,
+                              ).deleteButtonTooltip,
+                              onPressed: onDelete,
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: ConstColor.error,
+                                size: 22,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );

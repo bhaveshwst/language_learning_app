@@ -20,6 +20,14 @@ import 'package:language_learning_app/provider/get_tutor_profile/get_tutor_profi
 import 'package:language_learning_app/provider/tutor_sessions/tutor_sessions_bloc.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_profile_complete_page.dart';
 
+String _formatSessionCardDate(String raw, Locale locale) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty || trimmed == '-') return raw;
+  final parsed = DateTime.tryParse(trimmed.split(' ').first);
+  if (parsed == null) return raw;
+  return DateFormat.yMMMEd(locale.toString()).format(parsed);
+}
+
 class TutorHomeDashboardScreen extends StatefulWidget {
   const TutorHomeDashboardScreen({super.key});
 
@@ -39,6 +47,11 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
   String _address = "";
   String _latitude = "";
   String _longitude = "";
+
+  final TextEditingController _bookingSearchController =
+      TextEditingController();
+  DateTime? _bookingFilterDate;
+  DateTime? _pendingBookingFilterDate;
 
   @override
   void initState() {
@@ -156,10 +169,62 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
 
   @override
   void dispose() {
+    _bookingSearchController.dispose();
     _getTutorProfileBloc.close();
     _tutorSessionsBloc.close();
     super.dispose();
   }
+
+  String _formatDateKey(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  Future<void> _pickBookingFilterDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initial =
+        _pendingBookingFilterDate ?? _bookingFilterDate ?? today;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365 * 2)),
+      helpText: t('date'),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _pendingBookingFilterDate = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+      );
+    });
+  }
+
+  void _applyBookingDateFilter() {
+    if (_pendingBookingFilterDate == null) return;
+    setState(() => _bookingFilterDate = _pendingBookingFilterDate);
+  }
+
+  void _clearBookingDateFilter() {
+    setState(() {
+      _bookingFilterDate = null;
+      _pendingBookingFilterDate = null;
+    });
+  }
+
+  bool get _hasActiveBookingFilters {
+    return _bookingFilterDate != null ||
+        _bookingSearchController.text.trim().isNotEmpty;
+  }
+
+  bool get _canApplyBookingDateFilter => _pendingBookingFilterDate != null;
+
+  bool get _canClearBookingDateFilter =>
+      _bookingFilterDate != null || _pendingBookingFilterDate != null;
 
   String _normalizeBookingStatus(String? input) {
     final raw = (input ?? '').trim().toLowerCase();
@@ -212,34 +277,322 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     return n;
   }
 
-  String _bookingDateOnlyLine(tutor_sessions.Data row, Locale locale) {
-    final dt = _sessionStartDateTime(row);
-    if (dt == null) {
-      final d = (row.date ?? '').trim();
-      return d.isEmpty ? '-' : d;
+  String _studentGroupKey(tutor_sessions.Data row) {
+    final id = (row.studentId ?? '').trim();
+    if (id.isNotEmpty) return 'id:$id';
+    return 'name:${(row.studentName ?? '').trim().toLowerCase()}';
+  }
+
+  String _bookingDateKey(tutor_sessions.Data row) {
+    return (row.date ?? '').trim().split(' ').first;
+  }
+
+  List<_StudentBookingDateGroup> _dateGroupsForSessions(
+    List<tutor_sessions.Data> sessions,
+    Locale locale,
+  ) {
+    final byDate = <String, List<tutor_sessions.Data>>{};
+    for (final row in sessions) {
+      final key = _bookingDateKey(row);
+      if (key.isEmpty) continue;
+      byDate.putIfAbsent(key, () => []).add(row);
     }
-    return DateFormat.yMMMd(locale.toString()).format(dt);
-  }
 
-  String _bookingTimeRangeLine(tutor_sessions.Data row, Locale locale) {
-    final start = (row.startTime ?? '').trim();
-    final end = (row.endTime ?? '').trim();
-    return TimeDisplayFormat.formatApiClockRangeForDisplay(start, end, locale);
-  }
+    final dateGroups = byDate.entries.map((entry) {
+      final rows = [...entry.value]
+        ..sort((a, b) {
+          final da = _sessionStartDateTime(a);
+          final db = _sessionStartDateTime(b);
+          if (da != null && db != null) return da.compareTo(db);
+          if (da != null) return -1;
+          if (db != null) return 1;
+          return (a.startTime ?? '').compareTo(b.startTime ?? '');
+        });
+      final first = rows.first;
+      final timezone = rows
+          .map((row) => (row.studentTimezone ?? '').trim())
+          .firstWhere((tz) => tz.isNotEmpty, orElse: () => '');
+      return _StudentBookingDateGroup(
+        dateLine: _formatSessionCardDate((first.date ?? '').trim(), locale),
+        sortKey: _sessionStartDateTime(first),
+        timezone: timezone,
+        timeRanges: rows
+            .map(
+              (row) => TimeDisplayFormat.formatApiClockRangeForDisplay(
+                (row.startTime ?? '').trim(),
+                (row.endTime ?? '').trim(),
+                locale,
+              ),
+            )
+            .toList(),
+      );
+    }).toList();
 
-  List<tutor_sessions.Data> _upcomingPreview(List<tutor_sessions.Data> rows) {
-    final upcoming = rows
-        .where((e) => _effectiveBookingStatus(e) == 'upcoming')
-        .toList();
-    upcoming.sort((a, b) {
-      final da = _sessionStartDateTime(a);
-      final db = _sessionStartDateTime(b);
+    dateGroups.sort((a, b) {
+      final da = a.sortKey;
+      final db = b.sortKey;
       if (da != null && db != null) return da.compareTo(db);
       if (da != null) return -1;
       if (db != null) return 1;
-      return (a.date ?? '').compareTo(b.date ?? '');
+      return a.dateLine.compareTo(b.dateLine);
     });
-    return upcoming.take(2).toList();
+    return dateGroups;
+  }
+
+  List<_StudentBookingGroup> _upcomingBookingGroups(
+    List<tutor_sessions.Data> rows,
+    Locale locale, {
+    required String searchQuery,
+    DateTime? filterDate,
+  }) {
+    final search = searchQuery.trim().toLowerCase();
+    final filterDateKey =
+        filterDate == null ? null : _formatDateKey(filterDate);
+
+    var upcoming = rows.where((e) => _effectiveBookingStatus(e) == 'upcoming');
+    if (filterDateKey != null) {
+      upcoming = upcoming.where((row) => _bookingDateKey(row) == filterDateKey);
+    }
+    if (search.isNotEmpty) {
+      upcoming = upcoming.where((row) {
+        final name = (row.studentName ?? '').trim().toLowerCase();
+        return name.contains(search);
+      });
+    }
+    final upcomingList = upcoming.toList();
+
+    final byStudent = <String, List<tutor_sessions.Data>>{};
+    for (final row in upcomingList) {
+      byStudent.putIfAbsent(_studentGroupKey(row), () => []).add(row);
+    }
+
+    final groups = byStudent.values.map((studentRows) {
+      final sorted = [...studentRows]
+        ..sort((a, b) {
+          final da = _sessionStartDateTime(a);
+          final db = _sessionStartDateTime(b);
+          if (da != null && db != null) return da.compareTo(db);
+          if (da != null) return -1;
+          if (db != null) return 1;
+          return (a.date ?? '').compareTo(b.date ?? '');
+        });
+      final first = sorted.first;
+      return _StudentBookingGroup(
+        student: (first.studentName ?? '').trim().isNotEmpty
+            ? (first.studentName ?? '').trim()
+            : '-',
+        studentprofile: (first.studentprofile ?? '').trim(),
+        dates: _dateGroupsForSessions(sorted, locale),
+      );
+    }).toList();
+
+    groups.sort((a, b) {
+      final da = a.dates.isEmpty ? null : a.dates.first.sortKey;
+      final db = b.dates.isEmpty ? null : b.dates.first.sortKey;
+      if (da != null && db != null) return da.compareTo(db);
+      if (da != null) return -1;
+      if (db != null) return 1;
+      return a.student.compareTo(b.student);
+    });
+
+    return groups.where((g) => g.dates.isNotEmpty).toList();
+  }
+
+  String? _bookingDateFilterLabel(Locale locale) {
+    final date = _pendingBookingFilterDate ?? _bookingFilterDate;
+    if (date == null) return null;
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  Widget _buildUpcomingBookingsFilters(Locale locale) {
+    final dateLabel = _bookingDateFilterLabel(locale);
+    final filterEnabled = _canApplyBookingDateFilter;
+    final clearEnabled = _canClearBookingDateFilter;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _bookingSearchController,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: ConstColor.textPrimary,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            hintText: t('searchStudentBookings'),
+            hintStyle: TextStyle(
+              color: ConstColor.textSecondary.withValues(alpha: 0.75),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: ConstColor.primaryBlue.withValues(alpha: 0.85),
+              size: 20,
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
+            suffixIcon: _bookingSearchController.text.trim().isNotEmpty
+                ? IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () {
+                      _bookingSearchController.clear();
+                      setState(() {});
+                    },
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: ConstColor.textSecondary.withValues(alpha: 0.8),
+                    ),
+                  )
+                : null,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ConstColor.border.withValues(alpha: 0.85),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ConstColor.border.withValues(alpha: 0.85),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: ConstColor.primaryBlue,
+                width: 1.5,
+              ),
+            ),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Material(
+                color: const Color(0xFFF7F9FC),
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: _pickBookingFilterDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: ConstColor.border.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            dateLabel ?? t('selectDate'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: dateLabel == null
+                                  ? ConstColor.textSecondary.withValues(
+                                      alpha: 0.8,
+                                    )
+                                  : ConstColor.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 18,
+                          color: ConstColor.primaryBlue.withValues(alpha: 0.9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: filterEnabled
+                  ? ConstColor.primaryBlue
+                  : ConstColor.primaryBlue.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: filterEnabled ? _applyBookingDateFilter : null,
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Tooltip(
+                    message: t('filter'),
+                    child: Center(
+                      child: Icon(
+                        Icons.tune_rounded,
+                        size: 20,
+                        color: Colors.white.withValues(
+                          alpha: filterEnabled ? 1 : 0.7,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: clearEnabled ? _clearBookingDateFilter : null,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ConstColor.border.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  child: Tooltip(
+                    message: t('clear'),
+                    child: Center(
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: clearEnabled
+                            ? ConstColor.textSecondary.withValues(alpha: 0.9)
+                            : ConstColor.textSecondary.withValues(
+                                alpha: 0.35,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -361,7 +714,15 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                       if (s == 'current') remainingCount++;
                     }
                     final todayCount = _todaySessionCount(rows);
-                    final preview = _upcomingPreview(rows);
+                    final hasUpcomingBookings = rows.any(
+                      (e) => _effectiveBookingStatus(e) == 'upcoming',
+                    );
+                    final previewGroups = _upcomingBookingGroups(
+                      rows,
+                      locale,
+                      searchQuery: _bookingSearchController.text,
+                      filterDate: _bookingFilterDate,
+                    );
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,43 +826,53 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                             color: ConstColor.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        if (!loading && preview.isEmpty)
+                        if (!loading && hasUpcomingBookings) ...[
+                          const SizedBox(height: 10),
+                          _buildUpcomingBookingsFilters(locale),
+                          const SizedBox(height: 12),
+                        ] else if (!loading) ...[
+                          const SizedBox(height: 10),
+                        ],
+                        if (loading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: ConstColor.primaryBlue,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (previewGroups.isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(
                               bottom: ConstSize.grid * 2,
                             ),
                             child: Text(
-                              t('noData'),
+                              _hasActiveBookingFilters
+                                  ? t('noTutorsMatch')
+                                  : t('noData'),
                               style: const TextStyle(
                                 color: ConstColor.textSecondary,
                                 fontSize: 13,
                               ),
                             ),
                           )
-                        else
-                          ...preview.asMap().entries.expand((entry) {
+                        else ...[
+                          ...previewGroups.asMap().entries.expand((entry) {
                             final i = entry.key;
-                            final row = entry.value;
+                            final group = entry.value;
                             return [
-                              _BookingTile(
-                                studentprofile: (row.studentprofile ?? '')
-                                    .trim(),
-                                student:
-                                    (row.studentName ?? '').trim().isNotEmpty
-                                    ? (row.studentName ?? '').trim()
-                                    : '-',
-                                dateLine: _bookingDateOnlyLine(row, locale),
-                                timeRangeLine: _bookingTimeRangeLine(
-                                  row,
-                                  locale,
-                                ),
-                                timezone: (row.studentTimezone ?? '').trim(),
-                              ),
-                              if (i < preview.length - 1)
+                              _StudentUpcomingBookingCard(group: group),
+                              if (i < previewGroups.length - 1)
                                 const SizedBox(height: 10),
                             ];
                           }),
+                        ],
                         const SizedBox(height: ConstSize.grid * 2),
                       ],
                     );
@@ -557,167 +928,226 @@ class _TutorMetricCard extends StatelessWidget {
   }
 }
 
-class _BookingTile extends StatelessWidget {
-  const _BookingTile({
-    required this.student,
+class _StudentBookingDateGroup {
+  const _StudentBookingDateGroup({
     required this.dateLine,
-    required this.timeRangeLine,
+    required this.timeRanges,
     required this.timezone,
+    required this.sortKey,
+  });
+
+  final String dateLine;
+  final List<String> timeRanges;
+  final String timezone;
+  final DateTime? sortKey;
+}
+
+class _StudentBookingGroup {
+  const _StudentBookingGroup({
+    required this.student,
     required this.studentprofile,
+    required this.dates,
   });
 
   final String student;
-  final String dateLine;
-  final String timeRangeLine;
-  final String timezone;
   final String studentprofile;
+  final List<_StudentBookingDateGroup> dates;
+}
 
-  static const double _avatarSize = 40;
+/// One card per student: name once at top, then all session date/times below.
+class _StudentUpcomingBookingCard extends StatelessWidget {
+  const _StudentUpcomingBookingCard({required this.group});
+
+  final _StudentBookingGroup group;
 
   @override
   Widget build(BuildContext context) {
-    final metaStyle = TextStyle(
-      fontSize: 12.5,
-      height: 1.25,
-      fontWeight: FontWeight.w500,
-      color: ConstColor.textSecondary.withValues(alpha: 0.92),
-    );
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
         boxShadow: [
           BoxShadow(
-            color: ConstColor.primaryBlue.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 3,
-                color: ConstColor.primaryBlue.withValues(alpha: 0.75),
-              ),
+              Container(width: 3, color: ConstColor.accentTeal),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _StudentAvatar(
-                        imageUrl: studentprofile,
-                        size: _avatarSize,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              student,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                      child: Row(
+                        children: [
+                          _StudentAvatar(
+                            imageUrl: group.studentprofile,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              group.student,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                height: 1.2,
+                                height: 1.15,
                                 color: ConstColor.textPrimary,
-                                letterSpacing: -0.2,
+                                letterSpacing: -0.35,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 1),
-                                  child: Icon(
-                                    Icons.event_rounded,
-                                    size: 13,
-                                    color: ConstColor.textSecondary.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Expanded(
-                                  child: Text(
-                                    dateLine,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: metaStyle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 1),
-                                  child: Icon(
-                                    Icons.schedule_rounded,
-                                    size: 13,
-                                    color: ConstColor.textSecondary.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Expanded(
-                                  child: Text(
-                                    timeRangeLine,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: metaStyle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (timezone.isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.public_rounded,
-                                    size: 13,
-                                    color: ConstColor.textSecondary.withValues(
-                                      alpha: 0.75,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: Text(
-                                      timezone,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: metaStyle.copyWith(fontSize: 12),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 12,
+                      endIndent: 12,
+                      color: ConstColor.border.withValues(alpha: 0.8),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < group.dates.length; i++) ...[
+                            if (i > 0) ...[
+                              const SizedBox(height: 10),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: ConstColor.border.withValues(alpha: 0.6),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                            _BookingDateGroupBlock(dateGroup: group.dates[i]),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BookingDateGroupBlock extends StatelessWidget {
+  const _BookingDateGroupBlock({required this.dateGroup});
+
+  final _StudentBookingDateGroup dateGroup;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 14,
+              color: ConstColor.textSecondary.withValues(alpha: 0.85),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                dateGroup.dateLine,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: ConstColor.textSecondary,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < dateGroup.timeRanges.length; i++) ...[
+          if (i > 0) const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      color: ConstColor.primaryBlue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    dateGroup.timeRanges[i],
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                      color: ConstColor.textPrimary,
+                      letterSpacing: -0.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (dateGroup.timezone.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.public_rounded,
+                  size: 13,
+                  color: ConstColor.textSecondary.withValues(alpha: 0.75),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    dateGroup.timezone,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.2,
+                      fontWeight: FontWeight.w500,
+                      color: ConstColor.textSecondary.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
