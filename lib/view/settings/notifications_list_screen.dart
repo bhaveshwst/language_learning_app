@@ -5,6 +5,7 @@ import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
+import 'package:language_learning_app/model/notification_listing_model.dart';
 import 'package:language_learning_app/provider/notification_listing/notification_listing_bloc.dart';
 
 class NotificationsListScreen extends StatefulWidget {
@@ -90,8 +91,8 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
                   }
 
                   final items = state is NotificationListingSuccess
-                      ? (state.model.data ?? const <String>[])
-                      : const <String>[];
+                      ? (state.model.data ?? const <NotificationListItem>[])
+                      : const <NotificationListItem>[];
 
                   if (items.isEmpty) {
                     return Center(
@@ -125,7 +126,9 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
-                      return _NotificationListCard(message: items[index]);
+                      return _NotificationListCard(
+                        message: items[index].displayMessage,
+                      );
                     },
                   );
                 },
