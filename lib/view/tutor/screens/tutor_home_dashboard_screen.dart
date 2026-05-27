@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
@@ -182,17 +183,84 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     return '$year-$month-$day';
   }
 
+  Future<DateTime?> _pickDateInBottomSheet({
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) async {
+    DateTime normalize(DateTime d) => DateTime(d.year, d.month, d.day);
+    final minDate = normalize(firstDate);
+    final maxDate = normalize(lastDate);
+    var selected = normalize(initialDate);
+    if (selected.isBefore(minDate)) selected = minDate;
+    if (selected.isAfter(maxDate)) selected = maxDate;
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: Text(t('cancel')),
+                      ),
+                      const Spacer(),
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext, selected),
+                        child: Text(t('done')),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: ConstColor.border.withValues(alpha: 0.7),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: selected,
+                    minimumDate: minDate,
+                    maximumDate: maxDate,
+                    onDateTimeChanged: (value) {
+                      selected = normalize(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickBookingFilterDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final initial =
         _pendingBookingFilterDate ?? _bookingFilterDate ?? today;
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await _pickDateInBottomSheet(
       initialDate: initial,
       firstDate: today,
       lastDate: today.add(const Duration(days: 365 * 2)),
-      helpText: t('date'),
     );
     if (picked == null || !mounted) return;
     setState(() {

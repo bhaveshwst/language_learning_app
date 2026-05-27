@@ -55,10 +55,10 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
       case TargetPlatform.iOS:
         if (kIosAppStoreId.isNotEmpty) {
           return Uri.parse(
-            'https://apps.apple.com/app/id$kIosAppStoreId',
+            '$kIosAppStoreScheme://apps.apple.com/app/id$kIosAppStoreId',
           );
         }
-        return Uri.parse('https://apps.apple.com/');
+        return Uri.parse('$kIosAppStoreScheme://apps.apple.com/');
       default:
         return null;
     }

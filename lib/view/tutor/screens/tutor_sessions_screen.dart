@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,6 +47,11 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
   final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
   TutorSessionTab _tab = TutorSessionTab.upcoming;
   String _joiningSlotId = '';
+
+  DateTime? _upcomingFilterDate;
+  DateTime? _upcomingPendingFilterDate;
+  DateTime? _pastFilterDate;
+  DateTime? _pastPendingFilterDate;
 
   Future<({String latitude, String longitude, String address})>
   _fetchLocationForJoin() async {
@@ -247,12 +253,285 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     return raw;
   }
 
-  /// Uses API `booking_time_status` for tab grouping.
-  String _effectiveBookingStatus(tutor_sessions.Data row) {
-    return _normalizeStatus(row.bookingTimeStatus);
+  String _formatDateKey(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 
-  List<_SlotSessionGroup> _groupsForTab(
+  String _sessionDateKey(tutor_sessions.Data row) {
+    return (row.date ?? '').trim().split(' ').first;
+  }
+
+  DateTime? _appliedFilterDateForTab(TutorSessionTab tab) {
+    return switch (tab) {
+      TutorSessionTab.upcoming => _upcomingFilterDate,
+      TutorSessionTab.past => _pastFilterDate,
+      TutorSessionTab.current => null,
+    };
+  }
+
+  DateTime? _pendingFilterDateForTab(TutorSessionTab tab) {
+    return switch (tab) {
+      TutorSessionTab.upcoming => _upcomingPendingFilterDate,
+      TutorSessionTab.past => _pastPendingFilterDate,
+      TutorSessionTab.current => null,
+    };
+  }
+
+  bool _canApplyDateFilterForTab(TutorSessionTab tab) {
+    return _pendingFilterDateForTab(tab) != null;
+  }
+
+  bool _canClearDateFilterForTab(TutorSessionTab tab) {
+    return _appliedFilterDateForTab(tab) != null ||
+        _pendingFilterDateForTab(tab) != null;
+  }
+
+  String? _dateFilterLabelForTab(TutorSessionTab tab, Locale locale) {
+    final date = _pendingFilterDateForTab(tab) ?? _appliedFilterDateForTab(tab);
+    if (date == null) return null;
+    return DateFormat.yMMMd(locale.toString()).format(date);
+  }
+
+  Future<DateTime?> _pickDateInBottomSheet({
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) async {
+    DateTime normalize(DateTime d) => DateTime(d.year, d.month, d.day);
+    final minDate = normalize(firstDate);
+    final maxDate = normalize(lastDate);
+    var selected = normalize(initialDate);
+    if (selected.isBefore(minDate)) selected = minDate;
+    if (selected.isAfter(maxDate)) selected = maxDate;
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        String tx(String key) =>
+            ConstString.text(AppLanguageState.currentLanguage, key);
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: Text(tx('cancel')),
+                      ),
+                      const Spacer(),
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext, selected),
+                        child: Text(tx('done')),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: ConstColor.border.withValues(alpha: 0.7),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: selected,
+                    minimumDate: minDate,
+                    maximumDate: maxDate,
+                    onDateTimeChanged: (value) {
+                      selected = normalize(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickSessionFilterDate(TutorSessionTab tab) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initial =
+        _pendingFilterDateForTab(tab) ?? _appliedFilterDateForTab(tab) ?? today;
+    final picked = await _pickDateInBottomSheet(
+      initialDate: initial,
+      firstDate: tab == TutorSessionTab.past
+          ? today.subtract(const Duration(days: 365 * 10))
+          : today,
+      lastDate: tab == TutorSessionTab.past
+          ? today
+          : today.add(const Duration(days: 365 * 2)),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      final normalized = DateTime(picked.year, picked.month, picked.day);
+      if (tab == TutorSessionTab.upcoming) {
+        _upcomingPendingFilterDate = normalized;
+      } else if (tab == TutorSessionTab.past) {
+        _pastPendingFilterDate = normalized;
+      }
+    });
+  }
+
+  void _applySessionDateFilter(TutorSessionTab tab) {
+    final pending = _pendingFilterDateForTab(tab);
+    if (pending == null) return;
+    setState(() {
+      if (tab == TutorSessionTab.upcoming) {
+        _upcomingFilterDate = pending;
+      } else if (tab == TutorSessionTab.past) {
+        _pastFilterDate = pending;
+      }
+    });
+  }
+
+  void _clearSessionDateFilter(TutorSessionTab tab) {
+    setState(() {
+      if (tab == TutorSessionTab.upcoming) {
+        _upcomingFilterDate = null;
+        _upcomingPendingFilterDate = null;
+      } else if (tab == TutorSessionTab.past) {
+        _pastFilterDate = null;
+        _pastPendingFilterDate = null;
+      }
+    });
+  }
+
+  Widget _buildSessionDateFilterRow(
+    TutorSessionTab tab,
+    Locale locale,
+    String Function(String) t,
+  ) {
+    final dateLabel = _dateFilterLabelForTab(tab, locale);
+    final filterEnabled = _canApplyDateFilterForTab(tab);
+    final clearEnabled = _canClearDateFilterForTab(tab);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Material(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _pickSessionFilterDate(tab),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: ConstColor.border.withValues(alpha: 0.85),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dateLabel ?? t('selectDate'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: dateLabel == null
+                              ? ConstColor.textSecondary.withValues(alpha: 0.8)
+                              : ConstColor.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: ConstColor.primaryBlue.withValues(alpha: 0.9),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: filterEnabled
+              ? ConstColor.primaryBlue
+              : ConstColor.primaryBlue.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: filterEnabled ? () => _applySessionDateFilter(tab) : null,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Tooltip(
+                message: t('filter'),
+                child: Center(
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: Colors.white.withValues(
+                      alpha: filterEnabled ? 1 : 0.7,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: clearEnabled ? () => _clearSessionDateFilter(tab) : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: ConstColor.border.withValues(alpha: 0.85),
+                ),
+              ),
+              child: Tooltip(
+                message: t('clear'),
+                child: Center(
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: clearEnabled
+                        ? ConstColor.textSecondary.withValues(alpha: 0.9)
+                        : ConstColor.textSecondary.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _tabHasSessions(
     List<tutor_sessions.Data> rows,
     TutorSessionTab tab,
   ) {
@@ -261,11 +540,33 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
       TutorSessionTab.current => 'current',
       TutorSessionTab.past => 'past',
     };
-    final filtered = rows
-        .where((e) => _effectiveBookingStatus(e) == wanted)
-        .toList();
+    return rows.any((e) => _effectiveBookingStatus(e) == wanted);
+  }
+
+  /// Uses API `booking_time_status` for tab grouping.
+  String _effectiveBookingStatus(tutor_sessions.Data row) {
+    return _normalizeStatus(row.bookingTimeStatus);
+  }
+
+  List<_SlotSessionGroup> _groupsForTab(
+    List<tutor_sessions.Data> rows,
+    TutorSessionTab tab, {
+    DateTime? filterDate,
+  }) {
+    final wanted = switch (tab) {
+      TutorSessionTab.upcoming => 'upcoming',
+      TutorSessionTab.current => 'current',
+      TutorSessionTab.past => 'past',
+    };
+    final filterDateKey =
+        filterDate == null ? null : _formatDateKey(filterDate);
+    var filtered = rows.where((e) => _effectiveBookingStatus(e) == wanted);
+    if (filterDateKey != null) {
+      filtered = filtered.where((row) => _sessionDateKey(row) == filterDateKey);
+    }
+    final filteredList = filtered.toList();
     final bySlot = <String, List<tutor_sessions.Data>>{};
-    for (final row in filtered) {
+    for (final row in filteredList) {
       final date = (row.date ?? '').trim();
       final start = (row.startTime ?? '').trim();
       final end = (row.endTime ?? '').trim();
@@ -364,7 +665,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                         commonAlertDialog(context, state.message);
                       }
                       if (state is LiveSessionAnalyticsSuccess) {
-                        _showAnalyticsSheet(state.model);
+                        // _showAnalyticsSheet(state.model);
                       }
                     },
                   ),
@@ -412,6 +713,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                               onRefresh: _refreshTutorSessions,
                               child: BlocBuilder<TutorSessionsBloc, TutorSessionsState>(
                                 builder: (context, state) {
+                                  final locale = Localizations.localeOf(context);
                                   if (state is TutorSessionsInitial) {
                                     final tutorId = PrefUtils.gettutorid()
                                         .trim();
@@ -491,7 +793,16 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                       ? (state.model.data ??
                                             const <tutor_sessions.Data>[])
                                       : const <tutor_sessions.Data>[];
-                                  final groups = _groupsForTab(rows, _tab);
+                                  final showDateFilter =
+                                      _tab != TutorSessionTab.current &&
+                                      _tabHasSessions(rows, _tab);
+                                  final filterDate =
+                                      _appliedFilterDateForTab(_tab);
+                                  final groups = _groupsForTab(
+                                    rows,
+                                    _tab,
+                                    filterDate: filterDate,
+                                  );
                                   if (groups.isEmpty) {
                                     return LayoutBuilder(
                                       builder: (context, constraints) {
@@ -502,29 +813,59 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                             constraints: BoxConstraints(
                                               minHeight: constraints.maxHeight,
                                             ),
-                                            child: Center(
-                                              child: Text(
-                                                t('noData'),
-                                                style: const TextStyle(
-                                                  color:
-                                                      ConstColor.textSecondary,
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                if (showDateFilter) ...[
+                                                  _buildSessionDateFilterRow(
+                                                    _tab,
+                                                    locale,
+                                                    t,
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                ],
+                                                Align(
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    t('noData'),
+                                                    style: const TextStyle(
+                                                      color: ConstColor
+                                                          .textSecondary,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                              ],
                                             ),
                                           ),
                                         );
                                       },
                                     );
                                   }
-                                  return ListView.separated(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    itemCount: groups.length,
-                                    separatorBuilder: (context, index) =>
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (showDateFilter) ...[
+                                        _buildSessionDateFilterRow(
+                                          _tab,
+                                          locale,
+                                          t,
+                                        ),
                                         const SizedBox(height: 12),
-                                    itemBuilder: (_, i) => _SlotSessionCard(
-                                      group: groups[i],
-                                      onJoin: (row) {
+                                      ],
+                                      Expanded(
+                                        child: ListView.separated(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          itemCount: groups.length,
+                                          separatorBuilder:
+                                              (context, index) =>
+                                                  const SizedBox(height: 12),
+                                          itemBuilder: (_, i) =>
+                                              _SlotSessionCard(
+                                                group: groups[i],
+                                                onJoin: (row) {
                                         final tutorId = (row.tutorId ?? '')
                                             .trim();
                                         final slotId = (row.slotId ?? '')
@@ -593,6 +934,9 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                         );
                                       },
                                     ),
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               ),

@@ -1,3 +1,6 @@
-/// Numeric App Store ID from App Store Connect (e.g. URL .../id1234567890).
-/// Leave empty until the app is published; iOS will fall back to a generic App Store URL.
-const String kIosAppStoreId = '';
+/// Numeric App Store ID from the public listing URL
+/// (e.g. https://apps.apple.com/us/app/konnected-language-learning/id6764538427).
+const String kIosAppStoreId = '6764538427';
+
+/// Opens the native App Store app on iOS (not Safari).
+const String kIosAppStoreScheme = 'itms-apps';
