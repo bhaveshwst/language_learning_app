@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -17,6 +16,8 @@ import 'package:language_learning_app/provider/delete_tutor_slot/delete_tutor_sl
 import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_bloc.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_add_slot_screen.dart';
 
+enum TutorSlotListingTab { upcoming, today, past }
+
 class AvailabilityScreen extends StatefulWidget {
   const AvailabilityScreen({super.key});
 
@@ -27,11 +28,9 @@ class AvailabilityScreen extends StatefulWidget {
 class _AvailabilityScreenState extends State<AvailabilityScreen> {
   final ListTutorSlotBloc _listTutorSlotBloc = ListTutorSlotBloc();
   final DeleteTutorSlotBloc _deleteTutorSlotBloc = DeleteTutorSlotBloc();
-  final TextEditingController _filterDateController = TextEditingController();
-  DateTime? _selectedFilterDate;
+  TutorSlotListingTab _tab = TutorSlotListingTab.upcoming;
   bool _isDeleteLoaderVisible = false;
 
-  static const double _filterBarRadius = 16;
   static const double _cardRadius = 18;
 
   @override
@@ -44,34 +43,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   void dispose() {
     _listTutorSlotBloc.close();
     _deleteTutorSlotBloc.close();
-    _filterDateController.dispose();
     super.dispose();
-  }
-
-  String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
   }
 
   void _fetchSlots() {
     _listTutorSlotBloc.add(
-      FetchListTutorSlot(
-        tutorId: PrefUtils.gettutorid(),
-        availabilityDate: _selectedFilterDate != null
-            ? _formatDate(_selectedFilterDate!)
-            : null,
-      ),
+      FetchListTutorSlot(tutorId: PrefUtils.gettutorid()),
     );
-  }
-
-  void _clearFilterAndFetch() {
-    setState(() {
-      _selectedFilterDate = null;
-      _filterDateController.clear();
-    });
-    _fetchSlots();
   }
 
   Future<void> _confirmAndDelete(String slotId) async {
@@ -119,75 +97,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     if (!_isDeleteLoaderVisible) return;
     _isDeleteLoaderVisible = false;
     Navigator.of(context, rootNavigator: true).pop();
-  }
-
-  Future<DateTime?> _showCupertinoDatePicker({
-    required DateTime initialDate,
-  }) async {
-    final now = DateTime.now();
-    final minDate = DateTime(now.year - 1);
-    final maxDate = DateTime(now.year + 5);
-    final safeInitialDate = initialDate.isBefore(minDate)
-        ? minDate
-        : initialDate;
-    DateTime tempPickedDate = safeInitialDate;
-    final result = await showModalBottomSheet<DateTime?>(
-      context: context,
-      builder: (context) {
-        return SizedBox(
-          height: 320,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      onPressed: () => Navigator.pop(context, null),
-                      child: const AppText('cancel'),
-                    ),
-                    CupertinoButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      onPressed: () => Navigator.pop(context, tempPickedDate),
-                      child: const AppText('done'),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  minimumDate: minDate,
-                  maximumDate: maxDate,
-                  initialDateTime: safeInitialDate,
-                  onDateTimeChanged: (value) {
-                    tempPickedDate = value;
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    return result;
-  }
-
-  Future<void> _pickFilterDate() async {
-    final now = DateTime.now();
-    final picked = await _showCupertinoDatePicker(
-      initialDate: _selectedFilterDate ?? now,
-    );
-    if (picked == null) {
-      return;
-    }
-    setState(() {
-      _selectedFilterDate = picked;
-      _filterDateController.text = _formatDate(picked);
-    });
   }
 
   @override
@@ -282,12 +191,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     ),
                   ),
                   const SizedBox(height: ConstSize.grid * 2),
-                  _FilterBar(
-                    filterDateController: _filterDateController,
-                    onPickDate: _pickFilterDate,
-                    onApplyFilter: _fetchSlots,
-                    onClear: _clearFilterAndFetch,
-                    borderRadius: _filterBarRadius,
+                  _SlotListingTabToggle(
+                    selected: _tab,
+                    onChanged: (value) => setState(() => _tab = value),
                   ),
                   const SizedBox(height: ConstSize.grid * 2),
                   BlocBuilder<ListTutorSlotBloc, ListTutorSlotState>(
@@ -308,14 +214,15 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       }
                       if (state is ListTutorSlotSuccess) {
                         final slots = state.listTutorSlotModel.data ?? [];
-                        if (slots.isEmpty) {
+                        final filtered = _slotsForTab(slots, _tab);
+                        if (filtered.isEmpty) {
                           return const _EmptySlotsPlaceholder();
                         }
                         return ValueListenableBuilder<AppLanguage>(
                           valueListenable: AppLanguageState.current,
                           builder: (context, language, _) {
                             final locale = Localizations.localeOf(context);
-                            final dateGroups = _groupSlotsByDate(slots);
+                            final dateGroups = _groupSlotsByDate(filtered);
                             return ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -357,6 +264,41 @@ String _formatSlotDateForDisplay(String? raw, Locale locale) {
 
 String _slotDateKey(tutor_slots.Data slot) {
   return (slot.date ?? '').trim().split(' ').first;
+}
+
+DateTime? _slotLocalDate(tutor_slots.Data slot) {
+  final dateStr = _slotDateKey(slot);
+  if (dateStr.isEmpty) return null;
+  try {
+    final parsed = DateTime.parse(dateStr);
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  } catch (_) {
+    return null;
+  }
+}
+
+DateTime _todayDateOnly() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+}
+
+List<tutor_slots.Data> _slotsForTab(
+  List<tutor_slots.Data> slots,
+  TutorSlotListingTab tab,
+) {
+  final today = _todayDateOnly();
+  return slots.where((slot) {
+    final slotDate = _slotLocalDate(slot);
+    if (slotDate == null) return false;
+    return switch (tab) {
+      TutorSlotListingTab.today =>
+        slotDate.year == today.year &&
+            slotDate.month == today.month &&
+            slotDate.day == today.day,
+      TutorSlotListingTab.upcoming => slotDate.isAfter(today),
+      TutorSlotListingTab.past => slotDate.isBefore(today),
+    };
+  }).toList();
 }
 
 DateTime? _slotStartDateTime(tutor_slots.Data slot) {
@@ -454,123 +396,94 @@ String _slotStatusLabel(String? status, AppLanguage language) {
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({
-    required this.filterDateController,
-    required this.onPickDate,
-    required this.onApplyFilter,
-    required this.onClear,
-    required this.borderRadius,
+class _SlotListingTabToggle extends StatelessWidget {
+  const _SlotListingTabToggle({
+    required this.selected,
+    required this.onChanged,
   });
 
-  final TextEditingController filterDateController;
-  final VoidCallback onPickDate;
-  final VoidCallback onApplyFilter;
-  final VoidCallback onClear;
-  final double borderRadius;
+  final TutorSlotListingTab selected;
+  final ValueChanged<TutorSlotListingTab> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final tabs = <(TutorSlotListingTab, String)>[
+      (TutorSlotListingTab.upcoming, 'upcoming'),
+      (TutorSlotListingTab.today, 'today'),
+      (TutorSlotListingTab.past, 'past'),
+    ];
     return Container(
-      padding: const EdgeInsets.all(ConstSize.grid * 1.25),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
         boxShadow: [
           BoxShadow(
-            color: ConstColor.primaryBlue.withValues(alpha: 0.07),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
-        border: Border.all(color: ConstColor.border.withValues(alpha: 0.6)),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: TextFormField(
-              controller: filterDateController,
-              readOnly: true,
-              onTap: onPickDate,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: ConstColor.textPrimary,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: ConstColor.background.withValues(alpha: 0.65),
-                // labelText: ConstString.text(
-                //   AppLanguageState.currentLanguage,
-                //   // 'date',
-                // ),
-                hintText: 'YYYY-MM-DD',
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: ConstColor.primaryBlue,
-                    width: 1.5,
-                  ),
-                ),
-                suffixIcon: Icon(
-                  Icons.calendar_month_rounded,
-                  color: ConstColor.primaryBlue.withValues(alpha: 0.85),
-                  size: 18,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
+          for (var i = 0; i < tabs.length; i++) ...[
+            if (i > 0) const SizedBox(width: 4),
+            Expanded(
+              child: _SlotTabPill(
+                labelKey: tabs[i].$2,
+                selected: selected == tabs[i].$1,
+                onTap: () => onChanged(tabs[i].$1),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: FilledButton(
-              onPressed: onApplyFilter,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: ConstColor.primaryBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Icon(Icons.tune_rounded, size: 18),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: OutlinedButton(
-              onPressed: onClear,
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                foregroundColor: ConstColor.textSecondary,
-                side: BorderSide(
-                  color: ConstColor.border.withValues(alpha: 0.9),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Icon(Icons.close_rounded, size: 24),
-            ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _SlotTabPill extends StatelessWidget {
+  const _SlotTabPill({
+    required this.labelKey,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String labelKey;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? ConstColor.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: AppText(
+              labelKey,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
+                color: selected ? Colors.white : ConstColor.textSecondary,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

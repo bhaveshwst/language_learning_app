@@ -139,6 +139,7 @@ class ConstString {
 
     'sessions': 'Sessions',
     'upcoming': 'Upcoming',
+    'today': 'Today',
     'complete': 'Complete',
     'current': 'Current',
     'past': 'Past',
@@ -418,6 +419,7 @@ class ConstString {
 
     'sessions': '세션',
     'upcoming': '예정',
+    'today': '오늘',
     'current': '현재',
     'past': '지난',
     'join': '참여',
@@ -710,6 +712,7 @@ class ConstString {
 
     'sessions': 'Sesiones',
     'upcoming': 'Próximas',
+    'today': 'Hoy',
     'complete': 'Completada',
     'current': 'Actual',
     'past': 'Pasadas',
