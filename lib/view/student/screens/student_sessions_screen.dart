@@ -42,6 +42,7 @@ class StudentSessionsScreen extends StatefulWidget {
 
 class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
   StudentSessionTab _tab = StudentSessionTab.upcoming;
+  final TextEditingController _sessionSearchController = TextEditingController();
   final ListStudentBookingsBloc _listStudentBookingsBloc =
       ListStudentBookingsBloc();
   final CancelStudentBookingBloc _cancelStudentBookingBloc =
@@ -407,6 +408,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                 rows,
                                 _tab,
                                 filterDate: filterDate,
+                                searchQuery: _sessionSearchController.text,
                               );
 
                               if (groups.isEmpty) {
@@ -419,15 +421,19 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                         constraints: BoxConstraints(
                                           minHeight: constraints.maxHeight,
                                         ),
-                                        child: Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: ConstSize.grid,
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: ConstSize.grid * 0.5,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                               children: [
+                                                if (showDateFilter &&
+                                                    _showSearchFilterForCurrentTab) ...[
+                                                  _buildSessionSearchBar(t),
+                                                  const SizedBox(height: 10),
+                                                ],
                                                 if (showDateFilter) ...[
                                                   _buildSessionDateFilterRow(
                                                     _tab,
@@ -470,7 +476,6 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                                   ),
                                                 ),
                                               ],
-                                            ),
                                           ),
                                         ),
                                       ),
@@ -482,6 +487,11 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (showDateFilter &&
+                                      _showSearchFilterForCurrentTab) ...[
+                                    _buildSessionSearchBar(t),
+                                    const SizedBox(height: 10),
+                                  ],
                                   if (showDateFilter) ...[
                                     _buildSessionDateFilterRow(
                                       _tab,
@@ -634,6 +644,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
 
   @override
   void dispose() {
+    _sessionSearchController.dispose();
     _listStudentBookingsBloc.close();
     _cancelStudentBookingBloc.close();
     _liveSessionJoinBloc.close();
@@ -946,6 +957,64 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     return rows.any((e) => _effectiveBookingStatus(e) == wanted);
   }
 
+  bool get _showSearchFilterForCurrentTab => _tab != StudentSessionTab.current;
+
+  Widget _buildSessionSearchBar(String Function(String) t) {
+    return TextField(
+      controller: _sessionSearchController,
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+        color: ConstColor.textPrimary,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: t('searchTutors'),
+        hintStyle: TextStyle(
+          color: ConstColor.textSecondary.withValues(alpha: 0.75),
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          color: ConstColor.primaryBlue.withValues(alpha: 0.85),
+          size: 20,
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        suffixIcon: _sessionSearchController.text.trim().isNotEmpty
+            ? IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: () {
+                  _sessionSearchController.clear();
+                  setState(() {});
+                },
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: ConstColor.textSecondary.withValues(alpha: 0.8),
+                ),
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ConstColor.border.withValues(alpha: 0.85)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ConstColor.border.withValues(alpha: 0.85)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ConstColor.primaryBlue, width: 1.5),
+        ),
+        isDense: true,
+      ),
+      onChanged: (_) => setState(() {}),
+    );
+  }
+
   String _extractDateLabel(String? slot) {
     final s = (slot ?? '').trim();
     if (s.isEmpty) return '-';
@@ -999,7 +1068,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
   List<_TutorSessionGroup> _groupsForTab(
     List<bookings.Data> rows,
     StudentSessionTab tab,
-    {DateTime? filterDate,}
+    {DateTime? filterDate, String searchQuery = ''}
   ) {
     final wanted = switch (tab) {
       StudentSessionTab.upcoming => 'upcoming',
@@ -1012,6 +1081,13 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
     var filtered = rows.where((e) => _effectiveBookingStatus(e) == wanted);
     if (filterDateKey != null) {
       filtered = filtered.where((row) => _sessionDateKey(row) == filterDateKey);
+    }
+    final search = searchQuery.trim().toLowerCase();
+    if (search.isNotEmpty) {
+      filtered = filtered.where((row) {
+        final name = (row.tutorName ?? '').trim().toLowerCase();
+        return name.contains(search);
+      });
     }
     final filteredList = filtered.toList();
 

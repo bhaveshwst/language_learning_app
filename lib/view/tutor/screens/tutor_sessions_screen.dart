@@ -45,6 +45,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
   final LiveSessionAnalyticsBloc _liveSessionAnalyticsBloc =
       LiveSessionAnalyticsBloc();
   final LiveSessionJoinBloc _liveSessionJoinBloc = LiveSessionJoinBloc();
+  final TextEditingController _sessionSearchController = TextEditingController();
   TutorSessionTab _tab = TutorSessionTab.upcoming;
   String _joiningSlotId = '';
 
@@ -163,6 +164,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
 
   @override
   void dispose() {
+    _sessionSearchController.dispose();
     _tutorSessionsBloc.close();
     _liveSessionAnalyticsBloc.close();
     _liveSessionJoinBloc.close();
@@ -543,6 +545,64 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     return rows.any((e) => _effectiveBookingStatus(e) == wanted);
   }
 
+  bool get _showSearchFilterForCurrentTab => _tab != TutorSessionTab.current;
+
+  Widget _buildSessionSearchBar(String Function(String) t) {
+    return TextField(
+      controller: _sessionSearchController,
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+        color: ConstColor.textPrimary,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: t('searchStudentBookings'),
+        hintStyle: TextStyle(
+          color: ConstColor.textSecondary.withValues(alpha: 0.75),
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          color: ConstColor.primaryBlue.withValues(alpha: 0.85),
+          size: 20,
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        suffixIcon: _sessionSearchController.text.trim().isNotEmpty
+            ? IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: () {
+                  _sessionSearchController.clear();
+                  setState(() {});
+                },
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: ConstColor.textSecondary.withValues(alpha: 0.8),
+                ),
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ConstColor.border.withValues(alpha: 0.85)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ConstColor.border.withValues(alpha: 0.85)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ConstColor.primaryBlue, width: 1.5),
+        ),
+        isDense: true,
+      ),
+      onChanged: (_) => setState(() {}),
+    );
+  }
+
   /// Uses API `booking_time_status` for tab grouping.
   String _effectiveBookingStatus(tutor_sessions.Data row) {
     return _normalizeStatus(row.bookingTimeStatus);
@@ -552,6 +612,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     List<tutor_sessions.Data> rows,
     TutorSessionTab tab, {
     DateTime? filterDate,
+    String searchQuery = '',
   }) {
     final wanted = switch (tab) {
       TutorSessionTab.upcoming => 'upcoming',
@@ -563,6 +624,13 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
     var filtered = rows.where((e) => _effectiveBookingStatus(e) == wanted);
     if (filterDateKey != null) {
       filtered = filtered.where((row) => _sessionDateKey(row) == filterDateKey);
+    }
+    final search = searchQuery.trim().toLowerCase();
+    if (search.isNotEmpty) {
+      filtered = filtered.where((row) {
+        final name = (row.studentName ?? '').trim().toLowerCase();
+        return name.contains(search);
+      });
     }
     final filteredList = filtered.toList();
     final bySlot = <String, List<tutor_sessions.Data>>{};
@@ -802,6 +870,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                     rows,
                                     _tab,
                                     filterDate: filterDate,
+                                    searchQuery: _sessionSearchController.text,
                                   );
                                   if (groups.isEmpty) {
                                     return LayoutBuilder(
@@ -813,10 +882,19 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                             constraints: BoxConstraints(
                                               minHeight: constraints.maxHeight,
                                             ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: ConstSize.grid * 0.5,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                               children: [
+                                                if (showDateFilter &&
+                                                    _showSearchFilterForCurrentTab) ...[
+                                                  _buildSessionSearchBar(t),
+                                                  const SizedBox(height: 10),
+                                                ],
                                                 if (showDateFilter) ...[
                                                   _buildSessionDateFilterRow(
                                                     _tab,
@@ -825,8 +903,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                                   ),
                                                   const SizedBox(height: 12),
                                                 ],
-                                                Align(
-                                                  alignment: Alignment.center,
+                                                Center(
                                                   child: Text(
                                                     t('noData'),
                                                     style: const TextStyle(
@@ -837,6 +914,7 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                                 ),
                                               ],
                                             ),
+                                            ),
                                           ),
                                         );
                                       },
@@ -846,6 +924,11 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
+                                      if (showDateFilter &&
+                                          _showSearchFilterForCurrentTab) ...[
+                                        _buildSessionSearchBar(t),
+                                        const SizedBox(height: 10),
+                                      ],
                                       if (showDateFilter) ...[
                                         _buildSessionDateFilterRow(
                                           _tab,

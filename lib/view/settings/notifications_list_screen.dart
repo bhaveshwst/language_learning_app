@@ -126,8 +126,22 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
+                      final item = items[index];
                       return _NotificationListCard(
-                        message: items[index].displayMessage,
+                        message: item.displayMessage,
+                        isRead: item.readUnread == '1',
+                        onTap: item.notificationId.isEmpty
+                            ? null
+                            : () {
+                                _notificationListingBloc.add(
+                                  MarkNotificationReadUnread(
+                                    studentId: PrefUtils.getstudentid().trim(),
+                                    tutorId: PrefUtils.gettutorid().trim(),
+                                    notificationId: item.notificationId,
+                                    readUnread: item.readUnread == '1' ? '0' : '1',
+                                  ),
+                                );
+                              },
                       );
                     },
                   );
@@ -142,74 +156,105 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
 }
 
 class _NotificationListCard extends StatelessWidget {
-  const _NotificationListCard({required this.message});
+  const _NotificationListCard({
+    required this.message,
+    required this.isRead,
+    this.onTap,
+  });
 
   final String message;
+  final bool isRead;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ConstColor.border.withValues(alpha: 0.65)),
-        boxShadow: [
-          BoxShadow(
-            color: ConstColor.primaryBlue.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: isRead
+              ? Colors.white
+              : ConstColor.primaryBlue.withValues(alpha: 0.035),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isRead
+                ? ConstColor.border.withValues(alpha: 0.65)
+                : ConstColor.primaryBlue.withValues(alpha: 0.35),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 4,
-                color: ConstColor.primaryBlue.withValues(alpha: 0.85),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: ConstColor.primaryBlue.withValues(alpha: 0.1),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_rounded,
-                          color: ConstColor.primaryBlue,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          message,
-                          style: TextStyle(
-                            color: ConstColor.textPrimary.withValues(
-                              alpha: 0.9,
+          boxShadow: [
+            BoxShadow(
+              color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 4,
+                  color: isRead
+                      ? ConstColor.border.withValues(alpha: 0.9)
+                      : ConstColor.primaryBlue.withValues(alpha: 0.85),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isRead
+                                ? ConstColor.textSecondary.withValues(alpha: 0.1)
+                                : ConstColor.primaryBlue.withValues(alpha: 0.16),
+                            border: Border.all(
+                              color: isRead
+                                  ? ConstColor.border.withValues(alpha: 0.8)
+                                  : ConstColor.primaryBlue.withValues(alpha: 0.45),
                             ),
-                            fontSize: 14,
-                            height: 1.4,
-                            fontWeight: FontWeight.w500,
+                          ),
+                          child: Icon(
+                            isRead
+                                ? Icons.notifications_none_rounded
+                                : Icons.notifications_active_rounded,
+                            color: isRead
+                                ? ConstColor.textSecondary.withValues(alpha: 0.9)
+                                : ConstColor.primaryBlue,
+                            size: 22,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: TextStyle(
+                              color: ConstColor.textPrimary.withValues(
+                                alpha: 0.9,
+                              ),
+                              fontSize: 14,
+                              height: 1.4,
+                              fontWeight: isRead
+                                  ? FontWeight.w400
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -27,17 +27,31 @@ class NotificationListingModel {
         .toList();
     return map;
   }
+
+  NotificationListingModel copyWith({
+    String? responseCode,
+    String? detail,
+    List<NotificationListItem>? data,
+  }) {
+    return NotificationListingModel(
+      responseCode: responseCode ?? this.responseCode,
+      detail: detail ?? this.detail,
+      data: data ?? this.data,
+    );
+  }
 }
 
 class NotificationListItem {
   final String notificationId;
   final String message;
   final String raw;
+  final String readUnread;
 
   const NotificationListItem({
     required this.notificationId,
     required this.message,
     required this.raw,
+    required this.readUnread,
   });
 
   String get displayMessage {
@@ -54,6 +68,7 @@ class NotificationListItem {
             .trim(),
         message: (input['message'] ?? '').toString().trim(),
         raw: input.toString(),
+        readUnread: (input['read_unread'] ?? '').toString().trim(),
       );
     }
     if (input is Map) {
@@ -68,6 +83,7 @@ class NotificationListItem {
         notificationId: '',
         message: '',
         raw: '',
+        readUnread: '',
       );
     }
 
@@ -78,6 +94,7 @@ class NotificationListItem {
         notificationId: id,
         message: msg,
         raw: trimmed,
+        readUnread: _extractMapLikeValue(trimmed, 'read_unread'),
       );
     }
 
@@ -85,6 +102,7 @@ class NotificationListItem {
       notificationId: '',
       message: trimmed,
       raw: trimmed,
+      readUnread: '',
     );
   }
 
@@ -104,6 +122,21 @@ class NotificationListItem {
       'notification_id': notificationId,
       'message': message,
       'raw': raw,
+      'read_unread': readUnread,
     };
+  }
+
+  NotificationListItem copyWith({
+    String? notificationId,
+    String? message,
+    String? raw,
+    String? readUnread,
+  }) {
+    return NotificationListItem(
+      notificationId: notificationId ?? this.notificationId,
+      message: message ?? this.message,
+      raw: raw ?? this.raw,
+      readUnread: readUnread ?? this.readUnread,
+    );
   }
 }

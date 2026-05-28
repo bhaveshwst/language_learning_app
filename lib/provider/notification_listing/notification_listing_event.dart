@@ -19,3 +19,20 @@ final class FetchNotificationListing extends NotificationListingEvent {
   @override
   List<Object?> get props => [studentId, tutorId];
 }
+
+final class MarkNotificationReadUnread extends NotificationListingEvent {
+  final String studentId;
+  final String tutorId;
+  final String notificationId;
+  final String readUnread;
+
+  const MarkNotificationReadUnread({
+    required this.studentId,
+    required this.tutorId,
+    required this.notificationId,
+    required this.readUnread,
+  });
+
+  @override
+  List<Object?> get props => [studentId, tutorId, notificationId, readUnread];
+}

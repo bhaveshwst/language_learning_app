@@ -1,7 +1,3 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
-
 class ConstApiUrl {
   ConstApiUrl._();
 
@@ -76,4 +72,6 @@ static const String baseURL =
   static String get liveSessionAnalyticsUrl =>
       '$baseURL/live-session/analytics';
   static String get notificationListingUrl => '$baseURL/notification_listing';
+  static String get notificationReadUnreadUrl =>
+      '$baseURL/notification_read_unread';
 }
