@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +15,7 @@ import 'package:language_learning_app/model/list_tutor_slot_model.dart'
     as tutor_slots;
 import 'package:language_learning_app/provider/delete_tutor_slot/delete_tutor_slot_bloc.dart';
 import 'package:language_learning_app/provider/list_tutor_slot/list_tutor_slot_bloc.dart';
+import 'package:language_learning_app/model/tutor_slot_edit_args.dart';
 import 'package:language_learning_app/view/tutor/screens/tutor_add_slot_screen.dart';
 
 enum TutorSlotListingTab { upcoming, today, past }
@@ -30,6 +32,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   final DeleteTutorSlotBloc _deleteTutorSlotBloc = DeleteTutorSlotBloc();
   TutorSlotListingTab _tab = TutorSlotListingTab.upcoming;
   bool _isDeleteLoaderVisible = false;
+
+  DateTime? _upcomingFilterDate;
+  DateTime? _upcomingPendingFilterDate;
+  DateTime? _todayFilterDate;
+  DateTime? _todayPendingFilterDate;
+  DateTime? _pastFilterDate;
+  DateTime? _pastPendingFilterDate;
 
   static const double _cardRadius = 18;
 
@@ -83,6 +92,21 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     );
   }
 
+  Future<void> _openEditSlot(tutor_slots.Data slot) async {
+    final editArgs = TutorSlotEditArgs.fromSlot(slot);
+    if (editArgs.slotId.isEmpty) return;
+
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TutorAddSlotScreen(editSlot: editArgs),
+      ),
+    );
+    if (updated == true) {
+      _fetchSlots();
+    }
+  }
+
   void _showDeleteLoader() {
     if (_isDeleteLoaderVisible) return;
     _isDeleteLoaderVisible = true;
@@ -97,6 +121,291 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     if (!_isDeleteLoaderVisible) return;
     _isDeleteLoaderVisible = false;
     Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  DateTime? _appliedFilterDateForTab(TutorSlotListingTab tab) {
+    return switch (tab) {
+      TutorSlotListingTab.upcoming => _upcomingFilterDate,
+      TutorSlotListingTab.today => _todayFilterDate,
+      TutorSlotListingTab.past => _pastFilterDate,
+    };
+  }
+
+  DateTime? _pendingFilterDateForTab(TutorSlotListingTab tab) {
+    return switch (tab) {
+      TutorSlotListingTab.upcoming => _upcomingPendingFilterDate,
+      TutorSlotListingTab.today => _todayPendingFilterDate,
+      TutorSlotListingTab.past => _pastPendingFilterDate,
+    };
+  }
+
+  bool _canApplyDateFilterForTab(TutorSlotListingTab tab) {
+    return _pendingFilterDateForTab(tab) != null;
+  }
+
+  bool _canClearDateFilterForTab(TutorSlotListingTab tab) {
+    return _appliedFilterDateForTab(tab) != null ||
+        _pendingFilterDateForTab(tab) != null;
+  }
+
+  String? _dateFilterLabelForTab(TutorSlotListingTab tab, Locale locale) {
+    final date = _pendingFilterDateForTab(tab) ?? _appliedFilterDateForTab(tab);
+    if (date == null) return null;
+    return DateFormat.yMMMd(locale.toString()).format(date);
+  }
+
+  Future<DateTime?> _pickDateInBottomSheet({
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) async {
+    DateTime normalize(DateTime d) => DateTime(d.year, d.month, d.day);
+    final minDate = normalize(firstDate);
+    final maxDate = normalize(lastDate);
+    var selected = normalize(initialDate);
+    if (selected.isBefore(minDate)) selected = minDate;
+    if (selected.isAfter(maxDate)) selected = maxDate;
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        String tx(String key) =>
+            ConstString.text(AppLanguageState.currentLanguage, key);
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: Text(tx('cancel')),
+                      ),
+                      const Spacer(),
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        onPressed: () => Navigator.pop(sheetContext, selected),
+                        child: Text(tx('done')),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: ConstColor.border.withValues(alpha: 0.7),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: selected,
+                    minimumDate: minDate,
+                    maximumDate: maxDate,
+                    onDateTimeChanged: (value) {
+                      selected = normalize(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickSlotFilterDate(TutorSlotListingTab tab) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initial =
+        _pendingFilterDateForTab(tab) ?? _appliedFilterDateForTab(tab) ?? today;
+    final picked = await _pickDateInBottomSheet(
+      initialDate: initial,
+      firstDate: switch (tab) {
+        TutorSlotListingTab.past => today.subtract(const Duration(days: 365 * 10)),
+        TutorSlotListingTab.today => today,
+        TutorSlotListingTab.upcoming => today,
+      },
+      lastDate: switch (tab) {
+        TutorSlotListingTab.past => today,
+        TutorSlotListingTab.today => today,
+        TutorSlotListingTab.upcoming => today.add(const Duration(days: 365 * 2)),
+      },
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      final normalized = DateTime(picked.year, picked.month, picked.day);
+      switch (tab) {
+        case TutorSlotListingTab.upcoming:
+          _upcomingPendingFilterDate = normalized;
+        case TutorSlotListingTab.today:
+          _todayPendingFilterDate = normalized;
+        case TutorSlotListingTab.past:
+          _pastPendingFilterDate = normalized;
+      }
+    });
+  }
+
+  void _applySlotDateFilter(TutorSlotListingTab tab) {
+    final pending = _pendingFilterDateForTab(tab);
+    if (pending == null) return;
+    setState(() {
+      switch (tab) {
+        case TutorSlotListingTab.upcoming:
+          _upcomingFilterDate = pending;
+        case TutorSlotListingTab.today:
+          _todayFilterDate = pending;
+        case TutorSlotListingTab.past:
+          _pastFilterDate = pending;
+      }
+    });
+  }
+
+  void _clearSlotDateFilter(TutorSlotListingTab tab) {
+    setState(() {
+      switch (tab) {
+        case TutorSlotListingTab.upcoming:
+          _upcomingFilterDate = null;
+          _upcomingPendingFilterDate = null;
+        case TutorSlotListingTab.today:
+          _todayFilterDate = null;
+          _todayPendingFilterDate = null;
+        case TutorSlotListingTab.past:
+          _pastFilterDate = null;
+          _pastPendingFilterDate = null;
+      }
+    });
+  }
+
+  bool _tabHasSlots(List<tutor_slots.Data> slots, TutorSlotListingTab tab) {
+    return _slotsForTab(slots, tab).isNotEmpty;
+  }
+
+  Widget _buildSlotDateFilterRow(
+    TutorSlotListingTab tab,
+    Locale locale,
+    String Function(String) t,
+  ) {
+    final dateLabel = _dateFilterLabelForTab(tab, locale);
+    final filterEnabled = _canApplyDateFilterForTab(tab);
+    final clearEnabled = _canClearDateFilterForTab(tab);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Material(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _pickSlotFilterDate(tab),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: ConstColor.border.withValues(alpha: 0.85),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dateLabel ?? t('selectDate'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: dateLabel == null
+                              ? ConstColor.textSecondary.withValues(alpha: 0.8)
+                              : ConstColor.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: ConstColor.primaryBlue.withValues(alpha: 0.9),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: filterEnabled
+              ? ConstColor.primaryBlue
+              : ConstColor.primaryBlue.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: filterEnabled ? () => _applySlotDateFilter(tab) : null,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Tooltip(
+                message: t('filter'),
+                child: Center(
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: Colors.white.withValues(
+                      alpha: filterEnabled ? 1 : 0.7,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: clearEnabled ? () => _clearSlotDateFilter(tab) : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: ConstColor.border.withValues(alpha: 0.85),
+                ),
+              ),
+              child: Tooltip(
+                message: t('clear'),
+                child: Center(
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: clearEnabled
+                        ? ConstColor.textSecondary.withValues(alpha: 0.9)
+                        : ConstColor.textSecondary.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -195,7 +504,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     selected: _tab,
                     onChanged: (value) => setState(() => _tab = value),
                   ),
-                  const SizedBox(height: ConstSize.grid * 2),
+                  const SizedBox(height: ConstSize.grid * 1.25),
                   BlocBuilder<ListTutorSlotBloc, ListTutorSlotState>(
                     builder: (context, state) {
                       if (state is ListTutorSlotInitial) {
@@ -213,31 +522,60 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         return _ErrorCallout(message: state.message);
                       }
                       if (state is ListTutorSlotSuccess) {
-                        final slots = state.listTutorSlotModel.data ?? [];
-                        final filtered = _slotsForTab(slots, _tab);
-                        if (filtered.isEmpty) {
-                          return const _EmptySlotsPlaceholder();
-                        }
                         return ValueListenableBuilder<AppLanguage>(
                           valueListenable: AppLanguageState.current,
                           builder: (context, language, _) {
+                            String t(String key) =>
+                                ConstString.text(language, key);
                             final locale = Localizations.localeOf(context);
-                            final dateGroups = _groupSlotsByDate(filtered);
-                            return ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: dateGroups.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: ConstSize.grid * 1.25),
-                              itemBuilder: (context, index) {
-                                return _AvailabilityDateCard(
-                                  group: dateGroups[index],
-                                  locale: locale,
-                                  language: language,
-                                  cardRadius: _cardRadius,
-                                  onDeleteSlot: _confirmAndDelete,
-                                );
-                              },
+                            final slots = state.listTutorSlotModel.data ?? [];
+                            final showDateFilter =
+                                _tab != TutorSlotListingTab.today &&
+                                (_tabHasSlots(slots, _tab) ||
+                                    _canClearDateFilterForTab(_tab));
+                            final tabFiltered = _slotsForTab(slots, _tab);
+                            final filterDate = _tab == TutorSlotListingTab.today
+                                ? null
+                                : _appliedFilterDateForTab(_tab);
+                            final filtered = _filterSlotsByDate(
+                              tabFiltered,
+                              filterDate,
+                            );
+                            final dateGroups = filtered.isEmpty
+                                ? const <_AvailabilityDateGroup>[]
+                                : _groupSlotsByDate(filtered);
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (showDateFilter) ...[
+                                  _buildSlotDateFilterRow(_tab, locale, t),
+                                  const SizedBox(height: 12),
+                                ],
+                                if (dateGroups.isEmpty)
+                                  const _EmptySlotsPlaceholder()
+                                else
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: dateGroups.length,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(
+                                          height: ConstSize.grid * 1.25,
+                                        ),
+                                    itemBuilder: (context, index) {
+                                      return _AvailabilityDateCard(
+                                        group: dateGroups[index],
+                                        locale: locale,
+                                        language: language,
+                                        cardRadius: _cardRadius,
+                                        onDeleteSlot: _confirmAndDelete,
+                                        onEditSlot: _openEditSlot,
+                                      );
+                                    },
+                                  ),
+                              ],
                             );
                           },
                         );
@@ -280,6 +618,24 @@ DateTime? _slotLocalDate(tutor_slots.Data slot) {
 DateTime _todayDateOnly() {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
+}
+
+List<tutor_slots.Data> _filterSlotsByDate(
+  List<tutor_slots.Data> slots,
+  DateTime? filterDate,
+) {
+  if (filterDate == null) return slots;
+  final filterDateKey = _formatDateKeyFromDateTime(filterDate);
+  return slots
+      .where((slot) => _slotDateKey(slot) == filterDateKey)
+      .toList();
+}
+
+String _formatDateKeyFromDateTime(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
 }
 
 List<tutor_slots.Data> _slotsForTab(
@@ -496,6 +852,7 @@ class _AvailabilityDateCard extends StatelessWidget {
     required this.language,
     required this.cardRadius,
     required this.onDeleteSlot,
+    required this.onEditSlot,
   });
 
   final _AvailabilityDateGroup group;
@@ -503,6 +860,7 @@ class _AvailabilityDateCard extends StatelessWidget {
   final AppLanguage language;
   final double cardRadius;
   final Future<void> Function(String slotId) onDeleteSlot;
+  final Future<void> Function(tutor_slots.Data slot) onEditSlot;
 
   @override
   Widget build(BuildContext context) {
@@ -640,6 +998,7 @@ class _AvailabilityDateCard extends StatelessWidget {
                               slot: group.slots[i],
                               locale: locale,
                               language: language,
+                              onEdit: () => onEditSlot(group.slots[i]),
                               onDelete: () async {
                                 final slotId =
                                     (group.slots[i].slotid ?? '').trim();
@@ -666,12 +1025,14 @@ class _AvailabilitySlotSection extends StatelessWidget {
     required this.slot,
     required this.locale,
     required this.language,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final tutor_slots.Data slot;
   final Locale locale;
   final AppLanguage language;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -687,7 +1048,8 @@ class _AvailabilitySlotSection extends StatelessWidget {
     final statusLower = slot.status?.toLowerCase() ?? '';
     final statusLabel = _slotStatusLabel(slot.status, language);
     final accentColor = _slotAccentColor(statusLower);
-    final canDelete = statusLower == 'open';
+    final canEdit = statusLower == 'open';
+    final canDelete = canEdit;
     final chipBg = accentColor.withValues(alpha: 0.12);
     final chipBorder = accentColor.withValues(alpha: 0.35);
 
@@ -809,23 +1171,47 @@ class _AvailabilitySlotSection extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (canDelete)
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                              tooltip: MaterialLocalizations.of(
-                                context,
-                              ).deleteButtonTooltip,
-                              onPressed: onDelete,
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                color: ConstColor.error,
-                                size: 22,
-                              ),
+                          if (canEdit || canDelete)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (canEdit)
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    tooltip: ConstString.text(language, 'edit'),
+                                    onPressed: onEdit,
+                                    icon: Icon(
+                                      Icons.edit_outlined,
+                                      color: ConstColor.primaryBlue.withValues(
+                                        alpha: 0.95,
+                                      ),
+                                      size: 22,
+                                    ),
+                                  ),
+                                if (canDelete)
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    tooltip: MaterialLocalizations.of(
+                                      context,
+                                    ).deleteButtonTooltip,
+                                    onPressed: onDelete,
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: ConstColor.error,
+                                      size: 22,
+                                    ),
+                                  ),
+                              ],
                             ),
                         ],
                       ),

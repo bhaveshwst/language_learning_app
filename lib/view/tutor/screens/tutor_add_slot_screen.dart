@@ -11,11 +11,14 @@ import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_dropdown_button2.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
+import 'package:language_learning_app/model/tutor_slot_edit_args.dart';
 import 'package:language_learning_app/provider/tutor_add_slot/tutor_add_slot_bloc.dart';
 import 'package:language_learning_app/provider/tutor_topics/tutor_topics_bloc.dart';
 
 class TutorAddSlotScreen extends StatefulWidget {
-  const TutorAddSlotScreen({super.key});
+  const TutorAddSlotScreen({super.key, this.editSlot});
+
+  final TutorSlotEditArgs? editSlot;
 
   @override
   State<TutorAddSlotScreen> createState() => _TutorAddSlotScreenState();
@@ -33,11 +36,85 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
   final TutorAddSlotBloc _tutorAddSlotBloc = TutorAddSlotBloc();
   dynamic _selectedTopic;
   String? _topicErrorKey;
+  String? _pendingEditTopicLabel;
+
+  bool get _isEditing => widget.editSlot != null;
 
   @override
   void initState() {
     super.initState();
+    _prefillFromEditSlot();
     _tutorTopicsBloc.add(TutorTopicsProvider(tutorID: PrefUtils.gettutorid()));
+  }
+
+  void _prefillFromEditSlot() {
+    final edit = widget.editSlot;
+    if (edit == null) return;
+
+    _pendingEditTopicLabel = edit.topic;
+    _shortDescriptionController.text = edit.shortDescription;
+
+    if (edit.date.isNotEmpty) {
+      _dateController.text = edit.date;
+      try {
+        _selectedDate = DateTime.parse(edit.date);
+      } catch (_) {}
+    }
+
+    final start = _parseApiTime(edit.startTime);
+    final end = _parseApiTime(edit.endTime);
+    if (start != null) {
+      _selectedStartTime = start;
+    }
+    if (end != null) {
+      _selectedEndTime = end;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final locale = Localizations.localeOf(context);
+      if (_selectedStartTime != null && _startTimeController.text.isEmpty) {
+        _startTimeController.text = _formatTime12hDisplay(
+          _selectedStartTime!,
+          locale,
+        );
+      }
+      if (_selectedEndTime != null && _endTimeController.text.isEmpty) {
+        _endTimeController.text = _formatTime12hDisplay(
+          _selectedEndTime!,
+          locale,
+        );
+      }
+    });
+  }
+
+  TimeOfDay? _parseApiTime(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    final parts = trimmed.split(':');
+    if (parts.isEmpty) return null;
+    final hour = int.tryParse(parts[0]);
+    if (hour == null) return null;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  void _syncTopicSelectionFromEdit(List<dynamic> topics) {
+    final pending = _pendingEditTopicLabel?.trim();
+    if (pending == null || pending.isEmpty || _selectedTopic != null) {
+      return;
+    }
+    dynamic match;
+    for (final topic in topics) {
+      if (_topicLabel(topic).trim().toLowerCase() == pending.toLowerCase()) {
+        match = topic;
+        break;
+      }
+    }
+    setState(() {
+      _selectedTopic = match ?? pending;
+      _pendingEditTopicLabel = null;
+    });
   }
 
   DateTime? _selectedDate;
@@ -297,20 +374,40 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
     if (!isValid) {
       return;
     }
-    _tutorAddSlotBloc.add(
-      TutorAddSlotProvider(
-        tutorID: PrefUtils.gettutorid(),
-        date: _dateController.text,
-        startTime: _selectedStartTime != null
-            ? _formatTime24h(_selectedStartTime!)
-            : '',
-        endTime: _selectedEndTime != null
-            ? _formatTime24h(_selectedEndTime!)
-            : '',
-        topic: _selectedTopic,
-        description: _shortDescriptionController.text,
-      ),
-    );
+    final tutorId = PrefUtils.gettutorid();
+    final topic = _topicLabel(_selectedTopic).trim();
+    final date = _dateController.text;
+    final startTime = _selectedStartTime != null
+        ? _formatTime24h(_selectedStartTime!)
+        : '';
+    final endTime =
+        _selectedEndTime != null ? _formatTime24h(_selectedEndTime!) : '';
+    final description = _shortDescriptionController.text;
+
+    if (_isEditing) {
+      _tutorAddSlotBloc.add(
+        TutorEditSlotProvider(
+          tutorID: tutorId,
+          slotId: widget.editSlot!.slotId,
+          date: date,
+          startTime: startTime,
+          endTime: endTime,
+          topic: topic,
+          description: description,
+        ),
+      );
+    } else {
+      _tutorAddSlotBloc.add(
+        TutorAddSlotProvider(
+          tutorID: tutorId,
+          date: date,
+          startTime: startTime,
+          endTime: endTime,
+          topic: topic,
+          description: description,
+        ),
+      );
+    }
     // Navigator.pop(context);
   }
 
@@ -395,9 +492,9 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
           backgroundColor: ConstColor.background,
           foregroundColor: ConstColor.textPrimary,
           surfaceTintColor: Colors.transparent,
-          title: const AppText(
-            'addSlot',
-            style: TextStyle(
+          title: AppText(
+            _isEditing ? 'editSlot' : 'addSlot',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.3,
@@ -444,6 +541,12 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
               final topics = (state.tutorTopicsModel.topics ?? [])
                   .where((e) => _topicLabel(e).trim().isNotEmpty)
                   .toList();
+              if (_pendingEditTopicLabel != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  _syncTopicSelectionFromEdit(topics);
+                });
+              }
               return ColoredBox(
                 color: ConstColor.background,
                 child: SafeArea(
@@ -457,11 +560,11 @@ class _TutorAddSlotScreenState extends State<TutorAddSlotScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 12),
                           child: AppText(
-                            'addSlotDetails',
-                            style: TextStyle(
+                            _isEditing ? 'editSlot' : 'addSlotDetails',
+                            style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.25,

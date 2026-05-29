@@ -34,10 +34,21 @@ class Data {
   String? startTime;
   String? endTime;
   String? topics;
+  String? shortDescription;
   String? status;
   String? timezone;
 
-  Data({this.tutorId, this.date, this.slotid, this.startTime, this.endTime, this.topics, this.status, this.timezone});
+  Data({
+    this.tutorId,
+    this.date,
+    this.slotid,
+    this.startTime,
+    this.endTime,
+    this.topics,
+    this.shortDescription,
+    this.status,
+    this.timezone,
+  });
 
   Data.fromJson(Map<String, dynamic> json) {
     tutorId = json['tutor_id'];
@@ -45,6 +56,7 @@ class Data {
     date = json['date'];
     startTime = json['start_time'];
     endTime = json['end_time'];
+    shortDescription = json['short_description']?.toString();
     final rawTopics = json['topics'] ?? json['topic'];
     if (rawTopics is List) {
       topics = rawTopics.map((e) => e?.toString()).whereType<String>().join(', ');
@@ -63,6 +75,7 @@ class Data {
     data['start_time'] = startTime;
     data['end_time'] = endTime;
     data['topics'] = topics;
+    data['short_description'] = shortDescription;
     data['status'] = status;
     data['timezone'] = timezone;
     return data;
