@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
+import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
+import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/notification_listing_model.dart';
@@ -12,7 +14,8 @@ class NotificationsListScreen extends StatefulWidget {
   const NotificationsListScreen({super.key});
 
   @override
-  State<NotificationsListScreen> createState() => _NotificationsListScreenState();
+  State<NotificationsListScreen> createState() =>
+      _NotificationsListScreenState();
 }
 
 class _NotificationsListScreenState extends State<NotificationsListScreen> {
@@ -74,83 +77,178 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
                 ConstSize.grid * 2,
               ),
               child:
-                  BlocBuilder<NotificationListingBloc, NotificationListingState>(
-                builder: (context, state) {
-                  if (state is NotificationListingInitial ||
-                      state is NotificationListingLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: ConstColor.primaryBlue,
-                        ),
-                      ),
-                    );
-                  }
-
-                  final items = state is NotificationListingSuccess
-                      ? (state.model.data ?? const <NotificationListItem>[])
-                      : const <NotificationListItem>[];
-
-                  if (items.isEmpty) {
-                    return Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: ConstSize.grid * 3,
-                          vertical: ConstSize.grid * 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: ConstColor.border.withValues(alpha: 0.65),
+                  BlocBuilder<
+                    NotificationListingBloc,
+                    NotificationListingState
+                  >(
+                    builder: (context, state) {
+                      if (state is NotificationListingInitial ||
+                          state is NotificationListingLoading) {
+                        return const Center(
+                          child: SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: ConstColor.primaryBlue,
+                            ),
                           ),
-                        ),
-                        child: const AppText(
-                          'notificationsEmpty',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: ConstColor.textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+                        );
+                      }
 
-                  return ListView.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return _NotificationListCard(
-                        message: item.displayMessage,
-                        isRead: item.readUnread == '1',
-                        onTap: item.notificationId.isEmpty
-                            ? null
-                            : () {
-                                _notificationListingBloc.add(
-                                  MarkNotificationReadUnread(
-                                    studentId: PrefUtils.getstudentid().trim(),
-                                    tutorId: PrefUtils.gettutorid().trim(),
-                                    notificationId: item.notificationId,
-                                    readUnread: item.readUnread == '1' ? '0' : '1',
-                                  ),
-                                );
-                              },
+                      final items = state is NotificationListingSuccess
+                          ? (state.model.data ?? const <NotificationListItem>[])
+                          : const <NotificationListItem>[];
+
+                      if (items.isEmpty) {
+                        return Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: ConstSize.grid * 3,
+                              vertical: ConstSize.grid * 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: ConstColor.border.withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
+                            ),
+                            child: const AppText(
+                              'notificationsEmpty',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: ConstColor.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ValueListenableBuilder<AppLanguage>(
+                        valueListenable: AppLanguageState.current,
+                        builder: (context, language, _) {
+                          String t(String key) =>
+                              ConstString.text(language, key);
+
+                          return ListView.separated(
+                            itemCount: items.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 14),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return _NotificationListCard(
+                                message: item.displayMessage,
+                                kind: item.kind,
+                                typeLabel: _typeLabelFor(item.kind, t),
+                                isRead: item.readUnread == '1',
+                                onTap: item.notificationId.isEmpty
+                                    ? null
+                                    : () {
+                                        _notificationListingBloc.add(
+                                          MarkNotificationReadUnread(
+                                            studentId: PrefUtils.getstudentid()
+                                                .trim(),
+                                            tutorId: PrefUtils.gettutorid()
+                                                .trim(),
+                                            notificationId: item.notificationId,
+                                            readUnread: item.readUnread == '1'
+                                                ? '0'
+                                                : '1',
+                                          ),
+                                        );
+                                      },
+                              );
+                            },
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  String _typeLabelFor(NotificationKind kind, String Function(String) t) {
+    return switch (kind) {
+      NotificationKind.sessionStart => t('notificationSessionStart'),
+      NotificationKind.sessionCancel => t('notificationSessionCancel'),
+      NotificationKind.general => '',
+    };
+  }
+}
+
+class _NotificationVisualStyle {
+  const _NotificationVisualStyle({
+    required this.accent,
+    required this.icon,
+    required this.cardBackground,
+    required this.unreadBackground,
+    required this.border,
+    required this.iconBackground,
+    required this.iconBorder,
+  });
+
+  final Color accent;
+  final IconData icon;
+  final Color cardBackground;
+  final Color unreadBackground;
+  final Color border;
+  final Color iconBackground;
+  final Color iconBorder;
+
+  static _NotificationVisualStyle forKind(NotificationKind kind, bool isRead) {
+    final accent = switch (kind) {
+      NotificationKind.sessionStart => ConstColor.success,
+      NotificationKind.sessionCancel => ConstColor.error,
+      NotificationKind.general => ConstColor.primaryBlue,
+    };
+
+    final icon = switch (kind) {
+      NotificationKind.sessionStart => Icons.play_circle_rounded,
+      NotificationKind.sessionCancel => Icons.event_busy_rounded,
+      NotificationKind.general =>
+        isRead
+            ? Icons.notifications_none_rounded
+            : Icons.notifications_active_rounded,
+    };
+
+    final cardBackground = switch (kind) {
+      NotificationKind.sessionStart => ConstColor.success.withValues(
+        alpha: 0.01,
+      ),
+      NotificationKind.sessionCancel => ConstColor.error.withValues(
+        alpha: 0.01,
+      ),
+      NotificationKind.general => Colors.white,
+    };
+
+    final unreadBackground = switch (kind) {
+      NotificationKind.sessionStart => ConstColor.success.withValues(
+        alpha: 0.12,
+      ),
+      NotificationKind.sessionCancel => ConstColor.error.withValues(alpha: 0.1),
+      NotificationKind.general => ConstColor.primaryBlue.withValues(
+        alpha: 0.035,
+      ),
+    };
+
+    return _NotificationVisualStyle(
+      accent: accent,
+      icon: icon,
+      cardBackground: isRead ? cardBackground : unreadBackground,
+      unreadBackground: unreadBackground,
+      border: accent.withValues(alpha: isRead ? 0.28 : 0.42),
+      iconBackground: accent.withValues(alpha: isRead ? 0.12 : 0.18),
+      iconBorder: accent.withValues(alpha: isRead ? 0.35 : 0.5),
     );
   }
 }
@@ -158,34 +256,34 @@ class _NotificationsListScreenState extends State<NotificationsListScreen> {
 class _NotificationListCard extends StatelessWidget {
   const _NotificationListCard({
     required this.message,
+    required this.kind,
+    required this.typeLabel,
     required this.isRead,
     this.onTap,
   });
 
   final String message;
+  final NotificationKind kind;
+  final String typeLabel;
   final bool isRead;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final style = _NotificationVisualStyle.forKind(kind, isRead);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: isRead
-              ? Colors.white
-              : ConstColor.primaryBlue.withValues(alpha: 0.035),
+          color: style.cardBackground,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isRead
-                ? ConstColor.border.withValues(alpha: 0.65)
-                : ConstColor.primaryBlue.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: style.border),
           boxShadow: [
             BoxShadow(
-              color: ConstColor.primaryBlue.withValues(alpha: 0.06),
+              color: style.accent.withValues(alpha: 0.08),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -197,12 +295,7 @@ class _NotificationListCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 4,
-                  color: isRead
-                      ? ConstColor.border.withValues(alpha: 0.9)
-                      : ConstColor.primaryBlue.withValues(alpha: 0.85),
-                ),
+                Container(width: 4, color: style.accent),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
@@ -210,43 +303,60 @@ class _NotificationListCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isRead
-                                ? ConstColor.textSecondary.withValues(alpha: 0.1)
-                                : ConstColor.primaryBlue.withValues(alpha: 0.16),
-                            border: Border.all(
-                              color: isRead
-                                  ? ConstColor.border.withValues(alpha: 0.8)
-                                  : ConstColor.primaryBlue.withValues(alpha: 0.45),
-                            ),
+                            color: style.iconBackground,
+                            border: Border.all(color: style.iconBorder),
                           ),
                           child: Icon(
-                            isRead
-                                ? Icons.notifications_none_rounded
-                                : Icons.notifications_active_rounded,
-                            color: isRead
-                                ? ConstColor.textSecondary.withValues(alpha: 0.9)
-                                : ConstColor.primaryBlue,
-                            size: 22,
+                            style.icon,
+                            color: style.accent,
+                            size: 20,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            message,
-                            style: TextStyle(
-                              color: ConstColor.textPrimary.withValues(
-                                alpha: 0.9,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (typeLabel.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: style.accent.withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    typeLabel,
+                                    style: TextStyle(
+                                      color: style.accent,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.15,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              Text(
+                                message,
+                                style: TextStyle(
+                                  color: ConstColor.textPrimary.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                  fontSize: 14,
+                                  height: 1.4,
+                                  fontWeight: isRead
+                                      ? FontWeight.w400
+                                      : FontWeight.w600,
+                                ),
                               ),
-                              fontSize: 14,
-                              height: 1.4,
-                              fontWeight: isRead
-                                  ? FontWeight.w400
-                                  : FontWeight.w600,
-                            ),
+                            ],
                           ),
                         ),
                       ],

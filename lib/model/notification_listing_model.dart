@@ -41,18 +41,47 @@ class NotificationListingModel {
   }
 }
 
+enum NotificationKind {
+  sessionStart,
+  sessionCancel,
+  general,
+}
+
 class NotificationListItem {
   final String notificationId;
   final String message;
   final String raw;
   final String readUnread;
+  final String notificationType;
 
   const NotificationListItem({
     required this.notificationId,
     required this.message,
     required this.raw,
     required this.readUnread,
+    this.notificationType = '',
   });
+
+  NotificationKind get kind {
+    final type = notificationType.toLowerCase();
+    final text = displayMessage.toLowerCase();
+    if (_matchesCancel(type) || _matchesCancel(text)) {
+      return NotificationKind.sessionCancel;
+    }
+    if (_matchesStart(type) || _matchesStart(text)) {
+      return NotificationKind.sessionStart;
+    }
+    return NotificationKind.general;
+  }
+
+  static bool _matchesCancel(String value) {
+    return value.contains('cancel') || value.contains('cancelled');
+  }
+
+  static bool _matchesStart(String value) {
+    if (value.contains('cancel')) return false;
+    return value.contains('start') || value.contains('started');
+  }
 
   String get displayMessage {
     final msg = message.trim();
@@ -69,6 +98,7 @@ class NotificationListItem {
         message: (input['message'] ?? '').toString().trim(),
         raw: input.toString(),
         readUnread: (input['read_unread'] ?? '').toString().trim(),
+        notificationType: _parseNotificationType(input),
       );
     }
     if (input is Map) {
@@ -84,6 +114,7 @@ class NotificationListItem {
         message: '',
         raw: '',
         readUnread: '',
+        notificationType: '',
       );
     }
 
@@ -95,6 +126,9 @@ class NotificationListItem {
         message: msg,
         raw: trimmed,
         readUnread: _extractMapLikeValue(trimmed, 'read_unread'),
+        notificationType: _extractMapLikeValue(trimmed, 'notification_type').isNotEmpty
+            ? _extractMapLikeValue(trimmed, 'notification_type')
+            : _extractMapLikeValue(trimmed, 'type'),
       );
     }
 
@@ -103,7 +137,21 @@ class NotificationListItem {
       message: trimmed,
       raw: trimmed,
       readUnread: '',
+      notificationType: '',
     );
+  }
+
+  static String _parseNotificationType(Map<String, dynamic> input) {
+    for (final key in [
+      'notification_type',
+      'notificationType',
+      'type',
+      'title',
+    ]) {
+      final value = (input[key] ?? '').toString().trim();
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   static String _extractMapLikeValue(String source, String key) {
@@ -123,6 +171,7 @@ class NotificationListItem {
       'message': message,
       'raw': raw,
       'read_unread': readUnread,
+      'notification_type': notificationType,
     };
   }
 
@@ -131,12 +180,14 @@ class NotificationListItem {
     String? message,
     String? raw,
     String? readUnread,
+    String? notificationType,
   }) {
     return NotificationListItem(
       notificationId: notificationId ?? this.notificationId,
       message: message ?? this.message,
       raw: raw ?? this.raw,
       readUnread: readUnread ?? this.readUnread,
+      notificationType: notificationType ?? this.notificationType,
     );
   }
 }

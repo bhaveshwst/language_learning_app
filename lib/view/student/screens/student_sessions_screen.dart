@@ -442,37 +442,39 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                                   ),
                                                   const SizedBox(height: 12),
                                                 ],
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                    horizontal:
-                                                        ConstSize.grid * 3,
-                                                    vertical:
-                                                        ConstSize.grid * 2.5,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      16,
+                                                Center(
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          ConstSize.grid * 3,
+                                                      vertical:
+                                                          ConstSize.grid * 2.5,
                                                     ),
-                                                    border: Border.all(
-                                                      color: ConstColor.border
-                                                          .withValues(
-                                                        alpha: 0.65,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        16,
+                                                      ),
+                                                      border: Border.all(
+                                                        color: ConstColor.border
+                                                            .withValues(
+                                                          alpha: 0.65,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  child: Text(
-                                                    t('noData'),
-                                                    style: const TextStyle(
-                                                      color: ConstColor
-                                                          .textSecondary,
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                                    child: Text(
+                                                      t('noData'),
+                                                      style: const TextStyle(
+                                                        color: ConstColor
+                                                            .textSecondary,
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                      textAlign: TextAlign.center,
                                                     ),
-                                                    textAlign: TextAlign.center,
                                                   ),
                                                 ),
                                               ],
