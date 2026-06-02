@@ -102,7 +102,31 @@ class _AppBootstrapState extends State<_AppBootstrap> {
             ),
           ]);
 
-      await FirebaseMessaging.instance.requestPermission();
+      final fcmSettings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
+
+      final isAwesomeAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (!isAwesomeAllowed) {
+        await AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          'FCM notification permission: ${fcmSettings.authorizationStatus.name}',
+        );
+      }
 
       final startupToken = await _fetchFcmTokenWithRetry();
       if (startupToken != null) {
