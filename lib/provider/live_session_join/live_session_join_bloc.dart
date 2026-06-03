@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/client_cookie.dart';
 import 'package:language_learning_app/core/constants/const_api_url.dart';
+import 'package:language_learning_app/core/device/app_device_info.dart';
 import 'package:language_learning_app/model/live_session_join_model.dart';
 
 part 'live_session_join_event.dart';
@@ -102,6 +103,7 @@ class LiveSessionJoinBloc
         'longitude': event.longitude,
         'address': event.address,
         'wait_for_host': event.waitForHost,
+        'device_name': deviceInfo,
       },
     );
     final decoded = jsonDecode(response.body);

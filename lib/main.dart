@@ -22,7 +22,12 @@ import 'package:language_learning_app/view/force_update_screen.dart';
 import 'package:language_learning_app/core/widgets/connectivity_overlay.dart';
 import 'package:language_learning_app/core/navigation/app_navigator.dart';
 
+import 'package:language_learning_app/core/device/app_device_info.dart';
+
 import 'firebase_options.dart';
+
+export 'package:language_learning_app/core/device/app_device_info.dart'
+    show deviceInfo, loadAppDeviceInfo;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +70,8 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
       // Shared Preferences init
       await PrefUtils.init();
+
+      await loadAppDeviceInfo();
 
       _initializeNotifications();
 
@@ -344,4 +351,3 @@ class MyApp extends StatelessWidget {
 }
 
 int zegoAppID = 1896143529;
-String deviceInfo = '';

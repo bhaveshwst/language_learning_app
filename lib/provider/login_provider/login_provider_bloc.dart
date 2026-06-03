@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import 'package:language_learning_app/core/constants/client_cookie.dart';
 import 'package:language_learning_app/core/constants/const_api_url.dart';
+import 'package:language_learning_app/core/device/app_device_info.dart';
 import 'package:language_learning_app/model/signup_model/login_model.dart';
 
 part 'login_provider_event.dart';
@@ -22,6 +23,7 @@ class LoginProviderBloc extends Bloc<LoginProviderEvent, LoginProviderState> {
           
           body: {
             "email": event.email,
+            "device_name": deviceInfo,
           },
         );
         debugPrint('Login statusCode => ${reponse.statusCode}');
