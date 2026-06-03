@@ -38,6 +38,7 @@ class PrefUtils {
   static const String tutorid = "tutor_id";
   static const String studentid = "student_id";
   static const String fcmToken = "fcm_token";
+  static const String lastAppVersion = "last_app_version";
   // Set Token
   static Future setToken(String token) async {
     await _preferences?.setString(accessTokenKey, token);
@@ -145,6 +146,14 @@ class PrefUtils {
   }
   static String getstudentid() {
     return _preferences?.getString(studentid) ?? "";
+  }
+
+  static Future setLastAppVersion(String value) async {
+    await _preferences?.setString(lastAppVersion, value);
+  }
+
+  static String getLastAppVersion() {
+    return _preferences?.getString(lastAppVersion) ?? "";
   }
 
   // Clear All Preferences

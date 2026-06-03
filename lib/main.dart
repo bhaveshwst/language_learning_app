@@ -344,3 +344,4 @@ class MyApp extends StatelessWidget {
 }
 
 int zegoAppID = 1896143529;
+String deviceInfo = '';

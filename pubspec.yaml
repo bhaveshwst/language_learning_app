@@ -58,6 +58,7 @@ dependencies:
   geocoding: ^4.0.0
   image_picker: ^1.2.2
   image_cropper: ^12.2.1
+  device_info_plus:
   # freezed_annotation: ^3.1.0
 
 

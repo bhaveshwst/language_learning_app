@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/auth/student_auth_gate.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
@@ -32,6 +37,7 @@ class StudentHomeDashboardScreen extends StatefulWidget {
 
 class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     with WidgetsBindingObserver {
+      static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
   final TextEditingController _searchController = TextEditingController();
   final RecommendedTutorBloc _recommendedTutorBloc = RecommendedTutorBloc();
   final GetStudentProfileBloc _getStudentProfileBloc = GetStudentProfileBloc();
@@ -112,6 +118,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   @override
   void initState() {
     super.initState();
+    _deviceName();
     _getLocation();
     if (!widget.isGuest) {
       final studentId = PrefUtils.getstudentid().trim();
@@ -132,6 +139,38 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
     WidgetsBinding.instance.addObserver(this);
   }
+
+    Future<void> _deviceName() async {
+    final appVersion = await AppVersionInfo.versionString;
+    try {
+      if (Platform.isIOS) {
+        _getIOSDeviceInfo(await deviceInfoPlugin.iosInfo, appVersion);
+      } else if (Platform.isAndroid) {
+        _getAndroidDeviceInfo(await deviceInfoPlugin.androidInfo, appVersion);
+      }
+    } on PlatformException {
+      deviceInfo = 'Error: Failed to get platform data';
+    }
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _getIOSDeviceInfo(IosDeviceInfo data, String appVersion) {
+    deviceInfo =
+        '${data.model}_${data.name.toString().replaceAll(" ", "_")}_${data.systemName}_${data.systemVersion}_KONNECTED_APP_($appVersion)';
+    if (kDebugMode) {
+      print('iOS Device Info: $deviceInfo');
+    }
+  }
+
+  void _getAndroidDeviceInfo(AndroidDeviceInfo data, String appVersion) {
+    deviceInfo =
+        '${data.brand}_${data.model}_${data.device}_${data.version.release}_KONNECTED_APP_($appVersion)';
+    if (kDebugMode) {
+      print('Android Device Info: $deviceInfo');
+    }
+  }
+
 
   Future<void> _getLocation() async {
     Position position = await _getGeoLocationPosition();

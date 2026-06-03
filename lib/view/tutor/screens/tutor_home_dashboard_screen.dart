@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -39,6 +44,7 @@ class TutorHomeDashboardScreen extends StatefulWidget {
 
 class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     with WidgetsBindingObserver {
+  static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
   final GetTutorProfileBloc _getTutorProfileBloc = GetTutorProfileBloc();
   final TutorSessionsBloc _tutorSessionsBloc = TutorSessionsBloc();
 
@@ -57,6 +63,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
   @override
   void initState() {
     super.initState();
+    _deviceName();
     _getLocation();
     final tutorId = PrefUtils.gettutorid().trim();
     if (tutorId.isNotEmpty) {
@@ -86,6 +93,37 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     _address =
         '${place.street!.isEmpty ? place.name : place.street}, ${place.locality!.isNotEmpty ? place.locality : place.subAdministrativeArea}, ${place.administrativeArea!.isNotEmpty ? place.administrativeArea : place.subLocality}, ${place.postalCode}, ${place.isoCountryCode}';
     setState(() {});
+  }
+
+  Future<void> _deviceName() async {
+    final appVersion = await AppVersionInfo.versionString;
+    try {
+      if (Platform.isIOS) {
+        _getIOSDeviceInfo(await deviceInfoPlugin.iosInfo, appVersion);
+      } else if (Platform.isAndroid) {
+        _getAndroidDeviceInfo(await deviceInfoPlugin.androidInfo, appVersion);
+      }
+    } on PlatformException {
+      deviceInfo = 'Error: Failed to get platform data';
+    }
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _getIOSDeviceInfo(IosDeviceInfo data, String appVersion) {
+    deviceInfo =
+        '${data.model}_${data.name.toString().replaceAll(" ", "_")}_${data.systemName}_${data.systemVersion}_KONNECTED_APP_($appVersion)';
+    if (kDebugMode) {
+      print('iOS Device Info: $deviceInfo');
+    }
+  }
+
+  void _getAndroidDeviceInfo(AndroidDeviceInfo data, String appVersion) {
+    deviceInfo =
+        '${data.brand}_${data.model}_${data.device}_${data.version.release}_KONNECTED_APP_($appVersion)';
+    if (kDebugMode) {
+      print('Android Device Info: $deviceInfo');
+    }
   }
 
   Future<Position> _getGeoLocationPosition() async {
@@ -255,8 +293,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
   Future<void> _pickBookingFilterDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final initial =
-        _pendingBookingFilterDate ?? _bookingFilterDate ?? today;
+    final initial = _pendingBookingFilterDate ?? _bookingFilterDate ?? today;
     final picked = await _pickDateInBottomSheet(
       initialDate: initial,
       firstDate: today,
@@ -414,8 +451,9 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
     DateTime? filterDate,
   }) {
     final search = searchQuery.trim().toLowerCase();
-    final filterDateKey =
-        filterDate == null ? null : _formatDateKey(filterDate);
+    final filterDateKey = filterDate == null
+        ? null
+        : _formatDateKey(filterDate);
 
     var upcoming = rows.where((e) => _effectiveBookingStatus(e) == 'upcoming');
     if (filterDateKey != null) {
@@ -648,9 +686,7 @@ class _TutorHomeDashboardScreenState extends State<TutorHomeDashboardScreen>
                         size: 18,
                         color: clearEnabled
                             ? ConstColor.textSecondary.withValues(alpha: 0.9)
-                            : ConstColor.textSecondary.withValues(
-                                alpha: 0.35,
-                              ),
+                            : ConstColor.textSecondary.withValues(alpha: 0.35),
                       ),
                     ),
                   ),
