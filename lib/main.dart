@@ -160,17 +160,19 @@ class _AppBootstrapState extends State<_AppBootstrap> {
         final notification = message.notification;
         if (notification == null) return;
 
-        await AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            channelKey: 'silent_channel',
-            title: notification.title ?? 'New Notification',
-            body: notification.body ?? '',
-            icon: 'resource://drawable/notification',
-            notificationLayout: NotificationLayout.Default,
-            wakeUpScreen: true,
-          ),
-        );
+       if (defaultTargetPlatform == TargetPlatform.android) {
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        channelKey: 'silent_channel',
+        title: notification.title ?? 'New Notification',
+        body: notification.body ?? '',
+        icon: 'resource://drawable/notification',
+        notificationLayout: NotificationLayout.Default,
+        wakeUpScreen: true,
+      ),
+    );
+  }
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
