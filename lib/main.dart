@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -106,6 +107,11 @@ class _AppBootstrapState extends State<_AppBootstrap> {
               channelDescription: 'App push notifications',
               importance: NotificationImportance.High,
               playSound: true,
+              enableVibration: true,
+              soundSource: Platform.isAndroid
+                  ? 'resource://raw/notification_sound'
+                  : 'notification_sound.wav',
+                  defaultPrivacy: NotificationPrivacy.Public,
             ),
           ]);
 
@@ -117,14 +123,16 @@ class _AppBootstrapState extends State<_AppBootstrap> {
       );
 
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+        await FirebaseMessaging.instance
+            .setForegroundNotificationPresentationOptions(
+              alert: true,
+              badge: true,
+              sound: true,
+            );
       }
 
-      final isAwesomeAllowed = await AwesomeNotifications().isNotificationAllowed();
+      final isAwesomeAllowed = await AwesomeNotifications()
+          .isNotificationAllowed();
       if (!isAwesomeAllowed) {
         await AwesomeNotifications().requestPermissionToSendNotifications();
       }
@@ -160,19 +168,19 @@ class _AppBootstrapState extends State<_AppBootstrap> {
         final notification = message.notification;
         if (notification == null) return;
 
-       if (defaultTargetPlatform == TargetPlatform.android) {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        channelKey: 'silent_channel',
-        title: notification.title ?? 'New Notification',
-        body: notification.body ?? '',
-        icon: 'resource://drawable/notification',
-        notificationLayout: NotificationLayout.Default,
-        wakeUpScreen: true,
-      ),
-    );
-  }
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              channelKey: 'silent_channel',
+              title: notification.title ?? 'New Notification',
+              body: notification.body ?? '',
+              icon: 'resource://drawable/notification',
+              notificationLayout: NotificationLayout.Default,
+              wakeUpScreen: true,
+            ),
+          );
+        }
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
