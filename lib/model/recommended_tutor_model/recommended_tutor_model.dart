@@ -2,6 +2,7 @@ class RecommendedTutorModel {
   String? responseCode;
   dynamic matchLanguage;
   dynamic matchValue;
+  String? toggleKey;
   String? detail;
   Data? data;
 
@@ -9,6 +10,7 @@ class RecommendedTutorModel {
     this.responseCode,
     this.matchLanguage,
     this.matchValue,
+    this.toggleKey,
     this.detail,
     this.data,
   });
@@ -17,6 +19,7 @@ class RecommendedTutorModel {
     responseCode = json['response_code'];
     matchLanguage = json['match_language'];
     matchValue = json['match_value'];
+    toggleKey = json['toggle_key']?.toString();
     detail = json['detail'];
     data = json['data'] != null ? Data.fromJson(json['data']) : null;
   }
@@ -26,6 +29,7 @@ class RecommendedTutorModel {
     data['response_code'] = responseCode;
     data['match_language'] = matchLanguage;
     data['match_value'] = matchValue;
+    data['toggle_key'] = toggleKey;
     data['detail'] = detail;
     if (this.data != null) {
       data['data'] = this.data!.toJson();
@@ -61,6 +65,7 @@ class Tutors {
   String? id;
   String? displayName;
   String? teachesLanguages;
+  String? primaryLanguage;
   List<dynamic>? topics;
   String? nextSlot;
   String? bio;
@@ -69,11 +74,13 @@ class Tutors {
   String? country;
   String? imagepath;
   int? likeDislike;
+  String? tutorspeakprimarylanguage;
 
   Tutors({
     this.id,
     this.displayName,
     this.teachesLanguages,
+    this.primaryLanguage,
     this.country,
     this.topics,
     this.nextSlot,
@@ -82,6 +89,7 @@ class Tutors {
     this.avaragerating,
     this.imagepath,
     this.likeDislike,
+    this.tutorspeakprimarylanguage,
   });
 
   bool get isLiked => likeDislike == 1;
@@ -101,6 +109,7 @@ class Tutors {
     id = json['id'];
     displayName = json['display_name'];
     teachesLanguages = json['teaches_languages'];
+    primaryLanguage = json['primary_language']?.toString();
     topics = json['topics'].cast<String>();
     nextSlot = json['next_slot'];
     bio = json['bio'];
@@ -111,6 +120,7 @@ class Tutors {
     likeDislike = parseLikeDislike(
       json['like_dislike'] ?? json['likedislike'] ?? json['likeDislike'],
     );
+    tutorspeakprimarylanguage = json['tutor_speak_primary_language'];
   }
 
   Tutors copyWith({int? likeDislike}) {
@@ -118,6 +128,7 @@ class Tutors {
       id: id,
       displayName: displayName,
       teachesLanguages: teachesLanguages,
+      primaryLanguage: primaryLanguage,
       country: country,
       topics: topics,
       nextSlot: nextSlot,
@@ -126,6 +137,7 @@ class Tutors {
       avaragerating: avaragerating,
       imagepath: imagepath,
       likeDislike: likeDislike ?? this.likeDislike,
+      tutorspeakprimarylanguage: tutorspeakprimarylanguage ?? tutorspeakprimarylanguage,
     );
   }
 
@@ -134,6 +146,7 @@ class Tutors {
     data['id'] = id;
     data['display_name'] = displayName;
     data['teaches_languages'] = teachesLanguages;
+    data['primary_language'] = primaryLanguage;
     data['topics'] = topics;
     data['next_slot'] = nextSlot;
     data['bio'] = bio;
@@ -142,6 +155,7 @@ class Tutors {
     data['country'] = country;
     data['upload_image'] = imagepath;
     data['like_dislike'] = likeDislike;
+    data['tutor_speak_primary_language'] = tutorspeakprimarylanguage;
     return data;
   }
 }

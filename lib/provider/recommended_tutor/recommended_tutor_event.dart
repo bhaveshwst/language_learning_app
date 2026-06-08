@@ -10,16 +10,31 @@ sealed class RecommendedTutorEvent extends Equatable {
 class FetchRecommendedTutorWithSearch extends RecommendedTutorEvent {
   final String studentId;
   final String search;
-  final String matchLanguage;
+  final String? toggleKey;
 
   const FetchRecommendedTutorWithSearch({
     required this.studentId,
     required this.search,
-    required this.matchLanguage,
+    this.toggleKey,
   });
 
   @override
-  List<Object?> get props => [studentId, search, matchLanguage];
+  List<Object?> get props => [studentId, search, toggleKey];
+}
+
+class SaveTutorSpeakPrimaryLanguageToggle extends RecommendedTutorEvent {
+  final String studentId;
+  final String toggleKey;
+  final String search;
+
+  const SaveTutorSpeakPrimaryLanguageToggle({
+    required this.studentId,
+    required this.toggleKey,
+    required this.search,
+  });
+
+  @override
+  List<Object?> get props => [studentId, toggleKey, search];
 }
 
 class ToggleTutorLikeDislike extends RecommendedTutorEvent {

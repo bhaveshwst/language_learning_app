@@ -39,9 +39,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   final GetStudentProfileBloc _getStudentProfileBloc = GetStudentProfileBloc();
   Timer? _searchDebounce;
 
-  bool _tutorSpeakMyPrimaryLanguage = true;
+  bool? _tutorSpeakMyPrimaryLanguage;
+  bool _isTutorListRefreshing = false;
   bool _showFavoriteTutorsOnly = false;
   String? _selectedTargetLanguage;
+  String? _studentPrimaryLanguage;
 
   String _address = "";
   String _latitude = "";
@@ -49,19 +51,13 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   String t(String key) =>
       ConstString.text(AppLanguageState.currentLanguage, key);
 
-  String get _matchLanguageValue => _tutorSpeakMyPrimaryLanguage ? 'Yes' : 'No';
+  String? get _matchLanguageValue {
+    if (_tutorSpeakMyPrimaryLanguage == null) return null;
+    return _tutorSpeakMyPrimaryLanguage! ? 'Yes' : 'No';
+  }
 
   bool get _canUsePrimaryLanguageFilter =>
       !widget.isGuest && StudentAuthGate.isLoggedIn;
-
-  bool? _parseMatchValue(dynamic v) {
-    if (v == null) return null;
-    if (v is bool) return v;
-    final s = v.toString().trim().toLowerCase();
-    if (s == 'yes' || s == 'true' || s == '1') return true;
-    if (s == 'no' || s == 'false' || s == '0') return false;
-    return null;
-  }
 
   Future<void> _printFcmTokenAfterLogin() async {
     try {
@@ -87,8 +83,51 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     }
   }
 
+  String get _resolvedStudentPrimaryLanguage {
+    final fromState = (_studentPrimaryLanguage ?? '').trim();
+    if (fromState.isNotEmpty) return fromState;
+    return PrefUtils.getprimarylanguage().trim();
+  }
+
+  bool _languageMatchesStudentPrimary(String tutorLanguage, String studentPrimary) {
+    final student = studentPrimary.trim().toLowerCase();
+    if (student.isEmpty) return false;
+
+    final tutor = tutorLanguage.trim().toLowerCase();
+    if (tutor.isEmpty) return false;
+    if (tutor == student) return true;
+
+    return tutor
+        .split(',')
+        .map((part) => part.trim())
+        .any((part) => part == student);
+  }
+
+  String _tutorPrimaryLanguageLabel(Tutors tutor) {
+    final primary = (tutor.primaryLanguage ?? '').trim();
+    if (primary.isNotEmpty) return primary;
+    return (tutor.teachesLanguages ?? '').trim();
+  }
+
+  bool _tutorMatchesPrimaryLanguageFilter(Tutors tutor) {
+    final selection = _tutorSpeakMyPrimaryLanguage;
+    if (selection == null) return true;
+
+    final studentPrimary = _resolvedStudentPrimaryLanguage;
+    if (studentPrimary.isEmpty) return true;
+
+    final tutorLang = _tutorPrimaryLanguageLabel(tutor);
+    final speaksStudentPrimary =
+        _languageMatchesStudentPrimary(tutorLang, studentPrimary);
+
+    return selection ? speaksStudentPrimary : !speaksStudentPrimary;
+  }
+
   List<Tutors> _visibleTutors(List<Tutors>? tutors) {
-    final list = tutors ?? [];
+    var list = tutors ?? [];
+    if (_canUsePrimaryLanguageFilter && _tutorSpeakMyPrimaryLanguage != null) {
+      list = list.where(_tutorMatchesPrimaryLanguageFilter).toList();
+    }
     if (!_showFavoriteTutorsOnly) return list;
     return list.where((t) => t.isLiked).toList();
   }
@@ -114,6 +153,10 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   @override
   void initState() {
     super.initState();
+    final cachedPrimary = PrefUtils.getprimarylanguage().trim();
+    if (cachedPrimary.isNotEmpty) {
+      _studentPrimaryLanguage = cachedPrimary;
+    }
     _deviceName();
     _getLocation();
     if (!widget.isGuest) {
@@ -126,7 +169,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
       FetchRecommendedTutorWithSearch(
         studentId: PrefUtils.getstudentid(),
         search: "",
-        matchLanguage: _matchLanguageValue,
+        toggleKey: _matchLanguageValue,
       ),
     );
     if (!widget.isGuest) {
@@ -258,9 +301,28 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
       FetchRecommendedTutorWithSearch(
         studentId: PrefUtils.getstudentid(),
         search: _searchController.text.trim(),
-        matchLanguage: _matchLanguageValue,
+        toggleKey: _matchLanguageValue,
       ),
     );
+  }
+
+  void _onPrimaryLanguageToggleChanged(bool value) {
+    setState(() {
+      _tutorSpeakMyPrimaryLanguage = value;
+      _isTutorListRefreshing = true;
+    });
+    final toggleKey = value ? 'Yes' : 'No';
+    if (_canUsePrimaryLanguageFilter) {
+      _recommendedTutorBloc.add(
+        SaveTutorSpeakPrimaryLanguageToggle(
+          studentId: PrefUtils.getstudentid(),
+          toggleKey: toggleKey,
+          search: _searchController.text.trim(),
+        ),
+      );
+      return;
+    }
+    _fetchTutorsForSearch();
   }
 
   @override
@@ -275,6 +337,11 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             BlocListener<GetStudentProfileBloc, GetStudentProfileState>(
               listener: (context, state) async {
                 if (state is GetStudentProfileSuccess) {
+                  final profilePrimary =
+                      (state.model.data?.primaryLanguage ?? '').trim();
+                  if (profilePrimary.isNotEmpty) {
+                    _studentPrimaryLanguage = profilePrimary;
+                  }
                   zegoAppID = state.model.zegoAppID ?? 1896143529;
                   await PrefUtils.setname(state.model.data?.displayName ?? '');
                   await PrefUtils.setimagepath(
@@ -326,14 +393,12 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
             BlocListener<RecommendedTutorBloc, RecommendedTutorState>(
               bloc: _recommendedTutorBloc,
               listener: (context, state) {
-                if (!_canUsePrimaryLanguageFilter) return;
-                if (state is! RecommendedTutorSuccess) return;
-                final apiToggle = _parseMatchValue(
-                  state.recommendedTutorModel.matchValue,
-                );
-                if (apiToggle == null) return;
-                if (apiToggle == _tutorSpeakMyPrimaryLanguage) return;
-                setState(() => _tutorSpeakMyPrimaryLanguage = apiToggle);
+                if (_isTutorListRefreshing &&
+                    (state is RecommendedTutorSuccess ||
+                        state is RecommendedTutorError)) {
+                  setState(() => _isTutorListRefreshing = false);
+                }
+
               },
             ),
           ],
@@ -391,10 +456,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                         right: ConstString.text(language, 'no'),
                         value: _tutorSpeakMyPrimaryLanguage,
                         enabled: _canUsePrimaryLanguageFilter,
-                        onChanged: (v) {
-                          setState(() => _tutorSpeakMyPrimaryLanguage = v);
-                          // _fetchTutorsForSearch();
-                        },
+                        onChanged: _onPrimaryLanguageToggleChanged,
                       ),
 
                       const SizedBox(height: ConstSize.grid * 2),
@@ -487,7 +549,8 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                           if (tutorState is RecommendedTutorInitial) {
                             return SizedBox.shrink();
                           }
-                          if (tutorState is RecommendedTutorLoading) {
+                          if (_isTutorListRefreshing ||
+                              tutorState is RecommendedTutorLoading) {
                             return SizedBox(
                               height: MediaQuery.of(context).size.height * 0.35,
                               child: const Center(
@@ -1007,7 +1070,7 @@ class _YesNoToggle extends StatelessWidget {
   final String label;
   final String left;
   final String right;
-  final bool value;
+  final bool? value;
   final ValueChanged<bool> onChanged;
   final bool enabled;
 
@@ -1046,26 +1109,35 @@ class _YesNoToggle extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _YesNoPill(
-                    label: left,
-                    selected: value,
-                    enabled: enabled,
-                    onTap: enabled ? () => onChanged(true) : null,
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _YesNoPill(
+                      label: left,
+                      selected: value == true,
+                      enabled: enabled,
+                      onTap: enabled ? () => onChanged(true) : null,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _YesNoPill(
-                    label: right,
-                    selected: !value,
-                    enabled: enabled,
-                    onTap: enabled ? () => onChanged(false) : null,
+                  Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: ConstColor.primaryBlue,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: _YesNoPill(
+                      label: right,
+                      selected: value == false,
+                      enabled: enabled,
+                      onTap: enabled ? () => onChanged(false) : null,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

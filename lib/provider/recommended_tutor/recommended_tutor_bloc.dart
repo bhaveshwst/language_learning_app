@@ -13,33 +13,81 @@ class RecommendedTutorBloc
     extends Bloc<RecommendedTutorEvent, RecommendedTutorState> {
   RecommendedTutorBloc() : super(RecommendedTutorInitial()) {
     on<ToggleTutorLikeDislike>(_onToggleTutorLikeDislike);
-    on<FetchRecommendedTutorWithSearch>((event, emit) async {
-      emit(RecommendedTutorLoading());
-      try {
-        final studentId = event.studentId.trim();
-        final body = <String, dynamic>{
-          'search': event.search,
-          'match_language': event.matchLanguage,
-        };
-        if (studentId.isNotEmpty) {
-          body['student_id'] = studentId;
-        }
+    on<SaveTutorSpeakPrimaryLanguageToggle>(_onSaveTutorSpeakPrimaryLanguageToggle);
+    on<FetchRecommendedTutorWithSearch>(_onFetchRecommendedTutorWithSearch);
+  }
 
-        final response = await AppHttpClient.post(
-          ConstApiUrl.recommendedTutorUrl,
-          body: body,
-        );
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          emit(RecommendedTutorSuccess(RecommendedTutorModel.fromJson(data)));
-        } else {
-          final data = jsonDecode(response.body);
-          emit(RecommendedTutorError(data["detail"]));
-        }
-      } catch (e) {
-        emit(RecommendedTutorError(e.toString()));
+  Future<void> _onSaveTutorSpeakPrimaryLanguageToggle(
+    SaveTutorSpeakPrimaryLanguageToggle event,
+    Emitter<RecommendedTutorState> emit,
+  ) async {
+    emit(RecommendedTutorLoading());
+
+    final studentId = event.studentId.trim();
+    if (studentId.isEmpty) {
+      add(
+        FetchRecommendedTutorWithSearch(
+          studentId: studentId,
+          search: event.search,
+          toggleKey: event.toggleKey,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await AppHttpClient.post(
+        ConstApiUrl.tutorSpeakPrimaryLanguageUrl,
+        body: {
+          'student_id': studentId,
+          'toggle_key': event.toggleKey,
+        },
+      );
+    } catch (_) {
+      // Still refresh tutors so the list reflects the local toggle choice.
+    }
+
+    add(
+      FetchRecommendedTutorWithSearch(
+        studentId: studentId,
+        search: event.search,
+        toggleKey: event.toggleKey,
+      ),
+    );
+  }
+
+  Future<void> _onFetchRecommendedTutorWithSearch(
+    FetchRecommendedTutorWithSearch event,
+    Emitter<RecommendedTutorState> emit,
+  ) async {
+    emit(RecommendedTutorLoading());
+    try {
+      final studentId = event.studentId.trim();
+      final body = <String, dynamic>{
+        'search': event.search,
+      };
+      final toggleKey = event.toggleKey?.trim();
+      if (toggleKey != null && toggleKey.isNotEmpty) {
+        body['toggle_key'] = toggleKey;
       }
-    });
+      if (studentId.isNotEmpty) {
+        body['student_id'] = studentId;
+      }
+
+      final response = await AppHttpClient.post(
+        ConstApiUrl.recommendedTutorUrl,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        emit(RecommendedTutorSuccess(RecommendedTutorModel.fromJson(data)));
+      } else {
+        final data = jsonDecode(response.body);
+        emit(RecommendedTutorError(data["detail"]));
+      }
+    } catch (e) {
+      emit(RecommendedTutorError(e.toString()));
+    }
   }
 
   Future<void> _onToggleTutorLikeDislike(
@@ -97,6 +145,7 @@ class RecommendedTutorBloc
       responseCode: model.responseCode,
       matchLanguage: model.matchLanguage,
       matchValue: model.matchValue,
+      toggleKey: model.toggleKey,
       detail: model.detail,
       data: Data(tutors: updatedTutors),
     );
