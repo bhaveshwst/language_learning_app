@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -146,6 +148,42 @@ class PrefUtils {
   }
   static String getstudentid() {
     return _preferences?.getString(studentid) ?? "";
+  }
+
+  static String _userIdFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return '';
+
+      final payloadJson = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final payload = jsonDecode(payloadJson);
+      if (payload is! Map) return '';
+
+      final raw = payload['user_id'] ??
+          payload['userId'] ??
+          payload['sub'] ??
+          payload['student_id'] ??
+          payload['id'];
+      return raw?.toString().trim() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// Student id from prefs, falling back to the signed-in JWT when prefs are empty.
+  static String getResolvedStudentId() {
+    final fromPrefs = getstudentid().trim();
+    if (fromPrefs.isNotEmpty) return fromPrefs;
+    return _userIdFromToken(getToken().trim());
+  }
+
+  static Future<void> cacheResolvedStudentId() async {
+    final resolved = getResolvedStudentId();
+    if (resolved.isNotEmpty && getstudentid().trim().isEmpty) {
+      await setstudentid(resolved);
+    }
   }
 
   static Future setLastAppVersion(String value) async {

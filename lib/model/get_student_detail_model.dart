@@ -47,7 +47,7 @@ class Data {
   });
 
   Data.fromJson(Map<String, dynamic> json) {
-    userId = json['user_id'];
+    userId = json['user_id']?.toString();
     displayName = json['display_name'];
     timezone = json['timezone'];
     primaryLanguage = json['primary_language'];

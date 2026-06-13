@@ -43,6 +43,7 @@ class StudentAuthGate {
     BuildContext context, {
     PendingBookingIntent? resumeAfterLogin,
     BookingAuthSource source = BookingAuthSource.tutorList,
+    String messageKey = 'signInRequiredMessage',
   }) async {
     if (isLoggedIn) return true;
 
@@ -54,7 +55,7 @@ class StudentAuthGate {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(t('signInRequiredTitle')),
-        content: Text(t('signInRequiredMessage')),
+        content: Text(t(messageKey)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),

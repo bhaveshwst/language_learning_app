@@ -27,6 +27,40 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+# zego_express_engine's download.sh does not quote paths, so it fails when the
+# project directory contains spaces (e.g. "Language Learning App").
+def fix_zego_express_engine_download(ios_dir)
+  download_sh = File.join(ios_dir, 'download.sh')
+  return unless File.exist?(download_sh)
+
+  script = File.read(download_sh)
+  patched = script
+    .gsub('cd $WORKSPACE', 'cd "$WORKSPACE"')
+    .gsub('[ -f $WORKSPACE/../.debugging ]', '[ -f "$WORKSPACE/../.debugging" ]')
+    .gsub("grep 'ios:' $WORKSPACE/../DEPS.yaml", "grep 'ios:' \"$WORKSPACE/../DEPS.yaml\"")
+    .gsub('mkdir -p $LIBSDIR', 'mkdir -p "$LIBSDIR"')
+    .gsub('[ -f $LIBSDIR/VERSION.txt ] && [ -f $LIBSDIR/ZegoExpressEngine.xcframework/Info.plist ]',
+           '[ -f "$LIBSDIR/VERSION.txt" ] && [ -f "$LIBSDIR/ZegoExpressEngine.xcframework/Info.plist" ]')
+    .gsub('--output $LIBSDIR/sdk.zip', '--output "$LIBSDIR/sdk.zip"')
+    .gsub('unzip -q -o $LIBSDIR/sdk.zip -d $LIBSDIR', 'unzip -q -o "$LIBSDIR/sdk.zip" -d "$LIBSDIR"')
+    .gsub('unzip -q -o $LIBSDIR/sdk.zip -d "$LIBSDIR"', 'unzip -q -o "$LIBSDIR/sdk.zip" -d "$LIBSDIR"')
+    .gsub('for file in $LIBSDIR/release/Library/*.xcframework', 'for file in "$LIBSDIR"/release/Library/*.xcframework')
+    .gsub('mv "$file" $LIBSDIR', 'mv "$file" "$LIBSDIR"')
+    .gsub('mv -f $LIBSDIR/release/VERSION.txt $LIBSDIR', 'mv -f "$LIBSDIR/release/VERSION.txt" "$LIBSDIR"')
+    .gsub('rm -rf $LIBSDIR/release', 'rm -rf "$LIBSDIR/release"')
+    .gsub('rm -f $LIBSDIR/sdk.zip', 'rm -f "$LIBSDIR/sdk.zip"')
+    .gsub('rm -rf $LIBSDIR/*.xcframework', 'rm -rf "$LIBSDIR"/*.xcframework')
+
+  File.write(download_sh, patched) if patched != script
+
+  xcframework = File.join(ios_dir, 'libs', 'ZegoExpressEngine.xcframework', 'Info.plist')
+  return if File.exist?(xcframework)
+
+  puts '[ZEGO] Downloading native iOS SDK (project path contains spaces)...'
+  success = system('sh', download_sh)
+  raise '[ZEGO] Failed to download ZegoExpressEngine.xcframework' unless success && File.exist?(xcframework)
+end
+
 target 'Runner' do
   use_frameworks!
 
@@ -58,4 +92,7 @@ post_install do |installer|
       )
     end
   end
+
+  zego_ios = File.expand_path('.symlinks/plugins/zego_express_engine/ios', __dir__)
+  fix_zego_express_engine_download(zego_ios) if File.directory?(zego_ios)
 end

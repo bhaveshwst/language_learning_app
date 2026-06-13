@@ -59,6 +59,7 @@ dependencies:
   image_picker: ^1.2.2
   image_cropper: ^12.2.1
   device_info_plus:
+  web_socket_channel: ^3.0.3
   # freezed_annotation: ^3.1.0
 
 

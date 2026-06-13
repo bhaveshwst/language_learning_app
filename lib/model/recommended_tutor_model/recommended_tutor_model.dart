@@ -106,7 +106,7 @@ class Tutors {
   }
 
   Tutors.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
+    id = json['id']?.toString();
     displayName = json['display_name'];
     teachesLanguages = json['teaches_languages'];
     primaryLanguage = json['primary_language']?.toString();

@@ -107,6 +107,10 @@ class ConstString {
     'signInRequiredTitle': 'Sign in required',
     'signInRequiredMessage':
         'Log in or create an account to book a session with this tutor.',
+    'signInRequiredMessageChat':
+        'Log in or create an account to message this tutor.',
+    'chatUnableToOpen':
+        'Unable to open chat right now. Please log out and sign in again, then try again.',
     'tutorSpeakPrimaryLanguage': 'Tutor speak my Primary language',
     'yes': 'YES',
     'no': 'NO',
@@ -261,6 +265,17 @@ class ConstString {
         'Are you sure you want to cancel this session?',
     'reportSpam': 'Report / Review',
     'reportSessionTitle': 'Report this session',
+    'message': 'Message',
+    'chat': 'Chat',
+    'chatWithTutor': 'Tutor chat',
+    'chatWithStudent': 'Student chat',
+    'typeMessage': 'Type a message...',
+    'chatEmptyTitle': 'Start the conversation',
+    'chatEmptySubtitle': 'Send a message to {name} to coordinate your session.',
+    'chatInboxEmptyTitle': 'No chats yet',
+    'chatInboxEmptySubtitle':
+        'When students message you, conversations will appear here.',
+    'chatNoMessagesYet': 'No messages yet',
     'notifications': 'Notifications',
     'notificationsEmpty': 'No notifications yet.',
     'notificationSessionStart': 'Session start',
@@ -390,6 +405,10 @@ class ConstString {
     'guestVisitor': '방문자',
     'signInRequiredTitle': '로그인이 필요합니다',
     'signInRequiredMessage': '이 튜터와 수업을 예약하려면 로그인하거나 계정을 만드세요.',
+    'signInRequiredMessageChat':
+        '이 튜터에게 메시지를 내려면 로그인하거나 계정을 만드세요.',
+    'chatUnableToOpen':
+        '지금은 채팅을 열 수 없습니다. 로그아웃 후 다시 로그인한 뒤 시도해 주세요.',
     'tutorSpeakPrimaryLanguage': '튜터가 제 기본 언어로 말하기',
     'no': '아니오',
     'searchTutors': '튜터 검색...',
@@ -543,6 +562,16 @@ class ConstString {
     'cancelSessionConfirmMessage': '이 세션을 취소하시겠습니까?',
     'reportSpam': '신고 / 검토',
     'reportSessionTitle': '이 세션 신고',
+    'message': '메시지',
+    'chat': '채팅',
+    'chatWithTutor': '튜터 채팅',
+    'chatWithStudent': '학생 채팅',
+    'typeMessage': '메시지를 입력하세요...',
+    'chatEmptyTitle': '대화를 시작하세요',
+    'chatEmptySubtitle': '{name}에게 메시지를 보내 세션을 조율하세요.',
+    'chatInboxEmptyTitle': '채팅이 없습니다',
+    'chatInboxEmptySubtitle': '학생이 메시지를 내면 여기에 대화가 표시됩니다.',
+    'chatNoMessagesYet': '아직 메시지가 없습니다',
     'notifications': '알림',
     'notificationsEmpty': '알림이 없습니다.',
     'notificationSessionStart': '세션 시작',
@@ -684,6 +713,10 @@ class ConstString {
     'signInRequiredTitle': 'Inicio de sesión requerido',
     'signInRequiredMessage':
         'Inicia sesión o crea una cuenta para reservar una sesión con este tutor.',
+    'signInRequiredMessageChat':
+        'Inicia sesión o crea una cuenta para enviar un mensaje a este tutor.',
+    'chatUnableToOpen':
+        'No se puede abrir el chat ahora. Cierra sesión, vuelve a iniciar sesión e inténtalo de nuevo.',
     'tutorSpeakPrimaryLanguage': 'El tutor habla mi idioma principal',
     'yes': 'SÍ',
     'no': 'NO',
@@ -842,6 +875,18 @@ class ConstString {
         '¿Estás seguro de que quieres cancelar esta sesión?',
     'reportSpam': 'Reportar / Reseña',
     'reportSessionTitle': 'Reportar esta sesión',
+    'message': 'Mensaje',
+    'chat': 'Chat',
+    'chatWithTutor': 'Chat con tutor',
+    'chatWithStudent': 'Chat con estudiante',
+    'typeMessage': 'Escribe un mensaje...',
+    'chatEmptyTitle': 'Inicia la conversación',
+    'chatEmptySubtitle':
+        'Envía un mensaje a {name} para coordinar tu sesión.',
+    'chatInboxEmptyTitle': 'Aún no hay chats',
+    'chatInboxEmptySubtitle':
+        'Cuando los estudiantes te escriban, las conversaciones aparecerán aquí.',
+    'chatNoMessagesYet': 'Aún no hay mensajes',
     'notifications': 'Notificaciones',
     'notificationsEmpty': 'No hay notificaciones.',
     'notificationSessionStart': 'Inicio de sesión',

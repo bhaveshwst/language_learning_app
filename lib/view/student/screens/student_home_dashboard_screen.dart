@@ -17,6 +17,9 @@ import 'package:language_learning_app/main.dart';
 import 'package:language_learning_app/provider/get_student_profile/get_student_profile_bloc.dart';
 import 'package:language_learning_app/model/recommended_tutor_model/recommended_tutor_model.dart';
 import 'package:language_learning_app/provider/recommended_tutor/recommended_tutor_bloc.dart';
+import 'package:language_learning_app/core/messaging/messaging_api_helper.dart';
+import 'package:language_learning_app/core/messaging/messaging_navigation.dart';
+import 'package:language_learning_app/core/widgets/unread_count_badge.dart';
 import 'package:language_learning_app/view/student/screens/tutor_availability_calendar_screen.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
@@ -48,6 +51,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
   String _address = "";
   String _latitude = "";
   String _longitude = "";
+  Map<String, int> _unreadByTutorId = {};
   String t(String key) =>
       ConstString.text(AppLanguageState.currentLanguage, key);
 
@@ -160,10 +164,16 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     _deviceName();
     _getLocation();
     if (!widget.isGuest) {
-      final studentId = PrefUtils.getstudentid().trim();
-      if (studentId.isNotEmpty) {
-        _getStudentProfileBloc.add(FetchStudentProfile(studentId: studentId));
-      }
+      unawaited(
+        PrefUtils.cacheResolvedStudentId().then((_) {
+          final studentId = PrefUtils.getResolvedStudentId();
+          if (studentId.isNotEmpty) {
+            _getStudentProfileBloc.add(
+              FetchStudentProfile(studentId: studentId),
+            );
+          }
+        }),
+      );
     }
     _recommendedTutorBloc.add(
       FetchRecommendedTutorWithSearch(
@@ -174,9 +184,33 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
     );
     if (!widget.isGuest) {
       unawaited(_printFcmTokenAfterLogin());
+      unawaited(_loadUnreadMessageCounts());
     }
 
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  Future<void> _loadUnreadMessageCounts() async {
+    if (widget.isGuest || !StudentAuthGate.isLoggedIn) return;
+
+    final studentId = PrefUtils.getstudentid().trim();
+    if (studentId.isEmpty) return;
+
+    try {
+      final counts = await MessagingApiHelper.unreadCountsByPeerId(
+        studentId: studentId,
+        tutorId: null,
+      );
+      if (!mounted) return;
+      setState(() => _unreadByTutorId = counts);
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_loadUnreadMessageCounts());
+    }
   }
 
   Future<void> _deviceName() async {
@@ -289,6 +323,7 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchDebounce?.cancel();
     _searchController.dispose();
     _recommendedTutorBloc.close();
@@ -343,6 +378,10 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                     _studentPrimaryLanguage = profilePrimary;
                   }
                   zegoAppID = state.model.zegoAppID ?? 1896143529;
+                  final userId = (state.model.data?.userId ?? '').trim();
+                  if (userId.isNotEmpty) {
+                    await PrefUtils.setstudentid(userId);
+                  }
                   await PrefUtils.setname(state.model.data?.displayName ?? '');
                   await PrefUtils.setimagepath(
                     state.model.data?.imagepath ?? '',
@@ -660,6 +699,28 @@ class _StudentHomeDashboardScreenState extends State<StudentHomeDashboardScreen>
                                         ),
                                       );
                                     },
+                                    unreadMessageCount:
+                                        _unreadByTutorId[(tutor.id ?? '').trim()] ??
+                                        0,
+                                    onMessage: () async {
+                                      final tutorId = (tutor.id ?? '').trim();
+                                      if (tutorId.isNotEmpty) {
+                                        setState(() {
+                                          _unreadByTutorId[tutorId] = 0;
+                                        });
+                                      }
+                                      await MessagingNavigation
+                                          .openStudentChatWithTutor(
+                                        context,
+                                        tutorId: tutor.id ?? '',
+                                        tutorName: tutor.displayName ?? '',
+                                        tutorImageUrl: tutor.imagepath,
+                                        requireLogin: widget.isGuest ||
+                                            !StudentAuthGate.isLoggedIn,
+                                      );
+                                      if (!mounted) return;
+                                      await _loadUnreadMessageCounts();
+                                    },
                                   ),
                                 );
                               },
@@ -699,7 +760,9 @@ class _TutorCard extends StatelessWidget {
     required this.onFavoriteToggle,
     required this.onBook,
     required this.onCheckAvailability,
+    required this.onMessage,
     required this.imagepath,
+    this.unreadMessageCount = 0,
   });
 
   final String name;
@@ -711,7 +774,9 @@ class _TutorCard extends StatelessWidget {
   final VoidCallback onFavoriteToggle;
   final VoidCallback onBook;
   final VoidCallback onCheckAvailability;
+  final VoidCallback onMessage;
   final String? imagepath;
+  final int unreadMessageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -987,6 +1052,44 @@ class _TutorCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 42,
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: ConstColor.primaryBlue,
+                                      side: BorderSide(
+                                        color: ConstColor.primaryBlue
+                                            .withValues(alpha: 0.55),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    onPressed: onMessage,
+                                    icon: const Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      ConstString.text(language, 'message'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (unreadMessageCount > 0) ...[
+                                const SizedBox(width: 10),
+                                UnreadCountBadge(count: unreadMessageCount),
+                              ],
                             ],
                           ),
                         ],

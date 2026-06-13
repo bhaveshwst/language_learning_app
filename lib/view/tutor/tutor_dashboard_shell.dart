@@ -5,6 +5,7 @@ import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
 import 'package:language_learning_app/core/constants/utils.dart';
 import 'package:language_learning_app/core/services/logout_service.dart';
+import 'package:language_learning_app/view/messaging/conversations_screen.dart';
 import 'package:language_learning_app/view/settings/delete_account_screen.dart';
 import 'package:language_learning_app/view/settings/notifications_list_screen.dart';
 import 'package:language_learning_app/view/tutor/screens/availability_screen.dart';
@@ -34,6 +35,7 @@ class _TutorDashboardShellState extends State<TutorDashboardShell> {
       const TutorHomeDashboardScreen(),
       const AvailabilityScreen(),
       const TutorSessionsScreen(),
+      const ConversationsScreen(),
       const _TutorSettingsScreen(),
     ];
 
@@ -90,10 +92,16 @@ class _TutorDashboardShellState extends State<TutorDashboardShell> {
                 onTap: () => setState(() => _tab = 2),
               ),
               _BottomItem(
-                icon: Icons.settings_outlined,
-                labelKey: 'settings',
+                icon: Icons.chat_bubble_outline_rounded,
+                labelKey: 'chat',
                 selected: _tab == 3,
                 onTap: () => setState(() => _tab = 3),
+              ),
+              _BottomItem(
+                icon: Icons.settings_outlined,
+                labelKey: 'settings',
+                selected: _tab == 4,
+                onTap: () => setState(() => _tab = 4),
               ),
             ],
           ),

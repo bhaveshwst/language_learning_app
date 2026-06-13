@@ -33,8 +33,8 @@ class Data {
   Data.fromJson(Map<String, dynamic> json) {
     accessToken = json['access_token'];
     tokenType = json['token_type'];
-    studentid = json['student_id'];
-    tutorid = json['tutor_id'];
+    studentid = json['student_id']?.toString();
+    tutorid = json['tutor_id']?.toString();
   }
 
   Map<String, dynamic> toJson() {

@@ -76,4 +76,31 @@ static const String baseURL =
   static String get notificationListingUrl => '$baseURL/notification_listing';
   static String get notificationReadUnreadUrl =>
       '$baseURL/notification_read_unread';
+
+  // Messaging (REST + Socket — backend pending)
+  static String get messagesConversationsUrl => '$baseURL/messages/conversations';
+  static String get messagesGetOrCreateConversationUrl =>
+      '$baseURL/messages/conversation/get-or-create';
+  static String get messagesListUrl => '$baseURL/messages/list';
+  static String get messagesSendUrl => '$baseURL/messages/send';
+  static String get messagesMarkReadUrl => '$baseURL/messages/mark-read';
+
+  /// Local dev hosts often run REST only; chat falls back to polling.
+  static bool get isMessagingWebSocketEnabled {
+    final host = Uri.parse(baseURL).host.toLowerCase();
+    const localHosts = {'localhost', '127.0.0.1', '10.0.2.2'};
+    return !localHosts.contains(host);
+  }
+
+  /// Builds a WebSocket URI from [baseURL] (`http` → `ws`, `https` → `wss`).
+  static Uri buildMessagesSocketUri({required String token}) {
+    final base = Uri.parse(baseURL);
+    final wsScheme = base.scheme == 'https' ? 'wss' : 'ws';
+
+    return base.replace(
+      scheme: wsScheme,
+      path: '/messages/ws',
+      queryParameters: <String, String>{'token': token},
+    );
+  }
 }
