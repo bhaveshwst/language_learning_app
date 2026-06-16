@@ -276,6 +276,7 @@ class ConstString {
     'chatInboxEmptySubtitle':
         'When students message you, conversations will appear here.',
     'chatNoMessagesYet': 'No messages yet',
+    'noChatsMatchSearch': 'No students match your search.',
     'notifications': 'Notifications',
     'notificationsEmpty': 'No notifications yet.',
     'notificationSessionStart': 'Session start',
@@ -572,6 +573,7 @@ class ConstString {
     'chatInboxEmptyTitle': '채팅이 없습니다',
     'chatInboxEmptySubtitle': '학생이 메시지를 내면 여기에 대화가 표시됩니다.',
     'chatNoMessagesYet': '아직 메시지가 없습니다',
+    'noChatsMatchSearch': '검색과 일치하는 학생이 없습니다.',
     'notifications': '알림',
     'notificationsEmpty': '알림이 없습니다.',
     'notificationSessionStart': '세션 시작',
@@ -887,6 +889,7 @@ class ConstString {
     'chatInboxEmptySubtitle':
         'Cuando los estudiantes te escriban, las conversaciones aparecerán aquí.',
     'chatNoMessagesYet': 'Aún no hay mensajes',
+    'noChatsMatchSearch': 'Ningún estudiante coincide con tu búsqueda.',
     'notifications': 'Notificaciones',
     'notificationsEmpty': 'No hay notificaciones.',
     'notificationSessionStart': 'Inicio de sesión',

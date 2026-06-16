@@ -22,6 +22,8 @@ class ConversationsScreen extends StatefulWidget {
 
 class _ConversationsScreenState extends State<ConversationsScreen> {
   late final ConversationListBloc _conversationListBloc;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -32,8 +34,23 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _conversationListBloc.close();
     super.dispose();
+  }
+
+  List<ConversationModel> _filterByStudentName(
+    List<ConversationModel> conversations,
+  ) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return conversations;
+
+    return conversations
+        .where(
+          (conversation) =>
+              conversation.peerName.toLowerCase().contains(query),
+        )
+        .toList();
   }
 
   void _fetchConversations() {
@@ -80,6 +97,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           final conversations = state is ConversationListSuccess
               ? state.conversations
               : const <ConversationModel>[];
+          final filteredConversations = _filterByStudentName(conversations);
+          final language = AppLanguageState.currentLanguage;
 
           return Scaffold(
             backgroundColor: ConstColor.background,
@@ -101,51 +120,149 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               actions: const [AppVersionAppBarAction()],
             ),
             body: SafeArea(
-              child: RefreshIndicator(
-                color: ConstColor.primaryBlue,
-                onRefresh: () async => _fetchConversations(),
-                child: isLoading
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 180),
-                          Center(
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: ConstColor.primaryBlue,
-                              ),
-                            ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ConstSize.grid * 2,
+                      ConstSize.grid,
+                      ConstSize.grid * 2,
+                      ConstSize.grid,
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: ConstColor.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: ConstString.text(
+                          language,
+                          'searchStudentBookings',
+                        ),
+                        hintStyle: TextStyle(
+                          color: ConstColor.textSecondary.withValues(
+                            alpha: 0.75,
                           ),
-                        ],
-                      )
-                    : conversations.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          ConstSize.grid * 2,
-                          ConstSize.grid * 4,
-                          ConstSize.grid * 2,
-                          ConstSize.grid * 2,
+                          fontSize: 15,
                         ),
-                        children: const [
-                          _ConversationsEmptyState(),
-                        ],
-                      )
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          ConstSize.grid * 2,
-                          ConstSize.grid,
-                          ConstSize.grid * 2,
-                          ConstSize.grid * 2,
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: ConstColor.primaryBlue.withValues(
+                            alpha: 0.85,
+                          ),
+                          size: 24,
                         ),
-                        itemCount: conversations.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final conversation = conversations[index];
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: ConstColor.textSecondary.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: ConstColor.border.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: ConstColor.border.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: ConstColor.primaryBlue,
+                            width: 1.5,
+                          ),
+                        ),
+                        isDense: true,
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                    ),
+                  ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: ConstColor.primaryBlue,
+                      onRefresh: () async => _fetchConversations(),
+                      child: isLoading
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: const [
+                                SizedBox(height: 180),
+                                Center(
+                                  child: SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: ConstColor.primaryBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : conversations.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                ConstSize.grid * 2,
+                                ConstSize.grid * 4,
+                                ConstSize.grid * 2,
+                                ConstSize.grid * 2,
+                              ),
+                              children: const [
+                                _ConversationsEmptyState(),
+                              ],
+                            )
+                          : filteredConversations.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                ConstSize.grid * 2,
+                                ConstSize.grid * 4,
+                                ConstSize.grid * 2,
+                                ConstSize.grid * 2,
+                              ),
+                              children: [
+                                _ConversationsSearchEmptyState(
+                                  query: _searchQuery.trim(),
+                                ),
+                              ],
+                            )
+                          : ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                ConstSize.grid * 2,
+                                0,
+                                ConstSize.grid * 2,
+                                ConstSize.grid * 2,
+                              ),
+                              itemCount: filteredConversations.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final conversation =
+                                    filteredConversations[index];
                           return _ConversationTile(
                             conversation: conversation,
                             timestampLabel: _formatTimestamp(
@@ -168,11 +285,63 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                           );
                         },
                       ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class _ConversationsSearchEmptyState extends StatelessWidget {
+  const _ConversationsSearchEmptyState({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: ConstColor.primaryBlue.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.search_off_rounded,
+            size: 38,
+            color: ConstColor.primaryBlue,
+          ),
+        ),
+        const SizedBox(height: 18),
+        AppText(
+          'noChatsMatchSearch',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: ConstColor.textPrimary,
+          ),
+        ),
+        if (query.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            '"$query"',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: ConstColor.textSecondary.withValues(alpha: 0.95),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

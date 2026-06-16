@@ -8,6 +8,7 @@ import 'package:language_learning_app/core/constants/live_session_config.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
 import 'package:language_learning_app/model/live_session_join_model.dart';
+import 'package:language_learning_app/view/student/screens/live_session_screen_sharing_layout.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 class LiveSessionScreen extends StatelessWidget {
@@ -78,6 +79,30 @@ class LiveSessionScreen extends StatelessWidget {
     final config = isTutor
         ? ZegoUIKitPrebuiltLiveStreamingConfig.host()
         : ZegoUIKitPrebuiltLiveStreamingConfig.audience();
+    // Screen sharing requires gallery layout for host and audience viewers.
+    config.layout = ZegoLayout.gallery(
+      showNewScreenSharingViewInFullscreenMode: false,
+      showScreenSharingFullscreenModeToggleButtonRules:
+          ZegoShowFullscreenModeToggleButtonRules.showWhenScreenPressed,
+    );
+    config.screenSharing.defaultFullScreen = false;
+    config.audioVideoView.containerBuilder = (
+      context,
+      allUsers,
+      audioVideoUsers,
+      audioVideoViewCreator,
+    ) {
+      final screenSharingUsers = ZegoUIKit().getScreenSharingList();
+      if (screenSharingUsers.isEmpty) {
+        return null;
+      }
+
+      return LiveSessionScreenSharingLayout(
+        screenSharingUser: screenSharingUsers.first,
+        participants: audioVideoUsers,
+        audioVideoViewCreator: audioVideoViewCreator,
+      );
+    };
     // Host kit defaults to a preview + "START" step. Join API already authorized
     // the slot — go straight into the live room (same expectation as Meet/Zoom).
     if (isTutor) {
@@ -106,6 +131,7 @@ class LiveSessionScreen extends StatelessWidget {
     };
     config.duration.isVisible = true;
     config.bottomMenuBar.hostButtons = [
+      ZegoLiveStreamingMenuBarButtonName.toggleScreenSharingButton,
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
       ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
       ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
