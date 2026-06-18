@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:language_learning_app/core/constants/const_color.dart';
 import 'package:language_learning_app/core/constants/const_dialog.dart';
 import 'package:language_learning_app/core/constants/const_size.dart';
 import 'package:language_learning_app/core/constants/const_string.dart';
+import 'package:language_learning_app/core/messaging/chat_image_picker.dart';
 import 'package:language_learning_app/core/state/app_language_state.dart';
 import 'package:language_learning_app/core/widgets/app_text.dart';
 import 'package:language_learning_app/core/widgets/app_version_widgets.dart';
@@ -25,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late final ChatThreadBloc _chatThreadBloc;
+  String? _lastSendErrorShown;
 
   @override
   void initState() {
@@ -61,6 +65,29 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
   }
 
+  Future<void> _handleAttachImage() async {
+    final imagePath = await ChatImagePicker.pickImagePath(context);
+    if (imagePath == null || !mounted) return;
+    _chatThreadBloc.add(SendChatImage(imagePath));
+  }
+
+  void _openImagePreview(BuildContext context, MessageModel message) {
+    final localPath = (message.localImagePath ?? '').trim();
+    final remoteUrl = (message.imageUrl ?? '').trim();
+
+    if (localPath.isEmpty && remoteUrl.isEmpty) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _ChatImagePreviewScreen(
+          localPath: localPath.isNotEmpty ? localPath : null,
+          imageUrl: remoteUrl.isNotEmpty ? remoteUrl : null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = widget.args;
@@ -71,6 +98,13 @@ class _ChatScreenState extends State<ChatScreen> {
         listener: (context, state) {
           if (state is ChatThreadReady) {
             _scrollToBottom();
+            final error = state.sendErrorMessage?.trim();
+            if (error == null || error.isEmpty) {
+              _lastSendErrorShown = null;
+            } else if (error != _lastSendErrorShown) {
+              _lastSendErrorShown = error;
+              commonAlertDialog(context, error);
+            }
           }
           if (state is ChatThreadError) {
             commonAlertDialog(context, state.message);
@@ -162,6 +196,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             return _MessageBubble(
                               message: message,
                               viewerRole: args.viewerRole,
+                              onImageTap: message.hasImageContent
+                                  ? () => _openImagePreview(context, message)
+                                  : null,
                             );
                           },
                         ),
@@ -171,6 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   enabled: !isLoading && state is! ChatThreadError,
                   isSending: isSending,
                   onSend: _handleSend,
+                  onAttachImage: _handleAttachImage,
                 ),
               ],
             ),
@@ -241,10 +279,12 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.viewerRole,
+    this.onImageTap,
   });
 
   final MessageModel message;
   final MessagingUserRole viewerRole;
+  final VoidCallback? onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -267,19 +307,21 @@ class _MessageBubble extends StatelessWidget {
             opacity: message.isPending ? 0.7 : 1,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: bubbleColor,
+                color: message.hasImageContent && !message.hasTextBody
+                    ? Colors.transparent
+                    : bubbleColor,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
                   bottomLeft: Radius.circular(isMine ? 16 : 4),
                   bottomRight: Radius.circular(isMine ? 4 : 16),
                 ),
-                border: isMine
+                border: isMine || message.hasImageContent
                     ? null
                     : Border.all(
                         color: ConstColor.border.withValues(alpha: 0.75),
                       ),
-                boxShadow: isMine
+                boxShadow: isMine && !message.hasImageContent
                     ? [
                         BoxShadow(
                           color: ConstColor.primaryBlue.withValues(alpha: 0.18),
@@ -290,17 +332,39 @@ class _MessageBubble extends StatelessWidget {
                     : null,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                padding: EdgeInsets.symmetric(
+                  horizontal: message.hasImageContent ? 4 : 14,
+                  vertical: message.hasImageContent ? 4 : 10,
                 ),
-                child: Text(
-                  message.body,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.35,
-                    color: isMine ? Colors.white : ConstColor.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (message.hasImageContent)
+                      _MessageImage(
+                        message: message,
+                        isMine: isMine,
+                        onTap: onImageTap,
+                      ),
+                    if (message.hasTextBody)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: message.hasImageContent ? 10 : 0,
+                          right: message.hasImageContent ? 10 : 0,
+                          top: message.hasImageContent ? 8 : 0,
+                          bottom: message.hasImageContent ? 6 : 0,
+                        ),
+                        child: Text(
+                          message.body,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.35,
+                            color: isMine
+                                ? Colors.white
+                                : ConstColor.textPrimary,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -311,16 +375,143 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+class _MessageImage extends StatelessWidget {
+  const _MessageImage({
+    required this.message,
+    required this.isMine,
+    this.onTap,
+  });
+
+  final MessageModel message;
+  final bool isMine;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final localPath = (message.localImagePath ?? '').trim();
+    final imageUrl = (message.imageUrl ?? '').trim();
+
+    Widget imageChild;
+    if (localPath.isNotEmpty) {
+      imageChild = Image.file(
+        File(localPath),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 220,
+        errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+      );
+    } else if (imageUrl.isNotEmpty) {
+      imageChild = Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 220,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            height: 220,
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isMine ? Colors.white : ConstColor.primaryBlue,
+                value: loadingProgress.expectedTotalBytes == null
+                    ? null
+                    : loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+      );
+    } else {
+      imageChild = _imageErrorPlaceholder();
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: isMine
+                ? null
+                : Border.all(
+                    color: ConstColor.border.withValues(alpha: 0.75),
+                  ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: imageChild,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imageErrorPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: 180,
+      color: ConstColor.background,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.broken_image_outlined,
+        color: ConstColor.textSecondary,
+        size: 36,
+      ),
+    );
+  }
+}
+
+class _ChatImagePreviewScreen extends StatelessWidget {
+  const _ChatImagePreviewScreen({
+    this.localPath,
+    this.imageUrl,
+  });
+
+  final String? localPath;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final local = (localPath ?? '').trim();
+    final remote = (imageUrl ?? '').trim();
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.8,
+          maxScale: 4,
+          child: local.isNotEmpty
+              ? Image.file(File(local), fit: BoxFit.contain)
+              : Image.network(remote, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
     required this.controller,
     required this.onSend,
+    required this.onAttachImage,
     required this.enabled,
     required this.isSending,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final Future<void> Function() onAttachImage;
   final bool enabled;
   final bool isSending;
 
@@ -341,6 +532,26 @@ class _ChatComposer extends StatelessWidget {
         ),
         child: Row(
           children: [
+            Material(
+              color: ConstColor.background,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                onTap: enabled && !isSending ? () => onAttachImage() : null,
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(
+                    Icons.photo_library_rounded,
+                    color: enabled
+                        ? ConstColor.primaryBlue
+                        : ConstColor.textSecondary.withValues(alpha: 0.5),
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: TextField(
                 controller: controller,

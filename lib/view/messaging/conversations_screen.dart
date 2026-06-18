@@ -64,6 +64,17 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
   }
 
+  String _formatLastMessagePreview(String preview) {
+    final normalized = preview.trim().toLowerCase();
+    if (normalized == 'photo' || normalized == '📷 photo') {
+      return ConstString.text(
+        AppLanguageState.currentLanguage,
+        'chatPhotoMessage',
+      );
+    }
+    return preview;
+  }
+
   String _formatTimestamp(DateTime? value) {
     if (value == null) return '';
 
@@ -268,6 +279,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                             timestampLabel: _formatTimestamp(
                               conversation.lastMessageAt,
                             ),
+                            previewLabel: _formatLastMessagePreview(
+                              (conversation.lastMessageText ?? '').trim(),
+                            ),
                             onTap: () async {
                               _conversationListBloc.add(
                                 MarkConversationReadLocally(conversation.id),
@@ -395,16 +409,17 @@ class _ConversationTile extends StatelessWidget {
   const _ConversationTile({
     required this.conversation,
     required this.timestampLabel,
+    required this.previewLabel,
     required this.onTap,
   });
 
   final ConversationModel conversation;
   final String timestampLabel;
+  final String previewLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final preview = (conversation.lastMessageText ?? '').trim();
     final hasUnread = conversation.unreadCount > 0;
 
     return Material(
@@ -466,12 +481,12 @@ class _ConversationTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            preview.isEmpty
+                            previewLabel.isEmpty
                                 ? ConstString.text(
                                     AppLanguageState.currentLanguage,
                                     'chatNoMessagesYet',
                                   )
-                                : preview,
+                                : previewLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

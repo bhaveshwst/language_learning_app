@@ -146,11 +146,42 @@ class MessagingApiHelper {
           'student_id': studentId,
           'tutor_id': tutorId,
           'sender_role': senderRole,
+          'message_type': 'text',
           'body': body,
         },
       ),
     );
 
+    return _parseMessageResponse(decoded);
+  }
+
+  static Future<MessageModel> sendImageMessage({
+    required String conversationId,
+    required String studentId,
+    required String tutorId,
+    required String senderRole,
+    required String imageBase64,
+    String? caption,
+  }) async {
+    final decoded = await _decodeResponse(
+      AppHttpClient.post(
+        ConstApiUrl.messagesSendUrl,
+        body: {
+          'conversation_id': conversationId,
+          'student_id': studentId,
+          'tutor_id': tutorId,
+          'sender_role': senderRole,
+          'message_type': 'image',
+          'image': imageBase64,
+          'body': (caption ?? '').trim(),
+        },
+      ),
+    );
+
+    return _parseMessageResponse(decoded);
+  }
+
+  static MessageModel _parseMessageResponse(Map<String, dynamic> decoded) {
     final message = _data(decoded)['message'];
     if (message is! Map) {
       throw MessagingApiException('Message not returned');

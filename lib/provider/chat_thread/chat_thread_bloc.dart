@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +8,7 @@ import 'package:language_learning_app/core/messaging/messaging_api_helper.dart';
 import 'package:language_learning_app/core/messaging/messaging_socket_client.dart';
 import 'package:language_learning_app/model/messaging/chat_thread_args.dart';
 import 'package:language_learning_app/model/messaging/message_model.dart';
+import 'package:language_learning_app/model/messaging/message_type.dart';
 
 part 'chat_thread_event.dart';
 part 'chat_thread_state.dart';
@@ -14,6 +17,7 @@ class ChatThreadBloc extends Bloc<ChatThreadEvent, ChatThreadState> {
   ChatThreadBloc() : super(const ChatThreadInitial()) {
     on<InitChatThread>(_onInit);
     on<SendChatMessage>(_onSend);
+    on<SendChatImage>(_onSendImage);
     on<IncomingSocketMessage>(_onIncomingSocketMessage);
     on<PollChatMessages>(_onPoll);
   }
@@ -191,6 +195,84 @@ class ChatThreadBloc extends Bloc<ChatThreadEvent, ChatThreadState> {
     SendChatMessage event,
     Emitter<ChatThreadState> emit,
   ) async {
+    final text = event.text.trim();
+    if (text.isEmpty) return;
+
+    await _sendOutgoingMessage(
+      emit,
+      pendingMessageBuilder: (pendingId, conversationId, args) => MessageModel(
+        id: pendingId,
+        body: text,
+        senderRole: args.viewerRole,
+        createdAt: DateTime.now(),
+        conversationId: conversationId,
+        senderId: args.selfId,
+        isPending: true,
+      ),
+      send: (conversationId, args) => MessagingApiHelper.sendMessage(
+        conversationId: conversationId,
+        studentId: args.studentId,
+        tutorId: args.tutorId,
+        senderRole: args.senderRole,
+        body: text,
+      ),
+    );
+  }
+
+  Future<void> _onSendImage(
+    SendChatImage event,
+    Emitter<ChatThreadState> emit,
+  ) async {
+    final imagePath = event.imagePath.trim();
+    if (imagePath.isEmpty) return;
+
+    final imageFile = File(imagePath);
+    if (!imageFile.existsSync()) return;
+
+    late final String imageBase64;
+    try {
+      imageBase64 = base64Encode(await imageFile.readAsBytes());
+    } catch (_) {
+      return;
+    }
+
+    await _sendOutgoingMessage(
+      emit,
+      pendingMessageBuilder: (pendingId, conversationId, args) => MessageModel(
+        id: pendingId,
+        body: '',
+        senderRole: args.viewerRole,
+        createdAt: DateTime.now(),
+        conversationId: conversationId,
+        senderId: args.selfId,
+        messageType: MessageType.image,
+        localImagePath: imagePath,
+        isPending: true,
+      ),
+      send: (conversationId, args) => MessagingApiHelper.sendImageMessage(
+        conversationId: conversationId,
+        studentId: args.studentId,
+        tutorId: args.tutorId,
+        senderRole: args.senderRole,
+        imageBase64: imageBase64,
+      ),
+    );
+  }
+
+  Future<void> _sendOutgoingMessage(
+    Emitter<ChatThreadState> emit, {
+    required MessageModel Function(
+      String pendingId,
+      String conversationId,
+      ChatThreadArgs args,
+    )
+    pendingMessageBuilder,
+    required Future<MessageModel> Function(
+      String conversationId,
+      ChatThreadArgs args,
+    )
+    send,
+  }) async {
     if (!_isActive) return;
 
     final args = _args;
@@ -203,35 +285,23 @@ class ChatThreadBloc extends Bloc<ChatThreadEvent, ChatThreadState> {
       return;
     }
 
-    final text = event.text.trim();
-    if (text.isEmpty) return;
-
     final pendingId = 'pending-${DateTime.now().microsecondsSinceEpoch}';
-    final pendingMessage = MessageModel(
-      id: pendingId,
-      body: text,
-      senderRole: args.viewerRole,
-      createdAt: DateTime.now(),
-      conversationId: conversationId,
-      senderId: args.selfId,
-      isPending: true,
+    final pendingMessage = pendingMessageBuilder(
+      pendingId,
+      conversationId,
+      args,
     );
 
     emit(
       current.copyWith(
         messages: [...current.messages, pendingMessage],
         isSending: true,
+        clearSendError: true,
       ),
     );
 
     try {
-      final sentMessage = await MessagingApiHelper.sendMessage(
-        conversationId: conversationId,
-        studentId: args.studentId,
-        tutorId: args.tutorId,
-        senderRole: args.senderRole,
-        body: text,
-      );
+      final sentMessage = await send(conversationId, args);
 
       if (!_isActive) return;
 
@@ -252,9 +322,10 @@ class ChatThreadBloc extends Bloc<ChatThreadEvent, ChatThreadState> {
               ? withoutPending
               : [...withoutPending, sentMessage],
           isSending: false,
+          clearSendError: true,
         ),
       );
-    } on MessagingApiException {
+    } on MessagingApiException catch (e) {
       if (!_isActive) return;
 
       final latest = state;
@@ -272,9 +343,10 @@ class ChatThreadBloc extends Bloc<ChatThreadEvent, ChatThreadState> {
         latest.copyWith(
           messages: updated,
           isSending: false,
+          sendErrorMessage: e.message,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!_isActive) return;
 
       final latest = state;

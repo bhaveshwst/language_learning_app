@@ -20,26 +20,38 @@ final class ChatThreadReady extends ChatThreadState {
     required this.conversationId,
     required this.messages,
     required this.isSending,
+    this.sendErrorMessage,
   });
 
   final String conversationId;
   final List<MessageModel> messages;
   final bool isSending;
+  final String? sendErrorMessage;
 
   ChatThreadReady copyWith({
     String? conversationId,
     List<MessageModel>? messages,
     bool? isSending,
+    String? sendErrorMessage,
+    bool clearSendError = false,
   }) {
     return ChatThreadReady(
       conversationId: conversationId ?? this.conversationId,
       messages: messages ?? this.messages,
       isSending: isSending ?? this.isSending,
+      sendErrorMessage: clearSendError
+          ? null
+          : sendErrorMessage ?? this.sendErrorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [conversationId, messages, isSending];
+  List<Object?> get props => [
+    conversationId,
+    messages,
+    isSending,
+    sendErrorMessage,
+  ];
 }
 
 final class ChatThreadError extends ChatThreadState {

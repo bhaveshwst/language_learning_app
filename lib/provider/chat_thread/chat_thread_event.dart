@@ -25,6 +25,15 @@ final class SendChatMessage extends ChatThreadEvent {
   List<Object?> get props => [text];
 }
 
+final class SendChatImage extends ChatThreadEvent {
+  const SendChatImage(this.imagePath);
+
+  final String imagePath;
+
+  @override
+  List<Object?> get props => [imagePath];
+}
+
 final class IncomingSocketMessage extends ChatThreadEvent {
   IncomingSocketMessage(this.message);
 

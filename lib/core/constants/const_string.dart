@@ -276,6 +276,13 @@ class ConstString {
     'chatInboxEmptySubtitle':
         'When students message you, conversations will appear here.',
     'chatNoMessagesYet': 'No messages yet',
+    'chatAttachPhoto': 'Send a photo',
+    'chatPickFromCamera': 'Take photo',
+    'chatPickFromGallery': 'Choose from gallery',
+    'chatImagePermissionTitle': 'Permission required',
+    'chatImagePermissionMessage':
+        'Camera or photo library access is required to send images. Please enable it in app settings.',
+    'chatPhotoMessage': 'Photo',
     'noChatsMatchSearch': 'No students match your search.',
     'notifications': 'Notifications',
     'notificationsEmpty': 'No notifications yet.',
@@ -573,6 +580,13 @@ class ConstString {
     'chatInboxEmptyTitle': '채팅이 없습니다',
     'chatInboxEmptySubtitle': '학생이 메시지를 내면 여기에 대화가 표시됩니다.',
     'chatNoMessagesYet': '아직 메시지가 없습니다',
+    'chatAttachPhoto': '사진 보내기',
+    'chatPickFromCamera': '카메라로 촬영',
+    'chatPickFromGallery': '갤러리에서 선택',
+    'chatImagePermissionTitle': '권한 필요',
+    'chatImagePermissionMessage':
+        '사진을내려면 카메라 또는 사진 라이브러리 권한이 필요합니다. 앱 설정에서 허용해 주세요.',
+    'chatPhotoMessage': '사진',
     'noChatsMatchSearch': '검색과 일치하는 학생이 없습니다.',
     'notifications': '알림',
     'notificationsEmpty': '알림이 없습니다.',
@@ -889,6 +903,13 @@ class ConstString {
     'chatInboxEmptySubtitle':
         'Cuando los estudiantes te escriban, las conversaciones aparecerán aquí.',
     'chatNoMessagesYet': 'Aún no hay mensajes',
+    'chatAttachPhoto': 'Enviar foto',
+    'chatPickFromCamera': 'Tomar foto',
+    'chatPickFromGallery': 'Elegir de la galería',
+    'chatImagePermissionTitle': 'Permiso requerido',
+    'chatImagePermissionMessage':
+        'Se necesita acceso a la cámara o a la galería para enviar imágenes. Actívalo en la configuración de la app.',
+    'chatPhotoMessage': 'Foto',
     'noChatsMatchSearch': 'Ningún estudiante coincide con tu búsqueda.',
     'notifications': 'Notificaciones',
     'notificationsEmpty': 'No hay notificaciones.',
