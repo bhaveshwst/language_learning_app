@@ -33,11 +33,11 @@ class ConstApiUrl {
   // }
 
   // static const String baseURL = "https://konnected-backend-production.up.railway.app";
-// static const String baseURL =
-//       "https://konnected.wisdomsquare.net";
+static const String baseURL =
+      "https://konnected.wisdomsquare.net";
   // Android emulator cannot access host machine via localhost.
   // Use 10.0.2.2 to reach the host's localhost from emulator.
-  static const String baseURL = "http://localhost:8000";
+  // static const String baseURL = "http://localhost:8000";
 
   static String get profileCommonURL => '$baseURL/profile/data';
   static String get signupURL => '$baseURL/auth/signup';
