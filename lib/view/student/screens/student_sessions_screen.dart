@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geocoding/geocoding.dart';
+// import 'package:geolocator/geolocator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -56,102 +56,102 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
   DateTime? _pastFilterDate;
   DateTime? _pastPendingFilterDate;
 
-  Future<({String latitude, String longitude, String address})>
-  _fetchLocationForJoin() async {
-    final position = await _getGeoLocationPosition();
-    final address = await _getAddressFromPosition(position);
-    return (
-      latitude: position.latitude.toString(),
-      longitude: position.longitude.toString(),
-      address: address,
-    );
-  }
+  // Future<({String latitude, String longitude, String address})>
+  // _fetchLocationForJoin() async {
+  //   final position = await _getGeoLocationPosition();
+  //   final address = await _getAddressFromPosition(position);
+  //   return (
+  //     latitude: position.latitude.toString(),
+  //     longitude: position.longitude.toString(),
+  //     address: address,
+  //   );
+  // }
 
-  Future<String> _getAddressFromPosition(Position position) async {
-    try {
-      final placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      if (placemarks.isEmpty) return '';
-      final place = placemarks.first;
-      return [
-        (place.street ?? '').trim(),
-        (place.locality ?? '').trim(),
-        (place.administrativeArea ?? '').trim(),
-        (place.postalCode ?? '').trim(),
-        (place.country ?? '').trim(),
-      ].where((e) => e.isNotEmpty).join(', ');
-    } catch (_) {
-      return '';
-    }
-  }
+  // Future<String> _getAddressFromPosition(Position position) async {
+  //   try {
+  //     final placemarks = await placemarkFromCoordinates(
+  //       position.latitude,
+  //       position.longitude,
+  //     );
+  //     if (placemarks.isEmpty) return '';
+  //     final place = placemarks.first;
+  //     return [
+  //       (place.street ?? '').trim(),
+  //       (place.locality ?? '').trim(),
+  //       (place.administrativeArea ?? '').trim(),
+  //       (place.postalCode ?? '').trim(),
+  //       (place.country ?? '').trim(),
+  //     ].where((e) => e.isNotEmpty).join(', ');
+  //   } catch (_) {
+  //     return '';
+  //   }
+  // }
 
-  Future<void> _showLocationSettingsDialog(String message) async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const AppText('cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                if (Platform.isIOS) {
-                  await Geolocator.openLocationSettings();
-                } else if (Platform.isAndroid) {
-                  await Geolocator.openAppSettings();
-                } else {
-                  await Geolocator.openAppSettings();
-                }
-              },
-              child: const AppText('settings'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Future<void> _showLocationSettingsDialog(String message) async {
+  //   if (!mounted) return;
+  //   await showDialog<void>(
+  //     context: context,
+  //     builder: (dialogContext) {
+  //       return AlertDialog(
+  //         content: Text(message),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(dialogContext),
+  //             child: const AppText('cancel'),
+  //           ),
+  //           TextButton(
+  //             onPressed: () async {
+  //               Navigator.pop(dialogContext);
+  //               if (Platform.isIOS) {
+  //                 await Geolocator.openLocationSettings();
+  //               } else if (Platform.isAndroid) {
+  //                 await Geolocator.openAppSettings();
+  //               } else {
+  //                 await Geolocator.openAppSettings();
+  //               }
+  //             },
+  //             child: const AppText('settings'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
-  Future<Position> _getGeoLocationPosition() async {
-    String t(String key) {
-      final language = AppLanguageState.currentLanguage;
-      return ConstString.text(language, key);
-    }
+  // Future<Position> _getGeoLocationPosition() async {
+  //   String t(String key) {
+  //     final language = AppLanguageState.currentLanguage;
+  //     return ConstString.text(language, key);
+  //   }
 
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await _showLocationSettingsDialog(t('locationServicesDisabled'));
-      throw Exception(t('locationServicesDisabled'));
-    }
+  //   final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     await _showLocationSettingsDialog(t('locationServicesDisabled'));
+  //     throw Exception(t('locationServicesDisabled'));
+  //   }
 
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        await _showLocationSettingsDialog(t('locationPermissionsDenied'));
-        throw Exception(t('locationPermissionsDenied'));
-      }
-    }
+  //   var permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       await _showLocationSettingsDialog(t('locationPermissionsDenied'));
+  //       throw Exception(t('locationPermissionsDenied'));
+  //     }
+  //   }
 
-    if (permission == LocationPermission.deniedForever) {
-      await _showLocationSettingsDialog(
-        t('locationPermissionsPermanentlyDenied'),
-      );
-      throw Exception(t('locationPermissionsPermanentlyDenied'));
-    }
+  //   if (permission == LocationPermission.deniedForever) {
+  //     await _showLocationSettingsDialog(
+  //       t('locationPermissionsPermanentlyDenied'),
+  //     );
+  //     throw Exception(t('locationPermissionsPermanentlyDenied'));
+  //   }
 
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-      ),
-    );
-  }
+  //   return Geolocator.getCurrentPosition(
+  //     locationSettings: const LocationSettings(
+  //       accuracy: LocationAccuracy.bestForNavigation,
+  //     ),
+  //   );
+  // }
 
   Future<void> _refreshStudentSessions() async {
     final studentId = PrefUtils.getstudentid().trim();
@@ -555,9 +555,7 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                       return;
                                     }
                                     setState(() => _joiningSlotId = slotId);
-                                    _fetchLocationForJoin()
-                                        .then((location) {
-                                          _liveSessionJoinBloc.add(
+                                       _liveSessionJoinBloc.add(
                                             LiveSessionJoinRequested(
                                               actorType: 'student',
                                               actorId: studentId,
@@ -566,17 +564,13 @@ class _StudentSessionsScreenState extends State<StudentSessionsScreen> {
                                               date: date,
                                               startTime: startTime,
                                               endTime: endTime,
-                                              latitude: location.latitude,
-                                              longitude: location.longitude,
-                                              address: location.address,
+                                              latitude: "",
+                                              longitude: "",
+                                              address: "",
                                               waitForHost: true,
                                             ),
                                           );
-                                        })
-                                        .catchError((_) {
-                                          if (!mounted) return;
-                                          setState(() => _joiningSlotId = '');
-                                        });
+                                   
                                         },
                                         joiningSlotId: _joiningSlotId,
                                         onCancel: (row) {

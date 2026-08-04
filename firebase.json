@@ -4,7 +4,7 @@
             "android": {
                 "default": {
                     "projectId": "language-learning-app-45b70",
-                    "appId": "1:703522963799:android:116c8173d7a6cc2fa8be12",
+                    "appId": "1:703522963799:android:b644e2bc1392d1dda8be12",
                     "fileOutput": "android/app/google-services.json"
                 }
             },
@@ -28,7 +28,7 @@
                 "lib/firebase_options.dart": {
                     "projectId": "language-learning-app-45b70",
                     "configurations": {
-                        "android": "1:703522963799:android:116c8173d7a6cc2fa8be12",
+                        "android": "1:703522963799:android:b644e2bc1392d1dda8be12",
                         "ios": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
                         "macos": "1:703522963799:ios:ee9c6f4f4d8b147fa8be12",
                         "web": "1:703522963799:web:72e628cc575c1d03a8be12",

@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBGuDbVeXu6Yb-Ryh6JxrhJPM_yDjH51LI',
-    appId: '1:703522963799:android:116c8173d7a6cc2fa8be12',
+    appId: '1:703522963799:android:b644e2bc1392d1dda8be12',
     messagingSenderId: '703522963799',
     projectId: 'language-learning-app-45b70',
     storageBucket: 'language-learning-app-45b70.firebasestorage.app',
